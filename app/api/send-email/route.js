@@ -1,10 +1,8 @@
 import nodemailer from 'nodemailer';
 
 export async function POST(req) {
-  console.log('API: send-email POST request received');
   try {
     const body = await req.json();
-    console.log('API: request body:', body);
     const { name, email, phone, company, message } = body;
 
     // Validate inputs
@@ -15,34 +13,23 @@ export async function POST(req) {
     const smtpPort = parseInt(process.env.SMTP_PORT || '465');
     const isSecure = smtpPort === 465;
 
-    console.log('API: Creating transporter with:', {
-      host: process.env.SMTP_HOST,
-      port: smtpPort,
-      user: process.env.SMTP_USER,
-      secure: isSecure
-    });
-
     // Create transporter
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: smtpPort,
-      secure: isSecure, // true for 465, false for others
+      secure: isSecure,
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASSWORD,
       },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 20000,
-      logger: true,
-      debug: true,
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 30000,
       tls: {
-        // Essential for Windows hosting mail servers that often have cert issues
-        rejectUnauthorized: false
+        rejectUnauthorized: false,
+        minVersion: 'TLSv1', // Windows hosting often uses older TLS
       }
     });
-
-    console.log(`API: Sending admin email to: ${process.env.ADMIN_EMAIL}`);
 
     // Email to admin
     await transporter.sendMail({
@@ -79,16 +66,13 @@ export async function POST(req) {
       `,
     });
 
-    console.log('API: Admin email sent successfully');
-
     // Confirmation email to user
-    console.log(`API: Sending user confirmation email to: ${email}`);
     await transporter.sendMail({
       from: process.env.SMTP_FROM,
       to: email,
       subject: 'Primili smo vaš upit - Rent a Web',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333 text-align: left;">
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
           <h2 style="color: #22c55e;">Hvala na upitu, ${name}!</h2>
           <p>Primili smo vašu poruku i javit ćemo vam se u roku 24 sata.</p>
           <div style="margin-top: 30px; padding: 20px; background: #f9fafb; border-left: 4px solid #22c55e;">
@@ -102,13 +86,12 @@ export async function POST(req) {
         </div>
       `,
     });
-    console.log('API: User confirmation email sent successfully');
 
     return Response.json({ success: true, message: 'Email uspješno poslan!' });
   } catch (error) {
     console.error('API Error (send-email):', error);
     return Response.json({
-      error: 'Greška pri slanju emaila. Provjerite SMTP postavke.',
+      error: 'Greška pri slanju emaila.',
       details: error.message
     }, { status: 500 });
   }
