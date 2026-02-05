@@ -5,30 +5,17 @@ export async function POST(req) {
     const body = await req.json();
     const { name, email, phone, company, message } = body;
 
-    // Validate inputs
     if (!name || !email || !message) {
       return Response.json({ error: 'Ime, email i poruka su obavezni' }, { status: 400 });
     }
 
-    const smtpPort = parseInt(process.env.SMTP_PORT || '465');
-    const isSecure = smtpPort === 465;
-
-    // Create transporter
+    // Gmail/Workspace specific transporter
     const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: smtpPort,
-      secure: isSecure,
+      service: 'gmail', // Nodemailer ima predefinirane postavke za Gmail
       auth: {
         user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASSWORD,
+        pass: process.env.SMTP_PASSWORD, // Ovdje ide APP PASSWORD
       },
-      connectionTimeout: 15000,
-      greetingTimeout: 15000,
-      socketTimeout: 30000,
-      tls: {
-        rejectUnauthorized: false,
-        minVersion: 'TLSv1', // Windows hosting often uses older TLS
-      }
     });
 
     // Email to admin
@@ -44,11 +31,7 @@ export async function POST(req) {
               <td style="padding: 10px; border-bottom: 1px solid #eee;"><strong>Ime:</strong></td>
               <td style="padding: 10px; border-bottom: 1px solid #eee;">${name}</td>
             </tr>
-            ${company ? `
-            <tr>
-              <td style="padding: 10px; border-bottom: 1px solid #eee;"><strong>Tvrtka:</strong></td>
-              <td style="padding: 10px; border-bottom: 1px solid #eee;">${company}</td>
-            </tr>` : ''}
+            ${company ? `<tr><td style="padding: 10px; border-bottom: 1px solid #eee;"><strong>Tvrtka:</strong></td><td style="padding: 10px; border-bottom: 1px solid #eee;">${company}</td></tr>` : ''}
             <tr>
               <td style="padding: 10px; border-bottom: 1px solid #eee;"><strong>Email:</strong></td>
               <td style="padding: 10px; border-bottom: 1px solid #eee;"><a href="mailto:${email}">${email}</a></td>
@@ -72,27 +55,21 @@ export async function POST(req) {
       to: email,
       subject: 'Primili smo vaš upit - Rent a Web',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333 text-align: left;">
           <h2 style="color: #22c55e;">Hvala na upitu, ${name}!</h2>
           <p>Primili smo vašu poruku i javit ćemo vam se u roku 24 sata.</p>
           <div style="margin-top: 30px; padding: 20px; background: #f9fafb; border-left: 4px solid #22c55e;">
             <strong>Vaša poruka:</strong><br>
             ${message.replace(/\n/g, '<br>')}
           </div>
-          <p style="margin-top: 30px; color: #666;">
-            Srdačan pozdrav,<br>
-            <strong>Rent a Web tim</strong>
-          </p>
+          <p style="margin-top: 30px; color: #666;">Srdačan pozdrav,<br><strong>Rent a Web tim</strong></p>
         </div>
       `,
     });
 
-    return Response.json({ success: true, message: 'Email uspješno poslan!' });
+    return Response.json({ success: true });
   } catch (error) {
-    console.error('API Error (send-email):', error);
-    return Response.json({
-      error: 'Greška pri slanju emaila.',
-      details: error.message
-    }, { status: 500 });
+    console.error('Email API Error:', error);
+    return Response.json({ error: 'Greška pri slanju emaila.' }, { status: 500 });
   }
 }
