@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
   title: "Rent a Web | Profesionalne Web Stranice",
-  description: "Najbrži način da dođete do moderne i funkcionalne web stranice. Rezervirajte svoj termin i unaprijedite svoje poslovanje.",
-  keywords: ["web dizajn", "izrada stranica", "najam weba", "automatizacija salesa"],
+  description: "Najbrži način da dođete do moderne i funkcionalne web stranice. Unajmite web stranicu za samo 39€/mjesečno.",
+  keywords: ["web dizajn", "cijena web stranica", "najam weba", "automatizacija salesa"],
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
   icons: {
     icon: "https://framerusercontent.com/images/fbLxHSQG15wQ5GLsHXeLv64Nvlo.png",

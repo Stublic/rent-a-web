@@ -371,12 +371,20 @@ const PricingCard = ({ title, price, features, recommended = false, description,
       ))}
     </ul>
 
-    <a
-      href="#contact"
-      className={`w-full py-3.5 rounded-xl font-bold transition-all block text-center ${recommended ? 'bg-green-600 text-white hover:bg-green-500' : 'bg-white text-black hover:bg-zinc-200'}`}
+    <button
+      onClick={() => onCheckout(priceId)}
+      disabled={loading}
+      className={`w-full py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${recommended ? 'bg-green-600 text-white hover:bg-green-500' : 'bg-white text-black hover:bg-zinc-200'} disabled:opacity-50`}
     >
-      Odaberi paket
-    </a>
+      {loading ? (
+        <>
+          <RefreshCw className="animate-spin" size={18} />
+          <span>Spajanje...</span>
+        </>
+      ) : (
+        "Odaberi paket"
+      )}
+    </button>
   </div>
 );
 
