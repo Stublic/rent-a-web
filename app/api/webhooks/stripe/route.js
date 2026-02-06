@@ -66,6 +66,47 @@ export async function POST(req) {
 
             if (result.status === 0) {
                 console.log('SOLO Invoice created successfully!');
+
+                // Send email to customer with invoice
+                const customerEmail = customer.email || session.customer_details?.email;
+                if (customerEmail) {
+                    try {
+                        const nodemailer = (await import('nodemailer')).default;
+                        const transporter = nodemailer.createTransport({
+                            service: 'gmail',
+                            auth: {
+                                user: process.env.SMTP_USER,
+                                pass: process.env.SMTP_PASSWORD,
+                            },
+                        });
+
+                        const invoiceUrl = result.pdf || '';
+
+                        await transporter.sendMail({
+                            from: process.env.SMTP_FROM,
+                            to: customerEmail,
+                            subject: 'Vaš račun - Rent a Web',
+                            html: `
+                                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333 text-align: left;">
+                                    <h2 style="color: #22c55e;">Hvala na narudžbi!</h2>
+                                    <p>Vaše plaćanje je uspješno obrađeno. U privitku (poveznici) dostavljamo vaš račun.</p>
+                                    ${invoiceUrl ? `
+                                    <div style="margin: 20px 0;">
+                                        <a href="${invoiceUrl}" style="background-color: #22c55e; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Preuzmi račun (PDF)</a>
+                                    </div>
+                                    ` : ''}
+                                    <p style="margin-top: 30px; color: #666;">
+                                        Srdačan pozdrav,<br>
+                                        <strong>Rent a Web tim</strong>
+                                    </p>
+                                </div>
+                            `,
+                        });
+                        console.log(`API: Invoice email sent to ${customerEmail}`);
+                    } catch (emailError) {
+                        console.error('Error sending invoice email:', emailError.message);
+                    }
+                }
             } else {
                 console.error('SOLO API Error:', result.message || 'Unknown error');
             }
