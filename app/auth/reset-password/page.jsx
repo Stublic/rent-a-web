@@ -4,9 +4,11 @@ import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { Loader2, Lock, CheckCircle2, AlertCircle } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 
 export default function ResetPasswordPage() {
+    const searchParams = useSearchParams();
+    const token = searchParams.get("token");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [loading, setLoading] = useState(false);
@@ -16,6 +18,11 @@ export default function ResetPasswordPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        if (!token) {
+            setError("Nevažeći ili nedostajući token za resetiranje.");
+            return;
+        }
         
         if (password !== confirmPassword) {
             setError("Lozinke se ne podudaraju.");
@@ -27,6 +34,7 @@ export default function ResetPasswordPage() {
 
         const { error } = await authClient.resetPassword({
             newPassword: password,
+            token: token,
         });
 
         if (error) {
