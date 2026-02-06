@@ -15,7 +15,9 @@ import {
     Settings as SettingsIcon,
     Key,
     UserCircle,
-    ChevronDown
+    ChevronDown,
+    Loader2,
+    Lock
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -262,6 +264,7 @@ function UserDropdown({ user, logout, setActiveTab }) {
 }
 
 function SettingsTab({ user, logout }) {
+    const [currentPassword, setCurrentPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [loading, setLoading] = useState(false);
@@ -280,6 +283,7 @@ function SettingsTab({ user, logout }) {
         setMessage({ type: "", text: "" });
 
         const { error } = await authClient.changePassword({
+            currentPassword: currentPassword,
             newPassword: newPassword,
             revokeOtherSessions: true,
         });
@@ -288,6 +292,7 @@ function SettingsTab({ user, logout }) {
             setMessage({ type: "error", text: error.message || "Greška pri promjeni lozinke." });
         } else {
             setMessage({ type: "success", text: "Lozinka uspješno promijenjena!" });
+            setCurrentPassword("");
             setNewPassword("");
             setConfirmPassword("");
         }
@@ -337,6 +342,20 @@ function SettingsTab({ user, logout }) {
                                         {message.text}
                                     </div>
                                 )}
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-zinc-400">Trenutna lozinka</label>
+                                    <div className="relative">
+                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                                        <input 
+                                            type="password"
+                                            value={currentPassword}
+                                            onChange={(e) => setCurrentPassword(e.target.value)}
+                                            required
+                                            className="w-full bg-zinc-950/50 border border-zinc-800 rounded-xl pl-12 pr-4 py-3 text-white focus:outline-none focus:border-green-500 transition-all"
+                                            placeholder="••••••••"
+                                        />
+                                    </div>
+                                </div>
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium text-zinc-400">Nova lozinka</label>
                                     <div className="relative">
