@@ -33,22 +33,20 @@ export async function POST(req) {
             formData.append('kupac_email', customer.email || session.customer_details?.email || '');
             formData.append('kupac_adresa', customer.address?.line1 || '');
 
-            // MATH FIX: Calculate NETTO price from Stripe's BRUTO total
-            // Bruto / 1.25 = Netto (for 25% VAT)
+            // USER IS NOT IN VAT SYSTEM: Send full amount, set tax to 0
             const brutoAmount = session.amount_total / 100;
-            const nettoAmount = brutoAmount / 1.25;
-            const formattedNetto = nettoAmount.toFixed(2).replace('.', ',');
+            const formattedAmount = brutoAmount.toFixed(2).replace('.', ',');
 
             formData.append('usluga', '1');
             formData.append('opis_usluge_1', session.line_items?.data[0]?.description || 'Najam web stranice');
-            formData.append('cijena_1', formattedNetto);
+            formData.append('cijena_1', formattedAmount);
             formData.append('kolicina_1', '1');
             formData.append('popust_1', '0');
-            formData.append('porez_stopa_1', '25');
+            formData.append('porez_stopa_1', '0');
 
             formData.append('nacin_placanja', '3'); // Kartice
             formData.append('valuta_racuna', '14'); // EUR
-            formData.append('napomene', `Stripe: ${session.id}`);
+            formData.append('napomene', `Plaćeno karticom putem Stripe-a. Obveznik nije u sustavu PDV-a prema čl. 90. st. 1. i 2. Zakona o PDV-u. PDV nije obračunat. (Subscription: ${session.id})`);
 
             console.log('API: Sending request to SOLO (Price Fix Applied)...');
 
