@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { authClient } from "@/lib/auth-client";
 import { Loader2, Mail, Lock, User, Github, Chrome } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 
 function SignupForm() {
     const searchParams = useSearchParams();

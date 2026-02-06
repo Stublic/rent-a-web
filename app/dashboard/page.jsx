@@ -142,7 +142,7 @@ export default function DashboardPage() {
     );
 }
 
-function SubscriptionTab({ user }) {
+function SubscriptionTab({ user, onPortal }) {
     const isSubscriber = user.subscriptionStatus === "active";
     const plan = user.planName || "Nema aktivne pretplate";
 
