@@ -371,13 +371,12 @@ const PricingCard = ({ title, price, features, recommended = false, description,
       ))}
     </ul>
 
-    <button
-      onClick={() => onCheckout(priceId)}
-      disabled={loading}
-      className={`w-full py-3.5 rounded-xl font-bold transition-all block text-center disabled:opacity-50 disabled:cursor-not-allowed ${recommended ? 'bg-green-600 text-white hover:bg-green-500' : 'bg-white text-black hover:bg-zinc-200'}`}
+    <a
+      href="#contact"
+      className={`w-full py-3.5 rounded-xl font-bold transition-all block text-center ${recommended ? 'bg-green-600 text-white hover:bg-green-500' : 'bg-white text-black hover:bg-zinc-200'}`}
     >
-      {loading ? "Pokretanje..." : "Odaberi paket"}
-    </button>
+      Odaberi paket
+    </a>
   </div>
 );
 
@@ -926,7 +925,7 @@ const App = () => {
             <FadeIn delay={200} className="h-full">
               <PricingCard
                 title="Advanced"
-                price="79"
+                price="89"
                 icon={Rocket}
                 priceId="price_1SxaHAKhkXukXczc0cPpLMH2"
                 onCheckout={handleCheckout}
