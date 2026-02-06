@@ -2,6 +2,8 @@ import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req) {
     const { searchParams } = new URL(req.url);
     const sessionId = searchParams.get('session_id');

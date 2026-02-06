@@ -4,6 +4,8 @@ import { prisma } from '@/lib/prisma';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req) {
     const body = await req.text();
     const headerList = await headers();
