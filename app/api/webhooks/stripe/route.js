@@ -60,8 +60,8 @@ export async function POST(req) {
             console.log('SOLO API FULL RESPONSE:', JSON.stringify(result));
 
             if (result.status === 0) {
-                // Try to find the PDF link in the response
-                const invoiceUrl = result.pdf || result.url || (result.data && result.data.pdf) || '';
+                // CORRECT PATH: result.racun.pdf
+                const invoiceUrl = (result.racun && result.racun.pdf) || result.pdf || '';
                 const customerEmail = customer.email || session.customer_details?.email;
 
                 if (customerEmail) {
