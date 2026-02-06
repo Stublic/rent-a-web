@@ -54,5 +54,13 @@ export const auth = betterAuth({
                 }
             }
         }
+    },
+    trustedOrigins: [
+        "https://rent-a-web-git-user-dashboard-stublics-projects.vercel.app",
+        "https://rent.webica.hr",
+        "https://*.vercel.app"
+    ],
+    rateLimit: {
+        enabled: false,
     }
 });
