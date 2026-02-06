@@ -21,61 +21,59 @@ export async function POST(req) {
         return Response.json({ error: 'Webhook verification failed' }, { status: 400 });
     }
 
-    // Handle the checkout.session.completed event
     if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
 
         try {
-            // Get customer details from session
             const customer = await stripe.customers.retrieve(session.customer);
 
-            // Create invoice in SOLO
-            const soloResponse = await fetch('https://api.solo.com.hr/racuni', {
+            // SOLO API v2.0 parameters (Effective Dec 2025)
+            const formData = new URLSearchParams();
+            formData.append('token', process.env.SOLO_API_TOKEN);
+            formData.append('tip_usluge', '1'); // Default service type ID (Check in SOLO Settings > Type of services)
+            formData.append('tip_racuna', '3'); // 3 = Standard invoice (bez oznake), 1 = R1
+
+            // Determine Customer Type (1 = B2C, 2 = B2B)
+            // If there's a company name or VAT, we treat it as B2B
+            const isBusiness = !!(customer.name || session.customer_details?.name) && !!customer.tax_ids?.data?.length;
+            formData.append('tip_kupca', isBusiness ? '2' : '1');
+
+            formData.append('kupac_naziv', customer.name || session.customer_details?.name || 'Nepoznat kupac');
+            formData.append('kupac_email', customer.email || session.customer_details?.email || '');
+            formData.append('kupac_adresa', customer.address?.line1 || '');
+
+            // Items (Stripe amount is in cents, SOLO needs comma decimal)
+            const amount = (session.amount_total / 100).toFixed(2).replace('.', ',');
+
+            formData.append('usluga', '1');
+            formData.append('opis_usluge_1', session.line_items?.data[0]?.description || 'Najam web stranice');
+            formData.append('cijena_1', amount);
+            formData.append('kolicina_1', '1');
+            formData.append('porez_stopa_1', '25'); // VAT 25%
+
+            formData.append('nacin_placanja', '3'); // 3 = Kartice (Stripe)
+            formData.append('valuta_racuna', '1'); // 1 = EUR
+            formData.append('napomene', `Stripe Subscription: ${session.subscription}`);
+
+            console.log('API: Sending request to SOLO (Fiskalizacija 2.0)...');
+
+            const soloResponse = await fetch('https://api.solo.com.hr/racun', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'API-Token': process.env.SOLO_API_TOKEN,
+                    'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: JSON.stringify({
-                    tip_racuna: 'ponavljajuci', // Recurring invoice for subscription
-                    kupac: {
-                        naziv: customer.name || session.customer_details?.name || 'Nepoznat kupac',
-                        email: customer.email || session.customer_details?.email,
-                        adresa: customer.address?.line1 || '',
-                        grad: customer.address?.city || '',
-                        postanski_broj: customer.address?.postal_code || '',
-                        drzava: customer.address?.country || 'HR',
-                    },
-                    stavke: [
-                        {
-                            opis: session.line_items?.data[0]?.description || 'Web pretplata',
-                            kolicina: 1,
-                            cijena: session.amount_total / 100, // Convert from cents
-                            porez: 25, // VAT 25%
-                        },
-                    ],
-                    nacin_placanja: 'kartica',
-                    valuta: session.currency.toUpperCase(),
-                    napomena: `Stripe Subscription ID: ${session.subscription}`,
-                }),
+                body: formData.toString(),
             });
 
-            if (!soloResponse.ok) {
-                const errorData = await soloResponse.json();
-                console.error('SOLO API error:', errorData);
-                throw new Error('Failed to create SOLO invoice');
+            const result = await soloResponse.json();
+            console.log('SOLO API Result:', result);
+
+            if (result.status !== 0 && result.code !== undefined) {
+                console.error('SOLO API Error:', result.message);
             }
 
-            const soloInvoice = await soloResponse.json();
-            console.log('SOLO invoice created:', soloInvoice);
-
-            // Optional: Send confirmation email to customer
-            // You can call your send-email API here if needed
-
         } catch (error) {
-            console.error('Error processing webhook:', error);
-            // Don't return error to Stripe - we've received the event
-            // Log it for manual review instead
+            console.error('Error processing SOLO invoice:', error);
         }
     }
 
