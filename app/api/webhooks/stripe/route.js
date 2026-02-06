@@ -25,11 +25,9 @@ export async function POST(req) {
         try {
             const customer = await stripe.customers.retrieve(session.customer);
 
-            // 1. CLEAN TOKEN (CRITICAL)
-            const cleanToken = (process.env.SOLO_API_TOKEN || '').trim();
-
+            // SOLO API v2.0 parameters
             const formData = new URLSearchParams();
-            formData.append('token', cleanToken);
+            formData.append('token', process.env.SOLO_API_TOKEN.trim());
             formData.append('tip_usluge', '1');
             formData.append('tip_racuna', '3');
 
@@ -48,27 +46,28 @@ export async function POST(req) {
             formData.append('kolicina_1', '1');
             formData.append('porez_stopa_1', '25');
 
-            formData.append('nacin_placanja', '3');
-            formData.append('valuta_racuna', '1');
+            formData.append('nacin_placanja', '3'); // 3 = Kartice
+            formData.append('valuta_racuna', '1'); // 1 = EUR
             formData.append('napomene', `Stripe: ${session.id}`);
 
-            // 2. TRIPLE DELIVERY METHOD (URL + Header + Body)
-            const soloUrl = `https://api.solo.com.hr/racun?token=${cleanToken}`;
+            console.log('API: Sending request to SOLO...');
 
-            console.log(`API: Sending to SOLO with token starting with: ${cleanToken.substring(0, 5)}...`);
-
-            const soloResponse = await fetch(soloUrl, {
+            const soloResponse = await fetch('https://api.solo.com.hr/racun', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
-                    'API-TOKEN': cleanToken, // Some legacy versions need this
-                    'Authorization': `Bearer ${cleanToken}` // Some doku.hr versions might check this
                 },
                 body: formData.toString(),
             });
 
             const result = await soloResponse.json();
-            console.log('SOLO API Final Response:', JSON.stringify(result));
+            console.log('SOLO API Response:', JSON.stringify(result));
+
+            if (result.status === 0) {
+                console.log('SOLO Invoice created successfully!');
+            } else {
+                console.error('SOLO API Error:', result.message || 'Unknown error');
+            }
 
         } catch (error) {
             console.error('Error in SOLO webhook:', error.message);
