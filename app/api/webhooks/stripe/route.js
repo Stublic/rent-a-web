@@ -27,14 +27,13 @@ export async function POST(req) {
         try {
             const customer = await stripe.customers.retrieve(session.customer);
 
-            // SOLO API v2.0 parameters (Effective Dec 2025)
+            // SOLO API v2.0 parameters
             const formData = new URLSearchParams();
+            // We'll put the token in the URL, but also keep it here for safety
             formData.append('token', process.env.SOLO_API_TOKEN);
-            formData.append('tip_usluge', '1'); // Default service type ID (Check in SOLO Settings > Type of services)
-            formData.append('tip_racuna', '3'); // 3 = Standard invoice (bez oznake), 1 = R1
+            formData.append('tip_usluge', '1');
+            formData.append('tip_racuna', '3');
 
-            // Determine Customer Type (1 = B2C, 2 = B2B)
-            // If there's a company name or VAT, we treat it as B2B
             const isBusiness = !!(customer.name || session.customer_details?.name) && !!customer.tax_ids?.data?.length;
             formData.append('tip_kupca', isBusiness ? '2' : '1');
 
@@ -42,22 +41,24 @@ export async function POST(req) {
             formData.append('kupac_email', customer.email || session.customer_details?.email || '');
             formData.append('kupac_adresa', customer.address?.line1 || '');
 
-            // Items (Stripe amount is in cents, SOLO needs comma decimal)
             const amount = (session.amount_total / 100).toFixed(2).replace('.', ',');
 
             formData.append('usluga', '1');
             formData.append('opis_usluge_1', session.line_items?.data[0]?.description || 'Najam web stranice');
             formData.append('cijena_1', amount);
             formData.append('kolicina_1', '1');
-            formData.append('porez_stopa_1', '25'); // VAT 25%
+            formData.append('porez_stopa_1', '25');
 
-            formData.append('nacin_placanja', '3'); // 3 = Kartice (Stripe)
+            formData.append('nacin_placanja', '3'); // 3 = Kartice
             formData.append('valuta_racuna', '1'); // 1 = EUR
-            formData.append('napomene', `Stripe Subscription: ${session.subscription}`);
+            formData.append('napomene', `Stripe: ${session.subscription || session.id}`);
 
-            console.log('API: Sending request to SOLO (Fiskalizacija 2.0)...');
+            // Sending token in URL as query param is the most reliable way for SOLO API
+            const soloUrl = `https://api.solo.com.hr/racun?token=${process.env.SOLO_API_TOKEN}`;
 
-            const soloResponse = await fetch('https://api.solo.com.hr/racun', {
+            console.log('API: Sending request to SOLO (Token in URL)...');
+
+            const soloResponse = await fetch(soloUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -66,14 +67,16 @@ export async function POST(req) {
             });
 
             const result = await soloResponse.json();
-            console.log('SOLO API Result:', result);
+            console.log('SOLO API Raw Result:', JSON.stringify(result));
 
-            if (result.status !== 0 && result.code !== undefined) {
-                console.error('SOLO API Error:', result.message);
+            if (result.status !== 0) {
+                console.error('SOLO API Error:', result.message || 'Unknown error');
+            } else {
+                console.log('SOLO Invoice created successfully!');
             }
 
         } catch (error) {
-            console.error('Error processing SOLO invoice:', error);
+            console.error('Error processing SOLO invoice:', error.message);
         }
     }
 
