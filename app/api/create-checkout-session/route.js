@@ -19,8 +19,8 @@ export async function POST(req) {
                 },
             ],
             mode: 'subscription',
-            success_url: `${req.headers.get('origin')}/?success=true`,
-            cancel_url: `${req.headers.get('origin')}/?canceled=true`,
+            success_url: `${req.headers.get('origin')}/auth/signup?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${req.headers.get('origin')}/#pricing`,
         });
 
         return Response.json({ url: session.url });
