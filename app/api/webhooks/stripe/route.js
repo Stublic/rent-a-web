@@ -63,7 +63,8 @@ export async function POST(req) {
                 });
             }
 
-            // 2. Original SOLO Invoice Logic
+            // 2. SOLO Invoice Logic - DISABLED BY USER REQUEST
+            /*
             const formData = new URLSearchParams();
             formData.append('token', process.env.SOLO_API_TOKEN.trim());
             formData.append('tip_usluge', '1');
@@ -97,38 +98,36 @@ export async function POST(req) {
             });
 
             const result = await soloResponse.json();
+            */
 
-            if (result.status === 0) {
-                const invoiceUrl = (result.racun && result.racun.pdf) || '';
-                if (customerEmail) {
-                    const nodemailer = (await import('nodemailer')).default;
-                    const transporter = nodemailer.createTransport({
-                        service: 'gmail',
-                        auth: {
-                            user: process.env.SMTP_USER,
-                            pass: process.env.SMTP_PASSWORD,
-                        },
-                    });
+            // Temporary: Send confirmation email without invoice
+            if (customerEmail) {
+                const nodemailer = (await import('nodemailer')).default;
+                const transporter = nodemailer.createTransport({
+                    service: 'gmail',
+                    auth: {
+                        user: process.env.SMTP_USER,
+                        pass: process.env.SMTP_PASSWORD,
+                    },
+                });
 
-                    await transporter.sendMail({
-                        from: process.env.SMTP_FROM,
-                        to: customerEmail,
-                        subject: 'Vaš račun i potvrda pretplate - Rent a Web',
-                        html: `
-                            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-                                <h2 style="color: #22c55e;">Hvala na pretplati!</h2>
-                                <p>Vaša narudžba za paket <strong>${planName}</strong> je uspješno obrađena.</p>
-                                <p>Sada se možete registrirati ili prijaviti na naš portal kako biste započeli s izradom vašeg weba.</p>
-                                <div style="margin: 30px 0;">
-                                    <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/signup" style="background-color: #22c55e; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Registriraj se i kreni</a>
-                                </div>
-                                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-                                <p>Vaš službeni račun:</p>
-                                ${invoiceUrl ? `<a href="${invoiceUrl}">Preuzmi račun (PDF)</a>` : '<p>Račun će biti dostupan u dashboardu.</p>'}
+                await transporter.sendMail({
+                    from: process.env.SMTP_FROM,
+                    to: customerEmail,
+                    subject: 'Potvrda pretplate - Rent a Web',
+                    html: `
+                        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+                            <h2 style="color: #22c55e;">Hvala na pretplati!</h2>
+                            <p>Vaša narudžba za paket <strong>${planName}</strong> je uspješno obrađena.</p>
+                            <p>Sada se možete registrirati ili prijaviti na naš portal kako biste započeli s izradom vašeg weba.</p>
+                            <div style="margin: 30px 0;">
+                                <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/signup" style="background-color: #22c55e; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Registriraj se i kreni</a>
                             </div>
-                        `,
-                    });
-                }
+                            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                            <p>Račun će biti dostupan u dashboardu nakon završetka testiranja.</p>
+                        </div>
+                    `,
+                });
             }
         } catch (error) {
             console.error('Webhook Error:', error.message);
