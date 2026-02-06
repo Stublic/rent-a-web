@@ -44,6 +44,7 @@ export async function POST(req) {
             formData.append('opis_usluge_1', session.line_items?.data[0]?.description || 'Najam web stranice');
             formData.append('cijena_1', amount);
             formData.append('kolicina_1', '1');
+            formData.append('popust_1', '0');
             formData.append('porez_stopa_1', '25');
 
             formData.append('nacin_placanja', '3'); // 3 = Kartice
