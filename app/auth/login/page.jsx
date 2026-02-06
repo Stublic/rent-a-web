@@ -4,12 +4,14 @@ import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { Loader2, Mail, Lock, Chrome } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const router = useRouter();
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -24,8 +26,10 @@ export default function LoginPage() {
 
         if (error) {
             setError(error.message || "Neispravan email ili lozinka.");
+            setLoading(false);
+        } else {
+            router.push("/dashboard");
         }
-        setLoading(false);
     };
 
     const handleGoogleAuth = async () => {
@@ -78,7 +82,12 @@ export default function LoginPage() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-zinc-400 ml-1">Lozinka</label>
+                            <div className="flex items-center justify-between ml-1">
+                                <label className="text-sm font-medium text-zinc-400">Lozinka</label>
+                                <Link href="/auth/forgot-password" virtual className="text-xs text-green-500 hover:underline">
+                                    Izgubljena lozinka?
+                                </Link>
+                            </div>
                             <div className="relative">
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
                                 <input

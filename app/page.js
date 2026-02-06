@@ -1218,6 +1218,7 @@ const App = () => {
             <span>Rent a Web</span>
           </div>
           <div className="flex gap-8 text-sm font-medium">
+            <a href="/auth/login" className="hover:text-white transition-colors">Korisnici</a>
             <a href="#" className="hover:text-white transition-colors">Politika privatnosti</a>
             <a href="#" className="hover:text-white transition-colors">Uvjeti korištenja</a>
             <a href="#contact" className="hover:text-white transition-colors">Kontakt</a>

@@ -12,9 +12,11 @@ function SignupForm() {
     
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
     const [name, setName] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const router = useRouter();
 
     useEffect(() => {
         if (sessionId) {
@@ -37,6 +39,12 @@ function SignupForm() {
 
     const handleSignup = async (e) => {
         e.preventDefault();
+        
+        if (password !== confirmPassword) {
+            setError("Lozinke se ne podudaraju.");
+            return;
+        }
+
         setLoading(true);
         setError("");
 
@@ -49,8 +57,10 @@ function SignupForm() {
 
         if (error) {
             setError(error.message || "Došlo je do greške pri registraciji.");
+            setLoading(false);
+        } else {
+            router.push("/dashboard");
         }
-        setLoading(false);
     };
 
     const handleGoogleAuth = async () => {
@@ -113,18 +123,35 @@ function SignupForm() {
                         </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-zinc-400 ml-1">Lozinka</label>
-                        <div className="relative">
-                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                                className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl pl-12 pr-4 py-3 text-white focus:outline-none focus:border-green-500 transition-all"
-                                placeholder="••••••••"
-                            />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-zinc-400 ml-1">Lozinka</label>
+                            <div className="relative">
+                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                    className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl pl-12 pr-4 py-3 text-white focus:outline-none focus:border-green-500 transition-all"
+                                    placeholder="••••••••"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-zinc-400 ml-1">Potvrdi lozinku</label>
+                            <div className="relative">
+                                <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 ${confirmPassword && password === confirmPassword ? 'text-green-500' : 'text-zinc-500'}`} size={18} />
+                                <input
+                                    type="password"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    required
+                                    className={`w-full bg-zinc-900/50 border ${confirmPassword && password === confirmPassword ? 'border-green-500/50' : 'border-zinc-800'} rounded-xl pl-12 pr-4 py-3 text-white focus:outline-none focus:border-green-500 transition-all`}
+                                    placeholder="••••••••"
+                                />
+                            </div>
                         </div>
                     </div>
 
