@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect, Suspense } from "react";
 import { authClient } from "@/lib/auth-client";
 import { Loader2, Mail, Lock, User, Github, Chrome } from "lucide-react";
