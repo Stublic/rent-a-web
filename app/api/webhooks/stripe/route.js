@@ -9,7 +9,6 @@ export async function POST(req) {
     const signature = headerList.get('stripe-signature');
 
     let event;
-
     try {
         event = stripe.webhooks.constructEvent(
             body,
@@ -17,7 +16,6 @@ export async function POST(req) {
             process.env.STRIPE_WEBHOOK_SECRET
         );
     } catch (err) {
-        console.error('Webhook signature verification failed:', err.message);
         return Response.json({ error: 'Webhook verification failed' }, { status: 400 });
     }
 
@@ -27,10 +25,11 @@ export async function POST(req) {
         try {
             const customer = await stripe.customers.retrieve(session.customer);
 
-            // SOLO API v2.0 parameters
+            // 1. CLEAN TOKEN (CRITICAL)
+            const cleanToken = (process.env.SOLO_API_TOKEN || '').trim();
+
             const formData = new URLSearchParams();
-            // We'll put the token in the URL, but also keep it here for safety
-            formData.append('token', process.env.SOLO_API_TOKEN);
+            formData.append('token', cleanToken);
             formData.append('tip_usluge', '1');
             formData.append('tip_racuna', '3');
 
@@ -49,34 +48,30 @@ export async function POST(req) {
             formData.append('kolicina_1', '1');
             formData.append('porez_stopa_1', '25');
 
-            formData.append('nacin_placanja', '3'); // 3 = Kartice
-            formData.append('valuta_racuna', '1'); // 1 = EUR
-            formData.append('napomene', `Stripe: ${session.subscription || session.id}`);
+            formData.append('nacin_placanja', '3');
+            formData.append('valuta_racuna', '1');
+            formData.append('napomene', `Stripe: ${session.id}`);
 
-            // Sending token in URL as query param is the most reliable way for SOLO API
-            const soloUrl = `https://api.solo.com.hr/racun?token=${process.env.SOLO_API_TOKEN}`;
+            // 2. TRIPLE DELIVERY METHOD (URL + Header + Body)
+            const soloUrl = `https://api.solo.com.hr/racun?token=${cleanToken}`;
 
-            console.log('API: Sending request to SOLO (Token in URL)...');
+            console.log(`API: Sending to SOLO with token starting with: ${cleanToken.substring(0, 5)}...`);
 
             const soloResponse = await fetch(soloUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
+                    'API-TOKEN': cleanToken, // Some legacy versions need this
+                    'Authorization': `Bearer ${cleanToken}` // Some doku.hr versions might check this
                 },
                 body: formData.toString(),
             });
 
             const result = await soloResponse.json();
-            console.log('SOLO API Raw Result:', JSON.stringify(result));
-
-            if (result.status !== 0) {
-                console.error('SOLO API Error:', result.message || 'Unknown error');
-            } else {
-                console.log('SOLO Invoice created successfully!');
-            }
+            console.log('SOLO API Final Response:', JSON.stringify(result));
 
         } catch (error) {
-            console.error('Error processing SOLO invoice:', error.message);
+            console.error('Error in SOLO webhook:', error.message);
         }
     }
 
