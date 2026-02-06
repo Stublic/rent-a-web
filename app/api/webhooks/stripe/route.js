@@ -48,7 +48,7 @@ export async function POST(req) {
             formData.append('porez_stopa_1', '25');
 
             formData.append('nacin_placanja', '3'); // 3 = Kartice
-            formData.append('valuta_racuna', '1'); // 1 = EUR
+            formData.append('valuta_racuna', '14'); // 14 = EUR
             formData.append('napomene', `Stripe: ${session.id}`);
 
             console.log('API: Sending request to SOLO...');
