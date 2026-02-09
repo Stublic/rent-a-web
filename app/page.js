@@ -170,12 +170,11 @@ const AIConsultant = () => {
 
       const prompt = `Ti si vrhunski prodajni strateg i web dizajner. Korisnik opisuje svoj posao: "${businessInput}".
         
-        Tvoj cilj je oduševiti korisnika i pokazati mu da je web stranica investicija, a ne trošak.
+        Tvoj cilj je oduševiti korisnika i pokazati mu da je web stranica investicija, a ne trošak. Guraj najčešće Advanced paket, Web Shop Start isključivo ako je online prodaja.
         Vrati SAMO JSON objekt (bez markdowna) sa sljedećim poljima na hrvatskom:
 
         {
           "slogan": "Kreativan i pamtljiv slogan",
-          "structure": ["Sekcija 1", "Sekcija 2", "Sekcija 3"],
           "package": "Starter, Advanced ili Web Shop Start",
           "reason": "Zašto baš taj paket",
           "roi_analysis": {
@@ -200,9 +199,6 @@ const AIConsultant = () => {
       text = text.replace(/```json/g, '').replace(/```/g, '').trim();
       const parsed = JSON.parse(text);
 
-      // Safety checks
-      if (!parsed.structure) parsed.structure = ["Naslovna", "Ponuda", "Kontakt"];
-      if (!Array.isArray(parsed.structure)) parsed.structure = [parsed.structure];
 
       setResult(parsed);
 
@@ -291,13 +287,6 @@ const AIConsultant = () => {
                       <Layout size={18} /> Preporuka: {result.package}
                     </div>
                     <p className="text-zinc-300 text-sm mb-4">{result.reason}</p>
-                    <div className="flex flex-wrap gap-2">
-                      {result.structure.map((sec, i) => (
-                        <span key={i} className="text-xs bg-black border border-zinc-700 px-2 py-1 rounded text-zinc-400">
-                          {sec}
-                        </span>
-                      ))}
-                    </div>
                   </div>
                 </div>
 
@@ -335,7 +324,7 @@ const TrendingUpIcon = ({ size, className }) => (
 );
 
 // 3. Pricing Card Component
-const PricingCard = ({ title, price, features, recommended = false, description, icon: Icon, targetAudience, priceId, onCheckout, loading }) => (
+const PricingCard = ({ title, price, originalPrice, features, recommended = false, description, icon: Icon, targetAudience, priceId, onCheckout, loading }) => (
   <div className={`relative flex flex-col p-8 rounded-3xl transition-all duration-300 hover:-translate-y-2 border ${recommended ? 'bg-zinc-900 border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.15)] scale-105 z-10' : 'bg-black border-zinc-800 hover:border-zinc-700'}`}>
     {recommended && (
       <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-green-600 text-white text-xs font-bold uppercase tracking-wider py-1.5 px-4 rounded-full shadow-lg">
@@ -350,9 +339,14 @@ const PricingCard = ({ title, price, features, recommended = false, description,
       <h3 className="text-xl font-bold mb-2 text-white">{title}</h3>
       <p className="text-sm mb-4 text-zinc-400 min-h-[40px]">{description}</p>
 
-      <div className="flex items-baseline gap-1 mb-2">
-        <span className="text-4xl font-extrabold text-white">{price}€</span>
-        <span className="text-sm text-zinc-500">/ mj</span>
+      <div className="flex items-baseline gap-2 mb-2">
+        <div className="flex items-baseline gap-1">
+          <span className="text-4xl font-extrabold text-white">{price}€</span>
+          <span className="text-sm text-zinc-500">/ mj</span>
+        </div>
+        {originalPrice && (
+          <span className="text-zinc-500 line-through text-lg decoration-red-500/50">{originalPrice}€</span>
+        )}
       </div>
 
       {targetAudience && (
@@ -637,20 +631,34 @@ const App = () => {
 
         <div className="max-w-7xl mx-auto text-center relative z-10">
           {/* REMOVED FadeIn from Hero Text for Instant Paint on Mobile */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900 border border-zinc-800 shadow-sm mb-8 animate-in fade-in zoom-in duration-700">
-            <span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
-            <span className="text-sm font-semibold text-zinc-300">Web stranice gotove za 48 sati</span>
+          <div className="flex flex-col items-center gap-4 mb-8">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900 border border-zinc-800 shadow-sm animate-in fade-in zoom-in duration-700">
+              <span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
+              <span className="text-sm font-semibold text-zinc-300">Web stranice gotove za 48 sati</span>
+            </div>
+
+            <div className="flex items-center gap-2 text-zinc-500 text-sm font-medium animate-in fade-in slide-in-from-top-4 duration-1000 delay-300">
+              <div className="flex -space-x-2 mr-2">
+                {[1, 2, 3, 4].map(i => (
+                  <div key={i} className={`w-7 h-7 rounded-full border-2 border-black bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-white overflow-hidden`}>
+                    <img src={`https://i.pravatar.cc/100?img=${i + 10}`} alt="User" className="w-full h-full object-cover opacity-80" />
+                  </div>
+                ))}
+                <div className="w-7 h-7 rounded-full border-2 border-black bg-green-600 flex items-center justify-center text-[8px] font-extrabold text-white">+</div>
+              </div>
+              <span><span className="text-white font-bold">142</span> aktivno unajmljenih stranica</span>
+            </div>
           </div>
 
           <h1 className="text-5xl lg:text-7xl font-extrabold tracking-tight text-white mb-8 leading-[1.1] animate-in slide-in-from-bottom-4 duration-700 delay-100">
-            Prestanite kupovati stranice. <br />
+            Pokreni web stranicu u 5 minuta, <br />
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-500">
-              Počnite ih unajmljivati.
+              već od 39€/mjesečno.
             </span>
           </h1>
 
           <p className="text-xl text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed animate-in slide-in-from-bottom-4 duration-700 delay-200">
-            Profesionalne web stranice za male poduzetnike.
+            Web stranice za svaki biznis.
             Plaćajte mjesečno, otkažite bilo kada. Bez velikih početnih troškova i bez ugovorne obveze.
           </p>
 
@@ -688,9 +696,9 @@ const App = () => {
             <div className="hidden md:block absolute top-12 left-0 w-full h-px bg-gradient-to-r from-transparent via-zinc-800 to-transparent z-0"></div>
 
             {[
-              { icon: CreditCard, title: "1. Odaberi paket", desc: "Odaberite paket koji odgovara vašim potrebama. Jednostavna stranica ili web shop." },
-              { icon: Rocket, title: "2. Mi izrađujemo", desc: "Naši stručnjaci dizajniraju i postavljaju vašu stranicu. Većina je gotova za 2-5 radnih dana." },
-              { icon: Monitor, title: "3. Tvoja stranica je live", desc: "Stranica se objavljuje. Mi vodimo brigu o hostingu, ažuriranjima i održavanju zauvijek." }
+              { icon: CreditCard, title: "1. Odaberi paket", desc: "Odaberi web stranicu ili web shop paket koji ti treba i aktiviraj mjesečnu pretplatu. Bez velike početne investicije i bez ugovorne obveze." },
+              { icon: Rocket, title: "2. Pošalji podatke o svom poslovanju", desc: "Ispunite kratak obrazac s informacijama. Mi prema tome izrađujemo tvoju web stranicu." },
+              { icon: Monitor, title: "3. Web je online za 48 sati", desc: "Tvoja web stranica je spremna, povezana s domenom i spremna za upite ili prodaju. Ako želiš, možeš dodati oglase ili kasnije otkupiti web stranicu." }
             ].map((step, idx) => (
               <FadeIn key={idx} delay={idx * 200} className="relative z-10 bg-black p-4">
                 <div className="flex flex-col items-center text-center">
@@ -886,7 +894,11 @@ const App = () => {
           <FadeIn>
             <div className="text-center mb-16">
               <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">Jednostavne, transparentne cijene</h2>
-              <p className="text-zinc-400 text-lg">Odaberite opciju koja vam najviše odgovara. Bez ugovorne obveze.</p>
+              <p className="text-zinc-400 text-lg mb-6">Odaberite opciju koja vam najviše odgovara. Bez ugovorne obveze.</p>
+
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 font-bold animate-pulse">
+                <Sparkles size={16} /> AKCIJA: Posebna cijena za prvih 1000 korisnika!
+              </div>
             </div>
 
             {/* Common Features Banner */}
@@ -912,6 +924,7 @@ const App = () => {
               <PricingCard
                 title="Starter"
                 price="39"
+                originalPrice="49"
                 icon={Star}
                 priceId="price_1SxaGbKhkXukXczcwVqlzrOx"
                 onCheckout={handleCheckout}
@@ -934,6 +947,7 @@ const App = () => {
               <PricingCard
                 title="Advanced"
                 price="89"
+                originalPrice="99"
                 icon={Rocket}
                 priceId="price_1SxaHAKhkXukXczc0cPpLMH2"
                 onCheckout={handleCheckout}
