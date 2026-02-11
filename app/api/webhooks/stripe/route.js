@@ -23,46 +23,63 @@ export async function POST(req) {
         const session = event.data.object;
 
         try {
-            const customer = await stripe.customers.retrieve(session.customer);
-            const customerEmail = customer.email || session.customer_details?.email;
+            // Handle successful subscription creation
+            if (event.type === 'checkout.session.completed') {
+                const session = event.data.object;
+                const customerId = session.customer;
+                const subscriptionId = session.subscription;
 
-            // Get Plan Name (simple mapping)
-            let planName = 'Starter';
-            if (session.amount_total === 8900) planName = 'Advanced';
-            if (session.amount_total === 19900) planName = 'Web Shop Start';
+                // Fetch subscription details to get plan info
+                const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+                const priceId = subscription.items.data[0].price.id;
 
-            console.log(`Webhook: Processing subscription for ${customerEmail} (Plan: ${planName})`);
+                // Map price ID to plan name
+                let planName = "Custom";
+                if (priceId === process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_STARTER) planName = "Starter";
+                if (priceId === process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_ADVANCED) planName = "Advanced";
+                if (priceId === process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_WEBSHOP) planName = "Web Shop Start";
 
-            // 1. Sync to Database (Prisma)
-            // We save to a separate table so we can link it during signup later.
-            if (customerEmail) {
-                await prisma.stripeSubscription.upsert({
-                    where: { email: customerEmail },
-                    update: {
-                        stripeCustomerId: session.customer,
-                        planName: planName,
-                        status: 'active',
-                    },
-                    create: {
-                        email: customerEmail,
-                        stripeCustomerId: session.customer,
-                        planName: planName,
-                        status: 'active',
-                    },
+                // Find user by customer ID or email
+                let user = await prisma.user.findUnique({
+                    where: { stripeCustomerId: customerId }
                 });
-                console.log(`Webhook: StripeSubscription synced for ${customerEmail}`);
 
-                // Also update User if they already exist
-                await prisma.user.updateMany({
-                    where: { email: customerEmail },
-                    data: {
-                        subscriptionStatus: 'active',
-                        stripeCustomerId: session.customer,
-                        planName: planName,
-                    }
-                });
+                if (!user && session.customer_email) {
+                    user = await prisma.user.findUnique({
+                        where: { email: session.customer_email }
+                    });
+                }
+
+                if (user) {
+                    // Determine new project name (e.g., "Moj Projekt #2")
+                    const projectCount = await prisma.project.count({
+                        where: { userId: user.id }
+                    });
+                    const newProjectName = projectCount > 0 ? `Moj Projekt #${projectCount + 1}` : "Moj Prvi Projekt";
+
+                    // Create a NEW Project record for this subscription
+                    await prisma.project.create({
+                        data: {
+                            userId: user.id,
+                            name: newProjectName,
+                            planName: planName,
+                            stripeSubscriptionId: subscriptionId,
+                            status: 'DRAFT', // Start as Draft so they can configure content
+                        }
+                    });
+
+                    // Also update User's main subscription status/ID just for legacy/profile reasons, 
+                    // though Projects are now the source of truth for features.
+                    await prisma.user.update({
+                        where: { id: user.id },
+                        data: {
+                            subscriptionStatus: subscription.status,
+                            stripeCustomerId: customerId,
+                            planName: planName
+                        }
+                    });
+                }
             }
-
             // 2. SOLO Invoice Logic - DISABLED BY USER REQUEST
             /*
             const formData = new URLSearchParams();

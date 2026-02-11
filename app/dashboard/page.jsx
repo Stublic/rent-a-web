@@ -17,7 +17,8 @@ import {
     UserCircle,
     ChevronDown,
     Loader2,
-    Lock
+    Lock,
+    Sparkles
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -89,6 +90,13 @@ export default function DashboardPage() {
                         <span className="font-medium">Pretplata</span>
                     </button>
                     <button
+                        onClick={() => setActiveTab("projects")}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === "projects" ? "bg-green-600/10 text-green-500 border border-green-500/20" : "text-zinc-400 hover:text-white hover:bg-zinc-800/50"}`}
+                    >
+                        <LayoutDashboard size={20} />
+                        <span className="font-medium">Projekti</span>
+                    </button>
+                    <button
                         onClick={() => setActiveTab("content")}
                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === "content" ? "bg-green-600/10 text-green-500 border border-green-500/20" : "text-zinc-400 hover:text-white hover:bg-zinc-800/50"}`}
                     >
@@ -135,6 +143,7 @@ export default function DashboardPage() {
                     <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-green-900/5 rounded-full blur-[100px] pointer-events-none"></div>
 
                     {activeTab === "subscription" && <SubscriptionTab user={user} onPortal={handlePortal} />}
+                    {activeTab === "projects" && <ProjectsTab />}
                     {activeTab === "content" && <PlaceholderTab title="Upravljanje Sadržajem" desc="Ovdje ćeš uskoro moći dodavati tekstove, slike i mijenjati informacije na svom webu." icon={FileText} />}
                     {activeTab === "tickets" && <PlaceholderTab title="Podrška & Ticketi" desc="Trebaš promjenu ili imaš problem? Ovdje ćeš moći otvoriti ticket i pratiti njegov status." icon={MessageSquare} />}
                     {activeTab === "settings" && <SettingsTab user={user} logout={logout} />}
@@ -147,6 +156,23 @@ export default function DashboardPage() {
 function SubscriptionTab({ user, onPortal }) {
     const isSubscriber = user.subscriptionStatus === "active";
     const plan = user.planName || "Nema aktivne pretplate";
+    const [invoices, setInvoices] = useState([]);
+    const [loadingInvoices, setLoadingInvoices] = useState(true);
+
+    useEffect(() => {
+        const fetchInvoices = async () => {
+             try {
+                 const res = await fetch("/api/user/subscription");
+                 const data = await res.json();
+                 if (data.invoices) setInvoices(data.invoices);
+             } catch (err) {
+                 console.error("Failed to fetch invoices", err);
+             } finally {
+                 setLoadingInvoices(false);
+             }
+        };
+        fetchInvoices();
+    }, []);
 
     return (
         <div className="max-w-4xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -169,11 +195,41 @@ function SubscriptionTab({ user, onPortal }) {
                              Upravljaj pretplatom <ChevronRight size={18} />
                         </button>
                     ) : (
-                        <Link href="/#pricing" className="bg-green-600 hover:bg-green-500 text-white font-bold px-8 py-4 rounded-xl transition-all inline-flex items-center gap-2">
+                        <Link href="/dashboard/new-project" className="bg-green-600 hover:bg-green-500 text-white font-bold px-8 py-4 rounded-xl transition-all inline-flex items-center gap-2">
                             Odaberi paket <ChevronRight size={18} />
                         </Link>
                     )}
                 </div>
+            </div>
+
+            <div className="bg-zinc-900/30 border border-zinc-800 rounded-2xl p-6">
+                 <h4 className="font-bold text-lg mb-4 flex items-center gap-2">
+                    <FileText size={20} className="text-zinc-500" /> Povijest Računa
+                 </h4>
+                 {loadingInvoices ? (
+                     <div className="text-center py-8 text-zinc-500">Učitavanje računa...</div>
+                 ) : invoices.length > 0 ? (
+                     <div className="space-y-2">
+                        {invoices.map((inv) => (
+                            <div key={inv.id} className="flex items-center justify-between p-4 bg-zinc-950/50 border border-zinc-800 rounded-xl hover:bg-zinc-900 transition-colors">
+                                <div>
+                                    <div className="font-bold text-white">{inv.date}</div>
+                                    <div className="text-xs text-zinc-500 uppercase">{inv.status}</div>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <span className="font-mono text-zinc-300">{inv.amount} {inv.currency}</span>
+                                    <a href={inv.pdfUrl} target="_blank" rel="noopener noreferrer" className="text-green-500 hover:text-green-400 font-medium text-sm">
+                                        PDF
+                                    </a>
+                                </div>
+                            </div>
+                        ))}
+                     </div>
+                 ) : (
+                     <div className="text-center py-8 text-zinc-500 italic border border-dashed border-zinc-800 rounded-xl">
+                        Nema dostupnih računa.
+                     </div>
+                 )}
             </div>
 
             <div className="grid md:grid-cols-2 gap-6">
@@ -396,6 +452,106 @@ function SettingsTab({ user, logout }) {
                     )}
                 </div>
             </div>
+        </div>
+    );
+}
+
+function ProjectsTab() {
+    const [projects, setProjects] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchProjects = async () => {
+            try {
+                const res = await fetch("/api/projects");
+                const data = await res.json();
+                if (Array.isArray(data)) {
+                    setProjects(data);
+                } else {
+                    console.error("Failed to fetch projects:", data);
+                    setProjects([]);
+                }
+            } catch (err) {
+                console.error(err);
+                setProjects([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchProjects();
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <Loader2 className="w-8 h-8 animate-spin text-green-500" />
+            </div>
+        );
+    }
+
+    return (
+        <div className="max-w-6xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex items-center justify-between mb-8">
+                <div>
+                    <h2 className="text-2xl font-bold mb-1">Moji Projekti</h2>
+                    <p className="text-zinc-400">Upravljajte svojim web stranicama</p>
+                </div>
+                <Link href="/dashboard/new-project" className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 transition-all">
+                    <Zap size={18} />
+                    <span className="hidden sm:inline">Novi projekt</span>
+                </Link>
+            </div>
+
+            {projects.length === 0 ? (
+                <div className="text-center py-20 bg-zinc-900/30 border border-zinc-800 rounded-3xl border-dashed">
+                    <div className="w-16 h-16 bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4 text-zinc-500">
+                        <LayoutDashboard size={32} />
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2">Nemate aktivnih projekata</h3>
+                    <p className="text-zinc-500 mb-6 max-w-sm mx-auto">Započnite svoje putovanje odabirom paketa i kreiranjem prve web stranice.</p>
+                    <Link href="/dashboard/new-project" className="text-green-500 font-bold hover:underline">
+                        Kreiraj prvi projekt
+                    </Link>
+                </div>
+            ) : (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {projects.map((project) => (
+                        <div key={project.id} className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 transition-all group">
+                            <div className="flex items-start justify-between mb-4">
+                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-xl ${project.status === 'LIVE' ? 'bg-green-500' : 'bg-zinc-800'}`}>
+                                    {project.name.charAt(0)}
+                                </div>
+                                <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${project.status === 'LIVE' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-zinc-800 text-zinc-500 border border-zinc-700'}`}>
+                                    {project.status === 'LIVE' ? 'Aktivan' : 'U izradi'}
+                                </div>
+                            </div>
+                            
+                            <h3 className="font-bold text-lg mb-1">{project.name}</h3>
+                            <div className="flex items-center justify-between mt-4">
+                                <span className="text-xs text-zinc-600">{project.domain || "Domena u pripremi"}</span>
+                                <Link 
+                                    href={`/dashboard/projects/${project.id}/content`} 
+                                    className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${
+                                        project.status === 'DRAFT' 
+                                            ? "bg-white text-black hover:bg-zinc-200" 
+                                            : "bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700"
+                                    }`}
+                                >
+                                    {project.status === 'DRAFT' ? (
+                                        <>
+                                            <Sparkles size={16} /> Kreiraj Web
+                                        </>
+                                    ) : (
+                                        <>
+                                            Uredi <ChevronRight size={16} />
+                                        </>
+                                    )}
+                                </Link>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }

@@ -59,6 +59,10 @@ export const auth = betterAuth({
             planName: {
                 type: "string",
                 required: false,
+            },
+            phoneNumber: {
+                type: "string",
+                required: false,
             }
         }
     },

@@ -22,11 +22,34 @@ model User {
   subscriptionStatus String?  // active, canceled, etc.
   stripeCustomerId   String?  @unique
   planName           String?  // Starter, Advanced, Web Shop Start
+  phoneNumber        String?
 
   sessions         Session[]
   accounts         Account[]
+  projects         Project[]
 
   @@map("user")
+}
+
+model Project {
+  id                   String   @id @default(cuid())
+  name                 String
+  domain               String?
+  status               String   @default("DRAFT") // DRAFT, SUBMITTED, GENERATED, PUBLISHED, LIVE
+  planName             String
+  stripeSubscriptionId String?  @unique
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Content Generation Fields
+  contentData          Json?    // Stores raw form data
+  generatedHtml        String?  @db.Text // Large text field for AI output
+  aiVersion            Int      @default(1)
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@map("project")
 }
 
 model Session {

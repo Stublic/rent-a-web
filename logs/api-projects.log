@@ -1,0 +1,98 @@
+[2026-02-11T12:39:43.212Z] API /projects - Start request
+[2026-02-11T12:39:43.271Z] API /projects - Start request
+[2026-02-11T12:41:08.712Z] API /projects - Start request
+[2026-02-11T12:41:08.716Z] API /projects - Headers retrieved
+[2026-02-11T12:41:08.957Z] API /projects - Session retrieved: stublic.jurica@gmail.com
+[2026-02-11T12:41:09.056Z] API /projects - Start request
+[2026-02-11T12:41:09.057Z] API /projects - Headers retrieved
+[2026-02-11T12:41:09.126Z] API /projects - Session retrieved: stublic.jurica@gmail.com
+[2026-02-11T12:43:54.322Z] API /projects - Start request
+[2026-02-11T12:43:54.328Z] API /projects - Headers retrieved
+[2026-02-11T12:43:54.565Z] API /projects - Session retrieved: stublic.jurica@gmail.com
+[2026-02-11T12:43:54.567Z] API /projects - Querying projects for user vv3Cm0Rx38s6NZT8QoFlmWDZcu3kSb4m
+[2026-02-11T12:43:54.606Z] API /projects - Query succesful. Found 1 projects.
+[2026-02-11T12:43:54.624Z] API /projects - Start request
+[2026-02-11T12:43:54.626Z] API /projects - Headers retrieved
+[2026-02-11T12:43:54.699Z] API /projects - Session retrieved: stublic.jurica@gmail.com
+[2026-02-11T12:43:54.699Z] API /projects - Querying projects for user vv3Cm0Rx38s6NZT8QoFlmWDZcu3kSb4m
+[2026-02-11T12:43:54.727Z] API /projects - Query succesful. Found 1 projects.
+[2026-02-11T12:43:59.041Z] API /projects - Start request
+[2026-02-11T12:43:59.044Z] API /projects - Headers retrieved
+[2026-02-11T12:43:59.140Z] API /projects - Session retrieved: stublic.jurica@gmail.com
+[2026-02-11T12:43:59.142Z] API /projects - Querying projects for user vv3Cm0Rx38s6NZT8QoFlmWDZcu3kSb4m
+[2026-02-11T12:43:59.174Z] API /projects - Query succesful. Found 1 projects.
+[2026-02-11T12:43:59.191Z] API /projects - Start request
+[2026-02-11T12:43:59.193Z] API /projects - Headers retrieved
+[2026-02-11T12:43:59.250Z] API /projects - Session retrieved: stublic.jurica@gmail.com
+[2026-02-11T12:43:59.250Z] API /projects - Querying projects for user vv3Cm0Rx38s6NZT8QoFlmWDZcu3kSb4m
+[2026-02-11T12:43:59.278Z] API /projects - Query succesful. Found 1 projects.
+[2026-02-11T12:45:09.696Z] API /projects - Start request
+[2026-02-11T12:45:09.698Z] API /projects - Headers retrieved
+[2026-02-11T12:45:09.953Z] API /projects - Session retrieved: stublic.jurica@gmail.com
+[2026-02-11T12:45:09.955Z] API /projects - Querying projects for user vv3Cm0Rx38s6NZT8QoFlmWDZcu3kSb4m
+[2026-02-11T12:45:09.985Z] API /projects - Query succesful. Found 1 projects.
+[2026-02-11T12:45:10.007Z] API /projects - Start request
+[2026-02-11T12:45:10.008Z] API /projects - Headers retrieved
+[2026-02-11T12:45:10.067Z] API /projects - Session retrieved: stublic.jurica@gmail.com
+[2026-02-11T12:45:10.067Z] API /projects - Querying projects for user vv3Cm0Rx38s6NZT8QoFlmWDZcu3kSb4m
+[2026-02-11T12:45:10.095Z] API /projects - Query succesful. Found 1 projects.
+[2026-02-11T12:45:17.358Z] API /projects - Start request
+[2026-02-11T12:45:17.362Z] API /projects - Headers retrieved
+[2026-02-11T12:45:17.423Z] API /projects - Session retrieved: stublic.jurica@gmail.com
+[2026-02-11T12:45:17.424Z] API /projects - Querying projects for user vv3Cm0Rx38s6NZT8QoFlmWDZcu3kSb4m
+[2026-02-11T12:45:17.455Z] API /projects - Query succesful. Found 1 projects.
+[2026-02-11T12:45:17.466Z] API /projects - Start request
+[2026-02-11T12:45:17.467Z] API /projects - Headers retrieved
+[2026-02-11T12:45:17.523Z] API /projects - Session retrieved: stublic.jurica@gmail.com
+[2026-02-11T12:45:17.524Z] API /projects - Querying projects for user vv3Cm0Rx38s6NZT8QoFlmWDZcu3kSb4m
+[2026-02-11T12:45:17.552Z] API /projects - Query succesful. Found 1 projects.
+[2026-02-11T12:45:19.055Z] API /projects - Start request
+[2026-02-11T12:45:19.057Z] API /projects - Headers retrieved
+[2026-02-11T12:45:19.119Z] API /projects - Session retrieved: stublic.jurica@gmail.com
+[2026-02-11T12:45:19.121Z] API /projects - Querying projects for user vv3Cm0Rx38s6NZT8QoFlmWDZcu3kSb4m
+[2026-02-11T12:45:19.150Z] API /projects - Query succesful. Found 1 projects.
+[2026-02-11T12:45:19.169Z] API /projects - Start request
+[2026-02-11T12:45:19.170Z] API /projects - Headers retrieved
+[2026-02-11T12:45:19.299Z] API /projects - Session retrieved: stublic.jurica@gmail.com
+[2026-02-11T12:45:19.300Z] API /projects - Querying projects for user vv3Cm0Rx38s6NZT8QoFlmWDZcu3kSb4m
+[2026-02-11T12:45:19.330Z] API /projects - Query succesful. Found 1 projects.
+[2026-02-11T12:45:36.068Z] API /projects - Start request
+[2026-02-11T12:45:36.070Z] API /projects - Headers retrieved
+[2026-02-11T12:45:36.130Z] API /projects - Session retrieved: stublic.jurica@gmail.com
+[2026-02-11T12:45:36.131Z] API /projects - Querying projects for user vv3Cm0Rx38s6NZT8QoFlmWDZcu3kSb4m
+[2026-02-11T12:45:36.159Z] API /projects - Query succesful. Found 1 projects.
+[2026-02-11T12:45:36.166Z] API /projects - Start request
+[2026-02-11T12:45:36.167Z] API /projects - Headers retrieved
+[2026-02-11T12:45:36.224Z] API /projects - Session retrieved: stublic.jurica@gmail.com
+[2026-02-11T12:45:36.225Z] API /projects - Querying projects for user vv3Cm0Rx38s6NZT8QoFlmWDZcu3kSb4m
+[2026-02-11T12:45:36.253Z] API /projects - Query succesful. Found 1 projects.
+[2026-02-11T12:53:54.095Z] API /projects - Start request
+[2026-02-11T12:53:54.097Z] API /projects - Headers retrieved
+[2026-02-11T12:53:54.175Z] API /projects - Session retrieved: stublic.jurica@gmail.com
+[2026-02-11T12:53:54.176Z] API /projects - Querying projects for user vv3Cm0Rx38s6NZT8QoFlmWDZcu3kSb4m
+[2026-02-11T12:53:54.223Z] API /projects - Query succesful. Found 10 projects.
+[2026-02-11T12:53:54.232Z] API /projects - Start request
+[2026-02-11T12:53:54.234Z] API /projects - Headers retrieved
+[2026-02-11T12:53:54.289Z] API /projects - Session retrieved: stublic.jurica@gmail.com
+[2026-02-11T12:53:54.289Z] API /projects - Querying projects for user vv3Cm0Rx38s6NZT8QoFlmWDZcu3kSb4m
+[2026-02-11T12:53:54.316Z] API /projects - Query succesful. Found 10 projects.
+[2026-02-11T12:54:27.708Z] API /projects - Start request
+[2026-02-11T12:54:27.710Z] API /projects - Headers retrieved
+[2026-02-11T12:54:27.770Z] API /projects - Session retrieved: stublic.jurica@gmail.com
+[2026-02-11T12:54:27.771Z] API /projects - Querying projects for user vv3Cm0Rx38s6NZT8QoFlmWDZcu3kSb4m
+[2026-02-11T12:54:27.802Z] API /projects - Query succesful. Found 10 projects.
+[2026-02-11T12:54:27.818Z] API /projects - Start request
+[2026-02-11T12:54:27.819Z] API /projects - Headers retrieved
+[2026-02-11T12:54:27.879Z] API /projects - Session retrieved: stublic.jurica@gmail.com
+[2026-02-11T12:54:27.880Z] API /projects - Querying projects for user vv3Cm0Rx38s6NZT8QoFlmWDZcu3kSb4m
+[2026-02-11T12:54:27.911Z] API /projects - Query succesful. Found 10 projects.
+[2026-02-11T12:55:12.085Z] API /projects - Start request
+[2026-02-11T12:55:12.088Z] API /projects - Headers retrieved
+[2026-02-11T12:55:12.150Z] API /projects - Session retrieved: stublic.jurica@gmail.com
+[2026-02-11T12:55:12.151Z] API /projects - Querying projects for user vv3Cm0Rx38s6NZT8QoFlmWDZcu3kSb4m
+[2026-02-11T12:55:12.265Z] API /projects - Query succesful. Found 10 projects.
+[2026-02-11T12:55:12.283Z] API /projects - Start request
+[2026-02-11T12:55:12.283Z] API /projects - Headers retrieved
+[2026-02-11T12:55:12.341Z] API /projects - Session retrieved: stublic.jurica@gmail.com
+[2026-02-11T12:55:12.341Z] API /projects - Querying projects for user vv3Cm0Rx38s6NZT8QoFlmWDZcu3kSb4m
+[2026-02-11T12:55:12.370Z] API /projects - Query succesful. Found 10 projects.
