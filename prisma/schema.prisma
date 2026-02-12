@@ -27,6 +27,7 @@ model User {
   sessions         Session[]
   accounts         Account[]
   projects         Project[]
+  invoices         Invoice[]
 
   @@map("user")
 }
@@ -45,6 +46,15 @@ model Project {
   contentData          Json?    // Stores raw form data
   generatedHtml        String?  @db.Text // Large text field for AI output
   aiVersion            Int      @default(1)
+  hasGenerated         Boolean  @default(false) // Track if website has been generated
+  
+  // Editor Fields
+  editHistory          Json[]   @default([])  // Array of edit events for undo
+  lastEditedAt         DateTime?
+  
+  // Editor Token System
+  editorTokens         Int      @default(500)  // Remaining tokens for AI edits (500 initial)
+  editorTokensUsed     Int      @default(0)    // Total tokens consumed
 
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
@@ -106,4 +116,21 @@ model StripeSubscription {
   updatedAt        DateTime @updatedAt
 
   @@map("stripe_subscription")
+}
+model Invoice {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId        String?
+  invoiceNumber    String   @unique
+  amount           Float
+  description      String
+  pdfUrl           String?
+  stripeSessionId  String?  @unique
+  type             String   // SUBSCRIPTION, TOKEN_PURCHASE
+  status           String   @default("PAID") // PAID, PENDING, FAILED
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("invoice")
 }

@@ -15,139 +15,206 @@ export async function POST(req) {
     try {
         event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET);
     } catch (err) {
-        console.error('Webhook signature verification failed:', err.message);
+        console.error('⚠️ Webhook signature verification failed:', err.message);
         return Response.json({ error: 'Webhook verification failed' }, { status: 400 });
     }
 
     if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
+        const customerId = session.customer;
+        const subscriptionId = session.subscription;
+        const customerEmail = session.customer_email || session.customer_details?.email;
 
         try {
-            // Handle successful subscription creation
-            if (event.type === 'checkout.session.completed') {
-                const session = event.data.object;
-                const customerId = session.customer;
-                const subscriptionId = session.subscription;
+            // 1. Fetch subscription details
+            const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+            const priceId = subscription.items.data[0].price.id;
 
-                // Fetch subscription details to get plan info
-                const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-                const priceId = subscription.items.data[0].price.id;
+            // Map price ID to plan name
+            let planName = "Custom";
+            if (priceId === process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_STARTER) planName = "Starter - Landing stranica";
+            if (priceId === process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_ADVANCED) planName = "Advanced - Landing stranica + Google oglasi";
+            if (priceId === process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_WEBSHOP) planName = "Web Shop Start";
 
-                // Map price ID to plan name
-                let planName = "Custom";
-                if (priceId === process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_STARTER) planName = "Starter";
-                if (priceId === process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_ADVANCED) planName = "Advanced";
-                if (priceId === process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_WEBSHOP) planName = "Web Shop Start";
+            console.log(`💰 Subscription created: ${planName} for ${customerEmail}`);
 
-                // Find user by customer ID or email
-                let user = await prisma.user.findUnique({
-                    where: { stripeCustomerId: customerId }
-                });
-
-                if (!user && session.customer_email) {
-                    user = await prisma.user.findUnique({
-                        where: { email: session.customer_email }
-                    });
-                }
-
-                if (user) {
-                    // Determine new project name (e.g., "Moj Projekt #2")
-                    const projectCount = await prisma.project.count({
-                        where: { userId: user.id }
-                    });
-                    const newProjectName = projectCount > 0 ? `Moj Projekt #${projectCount + 1}` : "Moj Prvi Projekt";
-
-                    // Create a NEW Project record for this subscription
-                    await prisma.project.create({
-                        data: {
-                            userId: user.id,
-                            name: newProjectName,
-                            planName: planName,
-                            stripeSubscriptionId: subscriptionId,
-                            status: 'DRAFT', // Start as Draft so they can configure content
-                        }
-                    });
-
-                    // Also update User's main subscription status/ID just for legacy/profile reasons, 
-                    // though Projects are now the source of truth for features.
-                    await prisma.user.update({
-                        where: { id: user.id },
-                        data: {
-                            subscriptionStatus: subscription.status,
-                            stripeCustomerId: customerId,
-                            planName: planName
-                        }
-                    });
-                }
-            }
-            // 2. SOLO Invoice Logic - DISABLED BY USER REQUEST
-            /*
-            const formData = new URLSearchParams();
-            formData.append('token', process.env.SOLO_API_TOKEN.trim());
-            formData.append('tip_usluge', '1');
-            formData.append('tip_racuna', '3');
-
-            const isBusiness = !!(customer.name || session.customer_details?.name) && !!customer.tax_ids?.data?.length;
-            formData.append('tip_kupca', isBusiness ? '2' : '1');
-
-            formData.append('kupac_naziv', customer.name || session.customer_details?.name || 'Nepoznat kupac');
-            formData.append('kupac_email', customerEmail || '');
-            formData.append('kupac_adresa', customer.address?.line1 || '');
-
-            const brutoAmount = session.amount_total / 100;
-            const formattedAmount = brutoAmount.toFixed(2).replace('.', ',');
-
-            formData.append('usluga', '1');
-            formData.append('opis_usluge_1', session.line_items?.data[0]?.description || `Pretplata - ${planName}`);
-            formData.append('cijena_1', formattedAmount);
-            formData.append('kolicina_1', '1');
-            formData.append('popust_1', '0');
-            formData.append('porez_stopa_1', '0');
-
-            formData.append('nacin_placanja', '3');
-            formData.append('valuta_racuna', '14');
-            formData.append('napomene', `Plaćeno karticom putem Stripe-a. Obveznik nije u sustavu PDV-a prema čl. 90. st. 1. i 2. Zakona o PDV-u. (Sub: ${session.id})`);
-
-            const soloResponse = await fetch('https://api.solo.com.hr/racun', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: formData.toString(),
+            // 2. Find or create user
+            let user = await prisma.user.findUnique({
+                where: { stripeCustomerId: customerId }
             });
 
-            const result = await soloResponse.json();
-            */
-
-            // Temporary: Send confirmation email without invoice
-            if (customerEmail) {
-                const nodemailer = (await import('nodemailer')).default;
-                const transporter = nodemailer.createTransport({
-                    service: 'gmail',
-                    auth: {
-                        user: process.env.SMTP_USER,
-                        pass: process.env.SMTP_PASSWORD,
-                    },
-                });
-
-                await transporter.sendMail({
-                    from: process.env.SMTP_FROM,
-                    to: customerEmail,
-                    subject: 'Potvrda pretplate - Rent a Web',
-                    html: `
-                        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-                            <h2 style="color: #22c55e;">Hvala na pretplati!</h2>
-                            <p>Vaša narudžba za paket <strong>${planName}</strong> je uspješno obrađena.</p>
-                            <p>Sada se možete registrirati ili prijaviti na naš portal kako biste započeli s izradom vašeg weba.</p>
-                            <div style="margin: 30px 0;">
-                                <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/signup" style="background-color: #22c55e; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Registriraj se i kreni</a>
-                            </div>
-                            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-                            <p>Račun će biti dostupan u dashboardu nakon završetka testiranja.</p>
-                        </div>
-                    `,
+            if (!user && session.customer_email) {
+                user = await prisma.user.findUnique({
+                    where: { email: session.customer_email }
                 });
             }
+
+            if (user) {
+                // Create new project for this subscription
+                const projectCount = await prisma.project.count({
+                    where: { userId: user.id }
+                });
+                const newProjectName = `${planName} Web`;
+
+                const newProject = await prisma.project.create({
+                    data: {
+                        userId: user.id,
+                        name: newProjectName,
+                        planName: planName,
+                        stripeSubscriptionId: subscriptionId,
+                        status: 'DRAFT',
+                    }
+                });
+
+                // Update user subscription status
+                await prisma.user.update({
+                    where: { id: user.id },
+                    data: {
+                        subscriptionStatus: subscription.status,
+                        stripeCustomerId: customerId,
+                        planName: planName
+                    }
+                });
+
+                console.log(`✅ Created project: ${newProject.name} (${newProject.id})`);
+
+                // 3. Solo fiscal receipt
+                let invoiceNumber = null;
+                let invoiceUrl = null;
+
+                try {
+                    const customer = await stripe.customers.retrieve(customerId);
+                    const brutoAmount = session.amount_total / 100;
+                    const formattedAmount = brutoAmount.toFixed(2);
+
+                    const formData = new URLSearchParams();
+                    formData.append('token', process.env.SOLO_API_TOKEN || '');
+                    formData.append('tip_racuna', '1'); // Račun
+                    formData.append('kupac_email', customerEmail || '');
+                    formData.append('usluga', '1');
+                    formData.append('opis_usluge_1', `Mjesečna pretplata - ${planName}`);
+                    formData.append('cijena_1', formattedAmount);
+                    formData.append('kolicina_1', '1');
+                    formData.append('popust_1', '0');
+                    formData.append('porez_stopa_1', '0');
+                    formData.append('nacin_placanja', '3'); // Kartično
+                    formData.append('valuta_racuna', '14'); // EUR
+                    formData.append('napomene', `Plaćeno karticom putem Stripe-a. Obveznik nije u sustavu PDV-a prema čl. 90. st. 1. i 2. Zakona o PDV-u. (Sub: ${subscriptionId})`);
+
+                    const soloResponse = await fetch('https://api.solo.com.hr/racun', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: formData.toString(),
+                    });
+
+                    const soloResult = await soloResponse.json();
+
+                    if (soloResult.status === 0) {
+                        invoiceNumber = soloResult.broj_racuna;
+                        invoiceUrl = soloResult.pdf_url;
+                        console.log(`✅ Fiscal receipt created: ${invoiceNumber}`);
+                    } else {
+                        console.error('❌ Solo API error:', soloResult);
+                    }
+                } catch (soloError) {
+                    console.error('❌ Error creating fiscal receipt:', soloError.message);
+                }
+
+                // 4. Save invoice to database
+                if (invoiceNumber) {
+                    try {
+                        await prisma.invoice.create({
+                            data: {
+                                userId: user.id,
+                                projectId: newProject.id,
+                                invoiceNumber: invoiceNumber,
+                                amount: session.amount_total / 100,
+                                description: `Pretplata - ${planName}`,
+                                pdfUrl: invoiceUrl,
+                                stripeSessionId: session.id,
+                                type: 'SUBSCRIPTION',
+                                status: 'PAID',
+                            }
+                        });
+                        console.log(`✅ Invoice saved: ${invoiceNumber}`);
+                    } catch (dbError) {
+                        console.error('❌ Error saving invoice:', dbError.message);
+                    }
+                }
+
+                // 5. Send confirmation email with invoice
+                if (customerEmail) {
+                    try {
+                        const nodemailer = (await import('nodemailer')).default;
+                        const transporter = nodemailer.createTransport({
+                            host: process.env.SMTP_HOST,
+                            port: parseInt(process.env.SMTP_PORT || '587'),
+                            secure: process.env.SMTP_PORT === '465',
+                            auth: {
+                                user: process.env.SMTP_USER,
+                                pass: process.env.SMTP_PASSWORD,
+                            },
+                        });
+
+                        const emailHtml = `
+                            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+                                <div style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+                                    <h1 style="color: white; margin: 0;">🎉 Dobrodošli u Rent a Web!</h1>
+                                </div>
+                                
+                                <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
+                                    <p style="font-size: 16px;">Hvala na pretplati!</p>
+                                    
+                                    <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #22c55e;">
+                                        <h2 style="margin-top: 0; color: #22c55e;">Vaš paket:</h2>
+                                        <p style="font-size: 18px; font-weight: bold; margin: 10px 0;">${planName}</p>
+                                        ${invoiceNumber ? `
+                                        <p style="font-size: 14px; color: #666; margin: 5px 0;">Broj računa: <strong>${invoiceNumber}</strong></p>
+                                        <p style="font-size: 14px; color: #666; margin: 5px 0;">Iznos: <strong>€${(session.amount_total / 100).toFixed(2)}</strong></p>
+                                        ` : ''}
+                                    </div>
+
+                                    <p style="font-size: 14px; color: #666;">
+                                        Sada se možete prijaviti na portal i započeti s izradom vašeg weba.
+                                    </p>
+
+                                    <div style="text-align: center; margin: 30px 0;">
+                                        <a href="${process.env.NEXT_PUBLIC_APP_URL}/auth/signin" 
+style="background-color: #22c55e; color: white; padding: 14px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+                                            Prijavite se i kreirajte web
+                                        </a>
+                                    </div>
+
+                                    ${invoiceUrl ? `
+                                    <p style="font-size: 12px; color: #888; text-align: center; margin-top: 20px;">
+                                        <a href="${invoiceUrl}" style="color: #22c55e;">Preuzmite račun (PDF)</a>
+                                    </p>
+                                    ` : ''}
+
+                                    <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                                    
+                                    <p style="font-size: 12px; color: #888;">
+                                        Račun možete uvijek preuzeti u dashboardu pod "Povijest računa".
+                                    </p>
+                                </div>
+                            </div>
+                        `;
+
+                        await transporter.sendMail({
+                            from: process.env.SMTP_FROM || 'Rent a Web <noreply@rentaweb.hr>',
+                            to: customerEmail,
+                            subject: `✅ Dobrodošli! Vaša pretplata (${planName}) - Račun ${invoiceNumber || ''}`,
+                            html: emailHtml,
+                        });
+
+                        console.log(`✅ Confirmation email sent to ${customerEmail}`);
+                    } catch (emailError) {
+                        console.error('❌ Error sending email:', emailError.message);
+                    }
+                }
+            }
         } catch (error) {
-            console.error('Webhook Error:', error.message);
+            console.error('❌ Webhook processing error:', error.message);
         }
     }
 

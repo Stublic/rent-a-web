@@ -10,18 +10,39 @@ import Link from 'next/link';
 const plans = [
   {
     name: "Starter",
-    price: "249",
-    features: ["Custom Dizajn", "Hosting Uključen", "Domena (.hr i .com)", "SSL Certifikat", "Osnovni SEO", "Mjesečno Održavanje"],
-    priceId: "price_1Ql8xQLbfUNXa5Hz6ZGLKyJl", // Replace with your actual Stripe Price ID
+    price: "39",
+    originalPrice: "49",
+    features: [
+      "Jednostavna landing stranica",
+      "Kontakt sekcija / forma",
+      "Moderan i responzivan dizajn",
+      "Hosting (Vercel)",
+      "Povezivanje vlastite domene",
+      "Osnovne animacije (scroll, hover)",
+      "Email notifikacije"
+    ],
+    priceId: "price_1SxaGbKhkXukXczcwVqlzrOx",
+    description: "Za testiranje poslovne ideje i jednostavan nastup.",
+    targetAudience: "Poduzetnici početnici, obrti",
     color: "bg-zinc-800",
     textColor: "text-white",
     buttonColor: "bg-white text-black hover:bg-zinc-200"
   },
   {
     name: "Advanced",
-    price: "349",
-    features: ["Sve u Starteru", "Napredni SEO", "Blog Sekcija", "Google Analytics", "Prioritetna Podrška", "Brže Učitavanje"],
-    priceId: "price_1QlWXZLbfUNXa5Hz84Q1Vmn2", // Replace with your actual Stripe Price ID
+    price: "89",
+    originalPrice: "99",
+    features: [
+      "Više podstranica (Naslovna, Usluge...)",
+      "Moderan dizajn + animacije",
+      "Hosting i domena uključeni",
+      "Google Ads kampanja (postavljanje)",
+      "Održavanje i tehnička podrška",
+      "Brza isporuka"
+    ],
+    priceId: "price_1SxaHAKhkXukXczc0cPpLMH2",
+    description: "Za aktivne male biznise koji žele brzo doći do klijenata.",
+    targetAudience: "Mali biznisi, uslužne djelatnosti",
     recommended: true,
     color: "bg-zinc-900 border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.15)]",
     textColor: "text-green-500",
@@ -29,9 +50,19 @@ const plans = [
   },
   {
     name: "Web Shop Start",
-    price: "499",
-    features: ["Sve u Advancedu", "WooCommerce", "Do 50 Proizvoda", "Integracija Plaćanja", "E-commerce SEO", "Obuka"],
-    priceId: "price_1QlWYlLbfUNXa5HzJ0Q1Vmn3", // Replace with your actual Stripe Price ID
+    price: "199",
+    features: [
+      "Web shop do 20 proizvoda",
+      "Košarica i checkout",
+      "Kartično plaćanje (Stripe)",
+      "Hosting i održavanje",
+      "Osnovni SEO",
+      "Moderan, responzivan dizajn",
+      "Integracija sa E-računi, SOLO, Synesis..."
+    ],
+    priceId: "price_1SxaHkKhkXukXczcEyO1eXFe",
+    description: "Krenite u online prodaju bez velikog ulaganja.",
+    targetAudience: "Mali webshopovi, prodaja proizvoda",
     color: "bg-zinc-800",
     textColor: "text-white",
     buttonColor: "bg-white text-black hover:bg-zinc-200"
@@ -80,21 +111,36 @@ export default function NewProjectPage() {
                             </div>
                         )}
                         <h3 className={`text-xl font-bold mb-2 ${plan.textColor}`}>{plan.name}</h3>
-                        <div className="flex items-baseline gap-1 mb-6">
-                            <span className="text-4xl font-extrabold">{plan.price}€</span>
-                            <span className="text-zinc-500 text-sm">/ jednokratno + mj.</span>
+                        <p className="text-sm mb-4 text-zinc-400 min-h-[40px]">{plan.description}</p>
+                        
+                        <div className="flex items-baseline gap-2 mb-2">
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-4xl font-extrabold">{plan.price}€</span>
+                                <span className="text-sm text-zinc-500">/ mj</span>
+                            </div>
+                            {plan.originalPrice && (
+                                <span className="text-zinc-500 line-through text-lg decoration-red-500/50">{plan.originalPrice}€</span>
+                            )}
                         </div>
+
+                        {plan.targetAudience && (
+                            <div className="text-xs text-zinc-500 italic border-t border-zinc-800/50 pt-2 mt-2 mb-6">
+                                Za: {plan.targetAudience}
+                            </div>
+                        )}
+
                         <ul className="space-y-4 mb-8 flex-1">
                             {plan.features.map((feature) => (
-                                <li key={feature} className="flex items-center gap-3 text-sm text-zinc-300">
-                                    <Check size={16} className="text-green-500" /> {feature}
+                                <li key={feature} className="flex items-start gap-3 text-sm text-zinc-300">
+                                    <Check size={16} className="text-green-500 mt-0.5 shrink-0" /> 
+                                    <span className="leading-snug">{feature}</span>
                                 </li>
                             ))}
                         </ul>
                         <button
                             onClick={() => handleSubscribe(plan.priceId)}
                             disabled={loadingPriceId === plan.priceId}
-                            className={`w-full py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${plan.buttonColor}`}
+                            className={`w-full py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${plan.buttonColor} disabled:opacity-50`}
                         >
                             {loadingPriceId === plan.priceId ? <Loader2 className="animate-spin" /> : "Odaberi paket"}
                         </button>
