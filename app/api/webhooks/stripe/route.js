@@ -25,6 +25,12 @@ export async function POST(req) {
         const subscriptionId = session.subscription;
         const customerEmail = session.customer_email || session.customer_details?.email;
 
+        // Skip if this is a token purchase (no subscription)
+        if (!subscriptionId) {
+            console.log('⏭️ Skipping token purchase event (no subscription ID)');
+            return Response.json({ received: true });
+        }
+
         try {
             // 1. Fetch subscription details
             const subscription = await stripe.subscriptions.retrieve(subscriptionId);
