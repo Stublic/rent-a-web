@@ -2,7 +2,7 @@ import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
-import ContentForm from './form';
+import ContentForm from './form.jsx';
 import PreviewPanel from './PreviewPanel';
 import { Loader2 } from 'lucide-react';
 
