@@ -64,6 +64,7 @@ export async function POST(req: Request) {
             try {
                 const formData = new URLSearchParams();
                 formData.append('token', process.env.SOLO_API_TOKEN || '');
+                formData.append('tip_usluge', '1'); // Usluga (ne proizvod)
                 formData.append('tip_racuna', '1'); // Račun
                 formData.append('kupac_email', customerEmail || '');
                 formData.append('usluga', '1');
