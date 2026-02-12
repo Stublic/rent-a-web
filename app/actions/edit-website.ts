@@ -198,7 +198,7 @@ export async function undoLastEditAction(projectId: string) {
     await prisma.project.update({
         where: { id: projectId },
         data: {
-            generatedHtml: lastEdit.htmlSnapshot,
+            generatedHtml: (lastEdit as any).htmlSnapshot,
             editHistory: history.slice(0, history.lastIndexOf(lastEdit)) as any
         }
     });
