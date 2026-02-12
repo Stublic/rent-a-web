@@ -207,7 +207,7 @@ export async function undoLastEditAction(projectId: string) {
 
     return {
         success: true,
-        updatedHtml: lastEdit.htmlSnapshot,
+        updatedHtml: (lastEdit as any).htmlSnapshot,
         message: 'Posljednja izmjena poništena.'
     };
 }
