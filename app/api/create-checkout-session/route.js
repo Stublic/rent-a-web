@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
-import { stripe } from '@/lib/stripe'; // Assuming stripe client is exported from lib/stripe or similar
+import { stripe } from '@/lib/stripe';
 import { NextResponse } from 'next/server';
 
 export async function POST(req) {

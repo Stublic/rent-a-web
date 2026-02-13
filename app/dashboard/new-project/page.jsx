@@ -21,7 +21,7 @@ const plans = [
       "Osnovne animacije (scroll, hover)",
       "Email notifikacije"
     ],
-    priceId: "price_1SxaGbKhkXukXczcwVqlzrOx",
+    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_STARTER,
     description: "Za testiranje poslovne ideje i jednostavan nastup.",
     targetAudience: "Poduzetnici početnici, obrti",
     color: "bg-zinc-800",
@@ -40,7 +40,7 @@ const plans = [
       "Održavanje i tehnička podrška",
       "Brza isporuka"
     ],
-    priceId: "price_1SxaHAKhkXukXczc0cPpLMH2",
+    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_ADVANCED,
     description: "Za aktivne male biznise koji žele brzo doći do klijenata.",
     targetAudience: "Mali biznisi, uslužne djelatnosti",
     recommended: true,
@@ -60,7 +60,7 @@ const plans = [
       "Moderan, responzivan dizajn",
       "Integracija sa E-računi, SOLO, Synesis..."
     ],
-    priceId: "price_1SxaHkKhkXukXczcEyO1eXFe",
+    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_WEBSHOP,
     description: "Krenite u online prodaju bez velikog ulaganja.",
     targetAudience: "Mali webshopovi, prodaja proizvoda",
     color: "bg-zinc-800",
