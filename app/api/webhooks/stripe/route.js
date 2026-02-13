@@ -226,6 +226,12 @@ export async function POST(req) {
                             to: customerEmail,
                             subject: `✅ Potvrda narudžbe - ${planName} - Račun ${invoiceNumber || ''}`,
                             html: emailHtml,
+                            attachments: invoiceUrl ? [
+                                {
+                                    filename: `Racun-${invoiceNumber}.pdf`,
+                                    path: invoiceUrl
+                                }
+                            ] : []
                         });
 
                         console.log(`✅ Confirmation email sent to ${customerEmail}`);

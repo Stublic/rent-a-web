@@ -194,6 +194,12 @@ export async function POST(req: Request) {
                         to: customerEmail,
                         subject: `✅ Kupnja ${tokens} tokena - Račun ${invoiceNumber || ''}`,
                         html: emailHtml,
+                        attachments: invoiceUrl ? [
+                            {
+                                filename: `Racun-${invoiceNumber}.pdf`,
+                                path: invoiceUrl
+                            }
+                        ] : []
                     });
 
                     console.log(`✅ Confirmation email sent to ${customerEmail}`);
