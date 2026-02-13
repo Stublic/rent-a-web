@@ -33,14 +33,23 @@ export async function POST(req) {
 
         try {
             // 1. Fetch subscription details
+            // 1. Fetch subscription details
             const subscription = await stripe.subscriptions.retrieve(subscriptionId);
             const priceId = subscription.items.data[0].price.id;
+
+            console.log(`🔍 Processing Subscription: ${subscriptionId}`);
+            console.log(`💰 Price ID from Stripe: ${priceId}`);
+            console.log(`📋 Env Starter: ${process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_STARTER}`);
+            console.log(`📋 Env Advanced: ${process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_ADVANCED}`);
+            console.log(`📋 Env Webshop: ${process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_WEBSHOP}`);
 
             // Map price ID to plan name
             let planName = "Custom";
             if (priceId === process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_STARTER) planName = "Starter - Landing stranica";
-            if (priceId === process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_ADVANCED) planName = "Advanced - Landing stranica + Google oglasi";
-            if (priceId === process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_WEBSHOP) planName = "Web Shop Start";
+            else if (priceId === process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_ADVANCED) planName = "Advanced - Landing stranica + Google oglasi";
+            else if (priceId === process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_WEBSHOP) planName = "Web Shop Start";
+
+            console.log(`🏷️ Determined Plan Name: ${planName}`);
 
             console.log(`💰 Subscription created: ${planName} for ${customerEmail}`);
 
@@ -93,6 +102,8 @@ export async function POST(req) {
                     const brutoAmount = session.amount_total / 100;
                     const formattedAmount = brutoAmount.toFixed(2).replace('.', ',');
 
+                    console.log(`🧾 Creating Solo Invoice... Amount: ${formattedAmount}, Email: ${customerEmail}`);
+
                     const formData = new URLSearchParams();
                     formData.append('token', process.env.SOLO_API_TOKEN || '');
                     formData.append('tip_usluge', '1'); // Usluga (ne proizvod)
@@ -115,6 +126,8 @@ export async function POST(req) {
                     });
 
                     const soloResult = await soloResponse.json();
+
+                    console.log(`🧾 Solo API Response:`, JSON.stringify(soloResult));
 
                     if (soloResult.status === 0) {
                         invoiceNumber = soloResult.broj_racuna;
