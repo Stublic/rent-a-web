@@ -32,6 +32,7 @@ export async function GET() {
                 orderBy: { createdAt: 'desc' },
                 take: 12
             });
+            console.log(`📊 Found ${dbInvoices.length} invoices in DB for user ${session.user.id}`);
 
             invoices = dbInvoices.map(inv => ({
                 id: inv.id,
