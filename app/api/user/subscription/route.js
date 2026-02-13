@@ -25,7 +25,6 @@ export async function GET() {
         }
 
         let invoices = [];
-        let invoices = [];
         try {
             const dbInvoices = await prisma.invoice.findMany({
                 where: { userId: session.user.id },
