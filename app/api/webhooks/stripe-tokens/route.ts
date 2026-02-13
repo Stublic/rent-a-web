@@ -37,8 +37,8 @@ export async function POST(req: Request) {
         const packageId = session.metadata?.packageId;
 
         if (!projectId || !tokens || !userId) {
-            console.error('❌ Missing metadata in webhook:', session.metadata);
-            return NextResponse.json({ error: 'Missing metadata' }, { status: 400 });
+            console.log('⏭️ Skipping event with missing metadata (likely subscription):', JSON.stringify(session.metadata));
+            return NextResponse.json({ received: true });
         }
 
         const customerEmail = session.customer_email || session.customer_details?.email;
