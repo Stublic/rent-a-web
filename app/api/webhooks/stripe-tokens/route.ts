@@ -88,8 +88,8 @@ export async function POST(req: Request) {
                 const soloResult = await soloResponse.json();
 
                 if (soloResult.status === 0) {
-                    invoiceNumber = soloResult.broj_racuna;
-                    invoiceUrl = soloResult.pdf_url;
+                    invoiceNumber = soloResult.racun?.broj_racuna;
+                    invoiceUrl = soloResult.racun?.pdf;
                     console.log(`✅ Fiscal receipt created: ${invoiceNumber}`);
                 } else {
                     console.error('❌ Solo API error:', soloResult);
