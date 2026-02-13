@@ -75,6 +75,8 @@ export async function POST(req: Request) {
                 formData.append('porez_stopa_1', '0');
                 formData.append('nacin_placanja', '3'); // Kartično plaćanje
                 formData.append('valuta_racuna', '14'); // EUR
+                formData.append('kupac_naziv', session.customer_details?.name || 'Kupac');
+                formData.append('kupac_email', customerEmail || '');
                 formData.append('napomene', `Plaćeno karticom putem Stripe-a. Obveznik nije u sustavu PDV-a prema čl. 90. st. 1. i 2. Zakona o PDV-u. (Session: ${session.id})`);
 
                 const soloResponse = await fetch('https://api.solo.com.hr/racun', {

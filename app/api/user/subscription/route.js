@@ -26,6 +26,7 @@ export async function GET() {
 
         let invoices = [];
         try {
+            console.log(`🔍 Fetching invoices for user: ${session.user.id}`);
             const dbInvoices = await prisma.invoice.findMany({
                 where: { userId: session.user.id },
                 orderBy: { createdAt: 'desc' },

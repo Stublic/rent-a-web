@@ -108,6 +108,7 @@ export async function POST(req) {
                     formData.append('token', process.env.SOLO_API_TOKEN || '');
                     formData.append('tip_usluge', '1'); // Usluga (ne proizvod)
                     formData.append('tip_racuna', '1'); // Račun
+                    formData.append('kupac_naziv', session.customer_details?.name || user.name || 'Kupac');
                     formData.append('kupac_email', customerEmail || '');
                     formData.append('usluga', '1');
                     formData.append('opis_usluge_1', `Mjesečna pretplata - ${planName}`);
