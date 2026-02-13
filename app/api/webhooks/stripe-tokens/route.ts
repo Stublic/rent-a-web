@@ -166,7 +166,7 @@ export async function POST(req: Request) {
                                 </p>
 
                                 <div style="text-align: center; margin: 30px 0;">
-                                    <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/projects/${projectId}/editor" 
+                                    <a href="${process.env.NEXT_PUBLIC_APP_URL}/auth/login?redirect=/dashboard/projects/${projectId}/editor" 
                                        style="background-color: #22c55e; color: white; padding: 14px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
                                         Otvori Editor
                                     </a>

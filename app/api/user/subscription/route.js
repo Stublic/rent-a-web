@@ -25,25 +25,24 @@ export async function GET() {
         }
 
         let invoices = [];
-        if (user.stripeCustomerId) {
-            try {
-                const invoiceList = await stripe.invoices.list({
-                    customer: user.stripeCustomerId,
-                    limit: 12, // Last 12 invoices
-                });
+        let invoices = [];
+        try {
+            const dbInvoices = await prisma.invoice.findMany({
+                where: { userId: session.user.id },
+                orderBy: { createdAt: 'desc' },
+                take: 12
+            });
 
-                invoices = invoiceList.data.map(invoice => ({
-                    id: invoice.id,
-                    date: new Date(invoice.created * 1000).toLocaleDateString("hr-HR"),
-                    amount: (invoice.total / 100).toFixed(2),
-                    currency: invoice.currency.toUpperCase(),
-                    status: invoice.status,
-                    pdfUrl: invoice.hosted_invoice_url
-                }));
-            } catch (stripeError) {
-                console.error("Stripe fetch error:", stripeError);
-                // Return empty list on error to not break page
-            }
+            invoices = dbInvoices.map(inv => ({
+                id: inv.id,
+                date: new Date(inv.createdAt).toLocaleDateString("hr-HR"),
+                amount: inv.amount.toFixed(2),
+                currency: "EUR",
+                status: inv.status,
+                pdfUrl: inv.pdfUrl
+            }));
+        } catch (dbError) {
+            console.error("Database invoice fetch error:", dbError);
         }
 
         return NextResponse.json({

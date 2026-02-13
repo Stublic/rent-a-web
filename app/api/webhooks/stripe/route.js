@@ -166,29 +166,29 @@ export async function POST(req) {
                         const emailHtml = `
                             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
                                 <div style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-                                    <h1 style="color: white; margin: 0;">🎉 Dobrodošli u Rent a Web!</h1>
+                                    <h1 style="color: white; margin: 0;">✅ Vaša narudžba je potvrđena!</h1>
                                 </div>
                                 
                                 <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
-                                    <p style="font-size: 16px;">Hvala na pretplati!</p>
+                                    <p style="font-size: 16px;">Hvala na povjerenju! Vaša pretplata je aktivna.</p>
                                     
                                     <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #22c55e;">
-                                        <h2 style="margin-top: 0; color: #22c55e;">Vaš paket:</h2>
+                                        <h2 style="margin-top: 0; color: #22c55e;">Detalji paketa:</h2>
                                         <p style="font-size: 18px; font-weight: bold; margin: 10px 0;">${planName}</p>
                                         ${invoiceNumber ? `
                                         <p style="font-size: 14px; color: #666; margin: 5px 0;">Broj računa: <strong>${invoiceNumber}</strong></p>
-                                        <p style="font-size: 14px; color: #666; margin: 5px 0;">Iznos: <strong>€${(session.amount_total / 100).toFixed(2)}</strong></p>
+                                        <p style="font-size: 14px; color: #666; margin: 5px 0;">Iznos: <strong>€${(session.amount_total / 100).toFixed(2).replace('.', ',')}</strong></p>
                                         ` : ''}
                                     </div>
 
                                     <p style="font-size: 14px; color: #666;">
-                                        Sada se možete prijaviti na portal i započeti s izradom vašeg weba.
+                                        Sada se možete prijaviti na portal i nastaviti s radom.
                                     </p>
 
                                     <div style="text-align: center; margin: 30px 0;">
-                                        <a href="${process.env.NEXT_PUBLIC_APP_URL}/auth/signin" 
-style="background-color: #22c55e; color: white; padding: 14px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
-                                            Prijavite se i kreirajte web
+                                        <a href="${process.env.NEXT_PUBLIC_APP_URL}/auth/login" 
+                                           style="background-color: #22c55e; color: white; padding: 14px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+                                            Prijavi se u Dashboard
                                         </a>
                                     </div>
 
@@ -210,7 +210,7 @@ style="background-color: #22c55e; color: white; padding: 14px 30px; text-decorat
                         await transporter.sendMail({
                             from: process.env.SMTP_FROM || 'Rent a Web <noreply@rentaweb.hr>',
                             to: customerEmail,
-                            subject: `✅ Dobrodošli! Vaša pretplata (${planName}) - Račun ${invoiceNumber || ''}`,
+                            subject: `✅ Potvrda narudžbe - ${planName} - Račun ${invoiceNumber || ''}`,
                             html: emailHtml,
                         });
 
