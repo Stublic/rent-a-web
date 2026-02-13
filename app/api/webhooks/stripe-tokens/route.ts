@@ -42,7 +42,7 @@ export async function POST(req: Request) {
         }
 
         const customerEmail = session.customer_email || session.customer_details?.email;
-        const amountPaid = session.amount_total ? (session.amount_total / 100).toFixed(2) : '0.00';
+        const amountPaid = session.amount_total ? (session.amount_total / 100).toFixed(2).replace('.', ',') : '0,00';
 
         console.log(`💰 Token purchase completed: ${tokens} tokens for project ${projectId}`);
 

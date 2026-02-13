@@ -91,7 +91,7 @@ export async function POST(req) {
                 try {
                     const customer = await stripe.customers.retrieve(customerId);
                     const brutoAmount = session.amount_total / 100;
-                    const formattedAmount = brutoAmount.toFixed(2);
+                    const formattedAmount = brutoAmount.toFixed(2).replace('.', ',');
 
                     const formData = new URLSearchParams();
                     formData.append('token', process.env.SOLO_API_TOKEN || '');
