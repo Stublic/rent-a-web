@@ -3,14 +3,18 @@
 const VERCEL_API = 'https://api.vercel.com';
 
 function getHeaders() {
+    const token = process.env.AUTH_VERCEL_TOKEN;
+    if (!token) {
+        console.error('AUTH_VERCEL_TOKEN is not set!');
+    }
     return {
-        'Authorization': `Bearer ${process.env.VERCEL_API_TOKEN}`,
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
     };
 }
 
 function getTeamQuery() {
-    return process.env.VERCEL_TEAM_ID ? `?teamId=${process.env.VERCEL_TEAM_ID}` : '';
+    return process.env.TEAM_ID_VERCEL ? `?teamId=${process.env.TEAM_ID_VERCEL}` : '';
 }
 
 /**
@@ -38,7 +42,7 @@ export function generateSubdomain(name: string): string {
  * Add a domain (subdomain or custom) to the Vercel project.
  */
 export async function addDomainToVercel(domain: string) {
-    const projectId = process.env.VERCEL_PROJECT_ID;
+    const projectId = process.env.PROJECT_ID_VERCEL;
     const teamQuery = getTeamQuery();
 
     const response = await fetch(
@@ -64,7 +68,7 @@ export async function addDomainToVercel(domain: string) {
  * Remove a domain from the Vercel project.
  */
 export async function removeDomainFromVercel(domain: string) {
-    const projectId = process.env.VERCEL_PROJECT_ID;
+    const projectId = process.env.PROJECT_ID_VERCEL;
     const teamQuery = getTeamQuery();
 
     const response = await fetch(
@@ -105,7 +109,7 @@ export async function getDomainConfig(domain: string) {
  * Verify a domain on the Vercel project.
  */
 export async function verifyDomain(domain: string) {
-    const projectId = process.env.VERCEL_PROJECT_ID;
+    const projectId = process.env.PROJECT_ID_VERCEL;
     const teamQuery = getTeamQuery();
 
     const response = await fetch(

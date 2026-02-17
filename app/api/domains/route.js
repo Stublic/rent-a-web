@@ -15,8 +15,14 @@ const ROOT_DOMAIN = process.env.ROOT_DOMAIN || 'webica.hr';
 // ─── POST: Publish site / Add custom domain ─────────────────────────
 
 export async function POST(req) {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    let session;
+    try {
+        session = await auth.api.getSession({ headers: await headers() });
+    } catch (e) {
+        console.error('Domain API auth error:', e);
+        return NextResponse.json({ error: 'Auth error' }, { status: 500 });
+    }
+    if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { projectId, action, customDomain } = await req.json();
 
@@ -27,9 +33,9 @@ export async function POST(req) {
     });
     const isAdmin = currentUser?.role === 'ADMIN';
 
-    const project = await prisma.project.findUnique({
-        where: isAdmin ? { id: projectId } : { id: projectId, userId: session.user.id },
-    });
+    const project = isAdmin
+        ? await prisma.project.findUnique({ where: { id: projectId } })
+        : await prisma.project.findFirst({ where: { id: projectId, userId: session.user.id } });
 
     if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 });
 
@@ -178,8 +184,14 @@ export async function POST(req) {
 // ─── GET: Check domain status ────────────────────────────────────────
 
 export async function GET(req) {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    let session;
+    try {
+        session = await auth.api.getSession({ headers: await headers() });
+    } catch (e) {
+        console.error('Domain API auth error:', e);
+        return NextResponse.json({ error: 'Auth error' }, { status: 500 });
+    }
+    if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const projectId = req.nextUrl.searchParams.get('projectId');
     if (!projectId) return NextResponse.json({ error: 'projectId required' }, { status: 400 });
@@ -190,10 +202,10 @@ export async function GET(req) {
     });
     const isAdmin = currentUser?.role === 'ADMIN';
 
-    const project = await prisma.project.findUnique({
-        where: isAdmin ? { id: projectId } : { id: projectId, userId: session.user.id },
-        select: { subdomain: true, customDomain: true, publishedAt: true, status: true }
-    });
+    const selectFields = { subdomain: true, customDomain: true, publishedAt: true, status: true };
+    const project = isAdmin
+        ? await prisma.project.findUnique({ where: { id: projectId }, select: selectFields })
+        : await prisma.project.findFirst({ where: { id: projectId, userId: session.user.id }, select: selectFields });
 
     if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 });
 
