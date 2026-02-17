@@ -39,6 +39,9 @@ model Project {
   id                   String   @id @default(cuid())
   name                 String
   domain               String?
+  subdomain            String?  @unique   // e.g. "moj-projekt" → moj-projekt.webica.hr
+  customDomain         String?  @unique   // e.g. "mojadomela.hr"
+  publishedAt          DateTime?          // When the site was published
   status               String   @default("DRAFT") // DRAFT, SUBMITTED, GENERATED, PUBLISHED, LIVE
   planName             String
   stripeSubscriptionId String?  @unique

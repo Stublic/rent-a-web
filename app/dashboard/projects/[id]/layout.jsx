@@ -124,10 +124,20 @@ export default async function ProjectLayout({ children, params }) {
                               </Link>
                           )}
                           
-                          <div className="text-zinc-600 font-medium py-2 md:py-5 flex items-center gap-2 text-sm whitespace-nowrap px-2 md:px-0 cursor-not-allowed opacity-50">
-                              <Settings size={16} /> 
-                              <span>Postavke</span>
-                          </div>
+                          {project?.hasGenerated ? (
+                              <Link
+                                href={`/dashboard/projects/${id}/settings`}
+                                className="text-zinc-400 hover:text-white font-medium py-2 md:py-5 flex items-center gap-2 text-sm whitespace-nowrap px-2 md:px-0 transition-colors"
+                              >
+                                  <Settings size={16} /> 
+                                  <span>Postavke</span>
+                              </Link>
+                          ) : (
+                              <div className="text-zinc-600 font-medium py-2 md:py-5 flex items-center gap-2 text-sm whitespace-nowrap px-2 md:px-0 cursor-not-allowed opacity-50">
+                                  <Settings size={16} /> 
+                                  <span>Postavke</span>
+                              </div>
+                          )}
                       </div>
                   </div>
               </div>
