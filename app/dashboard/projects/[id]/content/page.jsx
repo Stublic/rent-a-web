@@ -17,15 +17,19 @@ export default async function ContentPage({ params }) {
 
     const { id } = await params;
 
+    // Check if user is admin for bypassing ownership check
+    const currentUser = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { role: true }
+    });
+    const isAdmin = currentUser?.role === 'ADMIN';
+
     const project = await prisma.project.findUnique({
-        where: { 
-            id: id,
-            userId: session.user.id
-        }
+        where: isAdmin ? { id } : { id, userId: session.user.id }
     });
 
     if (!project) {
-        redirect('/dashboard');
+        redirect(isAdmin ? '/admin/projects' : '/dashboard');
     }
 
     const getStatusBadge = (status) => {

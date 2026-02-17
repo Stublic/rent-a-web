@@ -13,8 +13,15 @@ export default async function TokenPurchasePageWrapper({ params }) {
 
     const { id } = await Promise.resolve(params);
 
+    // Check if user is admin for bypassing ownership check
+    const currentUser = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { role: true }
+    });
+    const isAdmin = currentUser?.role === 'ADMIN';
+
     const project = await prisma.project.findUnique({
-        where: { id, userId: session.user.id }
+        where: isAdmin ? { id } : { id, userId: session.user.id }
     });
 
     if (!project) {

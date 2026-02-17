@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { contentSchema } from "@/lib/schemas";
 import { uploadImageAction, generateWebsiteAction } from "@/app/actions/content-generator";
 import { saveContentAction } from "@/app/actions/save-content";
 import { updateContentAction } from "@/app/actions/update-content";
-import { Loader2, Upload, Trash2, Plus, Sparkles, Eye, Palette, Globe, Image, FileText, Tag, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, Upload, Trash2, Plus, Sparkles, Palette, Globe, Image, ChevronDown, ChevronUp, X, FolderOpen, Phone, Mail, Link2, MessageCircle, Clock, MapPin, Star, HelpCircle, Images, DollarSign, ExternalLink } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 const templates = [
@@ -17,6 +17,177 @@ const templates = [
     { id: 'minimal', name: 'Minimal', desc: 'Clean & simple', icon: '⚪', color: 'from-zinc-600 to-zinc-800' },
 ];
 
+const CTA_TYPES = [
+    { value: 'contact', label: 'Kontakt forma', icon: Mail, desc: 'Šalje na kontakt sekciju' },
+    { value: 'phone', label: 'Poziv telefon', icon: Phone, desc: 'Poziva vaš broj' },
+    { value: 'email', label: 'Pošalji email', icon: Mail, desc: 'Otvara email klijent' },
+    { value: 'whatsapp', label: 'WhatsApp', icon: MessageCircle, desc: 'Otvara WhatsApp chat' },
+    { value: 'link', label: 'Custom link', icon: ExternalLink, desc: 'PDF, vanjska stranica...' },
+];
+
+const COLOR_PRESETS = [
+    '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#3b82f6', '#6366f1',
+    '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e', '#ef4444',
+    '#f97316', '#f59e0b', '#eab308', '#84cc16',
+];
+
+const DAYS = ['Ponedjeljak', 'Utorak', 'Srijeda', 'Četvrtak', 'Petak', 'Subota', 'Nedjelja'];
+
+const DEFAULT_HOURS = DAYS.map(day => ({
+    day,
+    from: day === 'Subota' || day === 'Nedjelja' ? '' : '08:00',
+    to: day === 'Subota' || day === 'Nedjelja' ? '' : '16:00',
+    closed: day === 'Subota' || day === 'Nedjelja'
+}));
+
+// --- Media Picker Modal ---
+function MediaPickerModal({ onSelect, onClose }) {
+    const [media, setMedia] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState("");
+
+    useEffect(() => {
+        const fetchMedia = async () => {
+            try {
+                const res = await fetch('/api/media');
+                const data = await res.json();
+                if (data.media) setMedia(data.media.filter(m => m.type.startsWith('image/')));
+            } catch (err) { console.error("Failed to fetch media", err); }
+            finally { setLoading(false); }
+        };
+        fetchMedia();
+    }, []);
+
+    const filtered = search ? media.filter(m => m.filename.toLowerCase().includes(search.toLowerCase())) : media;
+
+    return (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-3xl w-full max-h-[80vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between p-5 border-b border-zinc-800">
+                    <div>
+                        <h3 className="text-lg font-bold text-white">Media Knjižnica</h3>
+                        <p className="text-zinc-500 text-xs mt-0.5">Odaberite sliku iz vaše knjižnice</p>
+                    </div>
+                    <button onClick={onClose} className="p-2 hover:bg-zinc-800 rounded-lg transition-colors"><X size={20} className="text-zinc-400" /></button>
+                </div>
+                <div className="px-5 py-3 border-b border-zinc-800/50">
+                    <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Pretraži po nazivu..."
+                        className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-green-500 transition-colors" />
+                </div>
+                <div className="flex-1 overflow-y-auto p-5">
+                    {loading ? (
+                        <div className="flex items-center justify-center py-16"><Loader2 size={28} className="animate-spin text-green-500" /></div>
+                    ) : filtered.length > 0 ? (
+                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                            {filtered.map(item => (
+                                <button key={item.id} type="button" onClick={() => onSelect(item.url)}
+                                    className="group relative aspect-square rounded-xl overflow-hidden border-2 border-zinc-800 hover:border-green-500 transition-all focus:outline-none">
+                                    <img src={item.url} alt={item.filename} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-end">
+                                        <div className="w-full p-2 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <p className="text-white text-xs truncate font-medium">{item.filename}</p>
+                                        </div>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-16">
+                            <Image size={32} className="mx-auto text-zinc-700 mb-3" />
+                            <p className="text-zinc-500 text-sm font-medium">{search ? "Nema rezultata" : "Nema uploadanih slika"}</p>
+                            <p className="text-zinc-600 text-xs mt-1">{search ? "Pokušajte s drugim pojmom" : "Idite na Media tab da uploadate slike"}</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// --- CTA Selector Component ---
+function CtaSelector({ prefix, register, watch, setValue }) {
+    const ctaType = watch(`${prefix}.type`) || 'contact';
+    return (
+        <div className="bg-zinc-950/50 border border-zinc-800 rounded-xl p-4 space-y-3">
+            <label className="text-zinc-400 text-xs font-semibold uppercase tracking-wide">CTA Gumb</label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+                {CTA_TYPES.map(cta => {
+                    const Icon = cta.icon;
+                    return (
+                        <button key={cta.value} type="button" onClick={() => setValue(`${prefix}.type`, cta.value)}
+                            className={`p-2.5 rounded-lg border text-left transition-all ${ctaType === cta.value
+                                ? 'border-green-500 bg-green-500/10 text-white' : 'border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:border-zinc-700'}`}>
+                            <Icon size={14} className={ctaType === cta.value ? 'text-green-400' : 'text-zinc-600'} />
+                            <p className="text-xs font-medium mt-1.5 leading-tight">{cta.label}</p>
+                        </button>
+                    );
+                })}
+            </div>
+            <div className="grid sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                    <label className="text-zinc-500 text-xs">Tekst gumba</label>
+                    <input {...register(`${prefix}.label`)} placeholder="npr. Kontaktirajte nas"
+                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-green-500" />
+                </div>
+                {ctaType === 'link' && (
+                    <div className="space-y-1">
+                        <label className="text-zinc-500 text-xs">URL / Poveznica</label>
+                        <input {...register(`${prefix}.url`)} placeholder="https://..."
+                            className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-green-500" />
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+// --- Color Picker Component ---
+function ColorPickerField({ label, value, onChange, presets = COLOR_PRESETS }) {
+    return (
+        <div className="space-y-2">
+            <label className="text-zinc-300 text-sm font-medium">{label}</label>
+            <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg border-2 border-zinc-700 flex-shrink-0" style={{ backgroundColor: value || '#000000' }} />
+                <input type="text" value={value || ''} onChange={e => onChange(e.target.value)}
+                    className="bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-white w-28 text-sm font-mono uppercase focus:outline-none focus:border-green-500" placeholder="#000000" />
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+                {presets.map(color => (
+                    <button key={color} type="button" onClick={() => onChange(color)}
+                        className={`w-7 h-7 rounded-lg border-2 transition-all hover:scale-110 ${value === color ? 'border-white scale-110 shadow-lg' : 'border-zinc-700 hover:border-zinc-500'}`}
+                        style={{ backgroundColor: color }} />
+                ))}
+            </div>
+        </div>
+    );
+}
+
+// --- Section Wrapper ---
+function Section({ number, icon, title, subtitle, children, collapsible = false, defaultOpen = true }) {
+    const [open, setOpen] = useState(defaultOpen);
+    return (
+        <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl overflow-hidden">
+            <button type="button" onClick={collapsible ? () => setOpen(!open) : undefined}
+                className={`w-full p-5 sm:p-6 flex items-center justify-between ${collapsible ? 'hover:bg-zinc-900/70 cursor-pointer' : 'cursor-default'} transition-colors`}>
+                <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${number ? 'bg-green-500 text-white' : 'bg-zinc-800 text-green-500'}`}>
+                        {number || icon}
+                    </div>
+                    <div className="text-left">
+                        <h2 className="text-base sm:text-lg font-bold text-white">{title}</h2>
+                        {subtitle && <p className="text-zinc-500 text-xs sm:text-sm">{subtitle}</p>}
+                    </div>
+                </div>
+                {collapsible && (open ? <ChevronUp className="text-zinc-500 flex-shrink-0" size={20} /> : <ChevronDown className="text-zinc-500 flex-shrink-0" size={20} />)}
+            </button>
+            {(!collapsible || open) && <div className="px-5 sm:px-6 pb-5 sm:pb-6 space-y-5">{children}</div>}
+        </div>
+    );
+}
+
+// ============================================================
+// MAIN COMPONENT
+// ============================================================
 export default function ContentForm({ project }) {
     const [uploading, setUploading] = useState(false);
     const [generating, setGenerating] = useState(false);
@@ -25,42 +196,38 @@ export default function ContentForm({ project }) {
     const [generationStep, setGenerationStep] = useState(0);
     const [errorMessage, setErrorMessage] = useState("");
     const [uploadError, setUploadError] = useState("");
-    const [seoExpanded, setSeoExpanded] = useState(false);
-    const [currentStep, setCurrentStep] = useState(1);
+    const [mediaPickerField, setMediaPickerField] = useState(null);
+    const [showAdvancedColors, setShowAdvancedColors] = useState(false);
     const router = useRouter();
+
+    const defaults = project.contentData || {
+        businessName: "", industry: "", description: "",
+        template: "modern", primaryColor: "#22c55e",
+        secondaryColor: "", backgroundColor: "", textColor: "",
+        heroCta: { type: 'contact', label: '', url: '' },
+        logoUrl: "", heroImageUrl: "", aboutImageUrl: "", featuresImageUrl: "", servicesBackgroundUrl: "",
+        metaTitle: "", metaDescription: "", metaKeywords: [],
+        email: "", phone: "", address: "", mapEmbed: "",
+        workingHours: DEFAULT_HOURS,
+        services: [{ name: "", description: "", imageUrl: "", cta: { type: 'contact', label: '', url: '' } }],
+        testimonials: [],
+        faq: [],
+        gallery: [],
+        pricing: [],
+        socialLinks: { facebook: "", instagram: "", linkedin: "", twitter: "" }
+    };
 
     const { register, control, handleSubmit, setValue, watch, formState: { errors } } = useForm({
         resolver: zodResolver(contentSchema),
-        defaultValues: project.contentData || {
-            businessName: "",
-            industry: "",
-            description: "",
-            template: "modern",
-            primaryColor: "#22c55e",
-            logoUrl: "",
-            heroImageUrl: "",
-            aboutImageUrl: "",
-            featuresImageUrl: "",
-            servicesBackgroundUrl: "",
-            metaTitle: "",
-            metaDescription: "",
-            metaKeywords: [],
-            email: "",
-            phone: "",
-            services: [{ name: "", description: "", imageUrl: "" }],
-            socialLinks: {
-                facebook: "",
-                instagram: "",
-                linkedin: "",
-                twitter: ""
-            }
-        }
+        defaultValues: defaults
     });
 
-    const { fields, append, remove } = useFieldArray({
-        control,
-        name: "services"
-    });
+    const { fields: serviceFields, append: appendService, remove: removeService } = useFieldArray({ control, name: "services" });
+    const { fields: testimonialFields, append: appendTestimonial, remove: removeTestimonial } = useFieldArray({ control, name: "testimonials" });
+    const { fields: faqFields, append: appendFaq, remove: removeFaq } = useFieldArray({ control, name: "faq" });
+    const { fields: galleryFields, append: appendGallery, remove: removeGallery } = useFieldArray({ control, name: "gallery" });
+    const { fields: pricingFields, append: appendPricing, remove: removePricing } = useFieldArray({ control, name: "pricing" });
+    const { fields: hoursFields } = useFieldArray({ control, name: "workingHours" });
 
     const generationSteps = [
         { label: "Validiranje podataka", icon: "✓" },
@@ -76,131 +243,72 @@ export default function ContentForm({ project }) {
     const handleImageUpload = async (e, field) => {
         const file = e.target.files[0];
         if (!file) return;
-
         setUploading(true);
         setUploadError("");
         const formData = new FormData();
         formData.append("file", file);
-
         try {
             const url = await uploadImageAction(formData);
             setValue(field, url);
         } catch (error) {
             console.error("Upload failed", error);
             setUploadError("Upload slike nije uspio. Molimo pokušajte ponovno.");
-        } finally {
-            setUploading(false);
-        }
+        } finally { setUploading(false); }
     };
 
     const onSubmit = async (data) => {
-        setGenerating(true);
-        setErrorMessage("");
-        setGenerationStep(0);
-
+        setGenerating(true); setErrorMessage(""); setGenerationStep(0);
         try {
-            setGenerationStep(1);
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            setGenerationStep(2);
-            await new Promise(resolve => setTimeout(resolve, 500));
-
+            setGenerationStep(1); await new Promise(r => setTimeout(r, 500));
+            setGenerationStep(2); await new Promise(r => setTimeout(r, 500));
             setGenerationStep(3);
             const result = await generateWebsiteAction(project.id, data);
-
-            if (result.error) {
-                setErrorMessage(typeof result.error === 'string' ? result.error : "Greška pri generiranju. Molimo pokušajte ponovno.");
-                setGenerating(false);
-                setGenerationStep(0);
-                return;
-            }
-
-            setGenerationStep(4);
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            router.refresh();
-            setGenerating(false);
-            setGenerationStep(0);
-
+            if (result.error) { setErrorMessage(typeof result.error === 'string' ? result.error : "Greška pri generiranju."); setGenerating(false); setGenerationStep(0); return; }
+            setGenerationStep(4); await new Promise(r => setTimeout(r, 500));
+            router.refresh(); setGenerating(false); setGenerationStep(0);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (error) {
-            console.error(error);
-            setErrorMessage("Došlo je do neočekivane greške. Molimo pokušajte ponovno.");
-            setGenerating(false);
-            setGenerationStep(0);
+            console.error(error); setErrorMessage("Neočekivana greška. Pokušajte ponovno."); setGenerating(false); setGenerationStep(0);
         }
     };
 
     const onSave = async (data) => {
-        // Use updateContentAction if website already generated, otherwise saveContentAction
         const isUpdate = project.hasGenerated;
-        
-        if (isUpdate) {
-            setUpdating(true);
-        } else {
-            setSaving(true);
-        }
+        if (isUpdate) setUpdating(true); else setSaving(true);
         setErrorMessage("");
-
         try {
-            const result = isUpdate 
-                ? await updateContentAction(project.id, data)
-                : await saveContentAction(project.id, data);
-
-            if (result.error) {
-                setErrorMessage(result.error);
-                setSaving(false);
-                setUpdating(false);
-                return;
-            }
-
-            router.refresh();
-            setSaving(false);
-            setUpdating(false);
+            const result = isUpdate ? await updateContentAction(project.id, data) : await saveContentAction(project.id, data);
+            if (result.error) { setErrorMessage(result.error); setSaving(false); setUpdating(false); return; }
+            router.refresh(); setSaving(false); setUpdating(false);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (error) {
-            console.error(error);
-            setErrorMessage(isUpdate 
-                ? "Došlo je do neočekivane greške pri ažuriranju."
-                : "Došlo je do neočekivane greške pri spremanju."
-            );
-            setSaving(false);
-            setUpdating(false);
+            console.error(error); setErrorMessage(isUpdate ? "Greška pri ažuriranju." : "Greška pri spremanju."); setSaving(false); setUpdating(false);
         }
     };
 
     const ImageUploadBox = ({ field, label, currentUrl }) => (
         <div className="space-y-2">
-            <label className="text-zinc-300 text-sm font-medium flex items-center gap-2">
-                <Image size={16} className="text-zinc-500" />
-                {label}
-            </label>
+            <label className="text-zinc-300 text-sm font-medium flex items-center gap-2"><Image size={16} className="text-zinc-500" />{label}</label>
             <div className="border-2 border-dashed border-zinc-700 rounded-xl p-6 hover:border-green-500/50 transition-all group relative overflow-hidden bg-zinc-950/50">
                 {currentUrl ? (
                     <div className="relative">
                         <img src={currentUrl} alt={label} className="w-full h-32 object-cover rounded-lg" />
-                        <button
-                            type="button"
-                            onClick={() => setValue(field, "")}
-                            className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 transition-colors shadow-lg"
-                        >
-                            <Trash2 size={14} />
-                        </button>
+                        <button type="button" onClick={() => setValue(field, "")} className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 transition-colors shadow-lg"><Trash2 size={14} /></button>
                     </div>
                 ) : (
-                    <>
-                        <Upload className="mx-auto text-zinc-600 group-hover:text-green-500 transition-colors mb-3" size={28} />
-                        <input
-                            type="file"
-                            onChange={(e) => handleImageUpload(e, field)}
-                            className="absolute inset-0 opacity-0 cursor-pointer"
-                            accept="image/*"
-                        />
-                        <p className="text-sm text-zinc-500 text-center font-medium">
-                            {uploading ? "Učitavanje..." : "Dodirni za prijenos"}
-                        </p>
-                        <p className="text-xs text-zinc-600 text-center mt-1.5">Ili ostavi prazno za automatski odabir</p>
-                    </>
+                    <div className="flex flex-col items-center gap-3">
+                        <Upload className="text-zinc-600 group-hover:text-green-500 transition-colors" size={28} />
+                        <div className="flex items-center gap-3">
+                            <label className="cursor-pointer px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-medium rounded-lg transition-colors">
+                                Prenesi datoteku
+                                <input type="file" onChange={e => handleImageUpload(e, field)} className="hidden" accept="image/*" />
+                            </label>
+                            <button type="button" onClick={() => setMediaPickerField(field)} className="px-4 py-2 bg-green-600/20 hover:bg-green-600/30 text-green-400 text-sm font-medium rounded-lg transition-colors flex items-center gap-2 border border-green-500/20">
+                                <FolderOpen size={14} />Iz knjižnice
+                            </button>
+                        </div>
+                        <p className="text-xs text-zinc-600 text-center">Ili ostavi prazno za automatski odabir</p>
+                    </div>
                 )}
             </div>
         </div>
@@ -208,7 +316,9 @@ export default function ContentForm({ project }) {
 
     return (
         <div className="w-full pb-8 relative">
-            {/* Loading Overlay */}
+            {mediaPickerField && <MediaPickerModal onSelect={url => { setValue(mediaPickerField, url); setMediaPickerField(null); }} onClose={() => setMediaPickerField(null)} />}
+
+            {/* Generating Overlay */}
             {generating && (
                 <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
                     <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-green-500/20 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl shadow-green-500/10">
@@ -218,25 +328,13 @@ export default function ContentForm({ project }) {
                                 <div className="absolute inset-0 blur-xl bg-green-500/30 animate-pulse"></div>
                             </div>
                             <h3 className="text-xl sm:text-2xl font-bold text-white mb-2">✨ AI stvara web stranicu</h3>
-                            <p className="text-zinc-400 text-sm">Koristi Gemini 3 Flash - Ovo može potrajati 15-20 sekundi.</p>
+                            <p className="text-zinc-400 text-sm">Koristi Gemini 3 Flash - Ovo može potrajati 30-60 sekundi.</p>
                         </div>
-
                         <div className="space-y-3">
-                            {generationSteps.map((step, index) => (
-                                <div
-                                    key={index}
-                                    className={`flex items-center gap-3 p-3 rounded-xl transition-all ${index < generationStep
-                                            ? 'bg-green-500/10 border border-green-500/30'
-                                            : index === generationStep
-                                                ? 'bg-zinc-800 border border-zinc-700 animate-pulse'
-                                                : 'bg-zinc-900/50 border border-zinc-800/50'
-                                        }`}
-                                >
-                                    <span className="text-2xl">{index < generationStep ? '✅' : index === generationStep ? '⏳' : '○'}</span>
-                                    <span className={`text-sm font-medium ${index <= generationStep ? 'text-white' : 'text-zinc-600'
-                                        }`}>
-                                        {step.label}
-                                    </span>
+                            {generationSteps.map((step, i) => (
+                                <div key={i} className={`flex items-center gap-3 p-3 rounded-xl transition-all ${i < generationStep ? 'bg-green-500/10 border border-green-500/30' : i === generationStep ? 'bg-zinc-800 border border-zinc-700 animate-pulse' : 'bg-zinc-900/50 border border-zinc-800/50'}`}>
+                                    <span className="text-2xl">{i < generationStep ? '✅' : i === generationStep ? '⏳' : '○'}</span>
+                                    <span className={`text-sm font-medium ${i <= generationStep ? 'text-white' : 'text-zinc-600'}`}>{step.label}</span>
                                 </div>
                             ))}
                         </div>
@@ -249,175 +347,95 @@ export default function ContentForm({ project }) {
                 <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
                     <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-blue-500/20 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl shadow-blue-500/10">
                         <div className="text-center mb-6">
-                            <div className="relative inline-block">
-                                <Loader2 className="w-16 h-16 animate-spin text-blue-500 mx-auto mb-4" />
-                                <div className="absolute inset-0 blur-xl bg-blue-500/30 animate-pulse"></div>
-                            </div>
-                            <h3 className="text-xl sm:text-2xl font-bold text-white mb-2">🔄 Ažuriranje sadržaja</h3>
+                            <Loader2 className="w-16 h-16 animate-spin text-blue-500 mx-auto mb-4" />
+                            <h3 className="text-xl font-bold text-white mb-2">🔄 Ažuriranje sadržaja</h3>
                             <p className="text-zinc-400 text-sm">AI pametno ažurira samo promijenjene podatke...</p>
                         </div>
-
-                        <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                                <span className="text-sm text-zinc-300">Analiziranje promjena</span>
-                            </div>
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                                <span className="text-sm text-zinc-300">Kirurško ažuriranje HTML-a</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                                <span className="text-sm text-zinc-300">Čuvanje AI editor izmjena</span>
-                            </div>
-                        </div>
-
-                        <p className="text-xs text-zinc-500 text-center mt-4">
-                            💡 Sve izmjene iz editora ostaju sačuvane
-                        </p>
                     </div>
                 </div>
             )}
 
-
-            {/* Error Messages */}
+            {/* Errors */}
             {errorMessage && (
-                <div className="mb-6 mx-4 sm:mx-0 bg-red-500/10 border border-red-500/30 rounded-2xl p-4 sm:p-5 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
-                    <span className="text-2xl sm:text-3xl">⚠️</span>
-                    <div className="flex-1">
-                        <h4 className="font-bold text-red-400 mb-1">Greška</h4>
-                        <p className="text-red-300 text-sm leading-relaxed">{errorMessage}</p>
-                    </div>
+                <div className="mb-6 bg-red-500/10 border border-red-500/30 rounded-2xl p-4 flex items-start gap-3">
+                    <span className="text-2xl">⚠️</span>
+                    <div><h4 className="font-bold text-red-400 mb-1">Greška</h4><p className="text-red-300 text-sm">{errorMessage}</p></div>
                 </div>
             )}
-
             {uploadError && (
-                <div className="mb-6 mx-4 sm:mx-0 bg-orange-500/10 border border-orange-500/30 rounded-2xl p-4 flex items-start gap-3">
-                    <span className="text-xl sm:text-2xl">⚠️</span>
-                    <p className="text-orange-300 text-sm flex-1">{uploadError}</p>
+                <div className="mb-6 bg-orange-500/10 border border-orange-500/30 rounded-2xl p-4 flex items-start gap-3">
+                    <span className="text-xl">⚠️</span><p className="text-orange-300 text-sm flex-1">{uploadError}</p>
                 </div>
             )}
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 px-4 sm:px-0">
-                {/* Template Selection */}
-                <div className="bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-xl backdrop-blur-sm">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                {/* ── Template Selection ── */}
+                <div className="bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800 rounded-2xl p-6 sm:p-8 shadow-xl">
                     <div className="flex items-center gap-3 mb-6">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-xl flex-shrink-0">
-                            🎨
-                        </div>
-                        <div>
-                            <h2 className="text-lg sm:text-xl font-bold text-white">Odaberi Predložak</h2>
-                            <p className="text-zinc-400 text-xs sm:text-sm">Stil dizajna web stranice</p>
-                        </div>
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-xl flex-shrink-0">🎨</div>
+                        <div><h2 className="text-lg sm:text-xl font-bold text-white">Odaberi Predložak</h2><p className="text-zinc-400 text-xs sm:text-sm">Stil dizajna web stranice</p></div>
                     </div>
-
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                        {templates.map((template) => (
-                            <label key={template.id} className="cursor-pointer group">
-                                <input
-                                    type="radio"
-                                    value={template.id}
-                                    {...register("template")}
-                                    className="sr-only"
-                                />
-                                <div className={`relative p-4 sm:p-5 rounded-xl sm:rounded-2xl border-2 transition-all ${selectedTemplate === template.id
-                                        ? 'border-green-500 bg-green-500/10 shadow-lg shadow-green-500/20'
-                                        : 'border-zinc-700 bg-zinc-900/50 hover:border-zinc-600'
-                                    }`}>
-                                    <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br ${template.color} flex items-center justify-center text-xl sm:text-2xl mb-2 sm:mb-3 group-hover:scale-110 transition-transform`}>
-                                        {template.icon}
-                                    </div>
-                                    <h3 className="font-bold text-white mb-1 text-sm sm:text-base">{template.name}</h3>
-                                    <p className="text-xs text-zinc-500">{template.desc}</p>
-                                    {selectedTemplate === template.id && (
-                                        <div className="absolute top-2 sm:top-3 right-2 sm:right-3 bg-green-500 rounded-full p-1">
-                                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                            </svg>
-                                        </div>
-                                    )}
+                        {templates.map(t => (
+                            <label key={t.id} className="cursor-pointer group">
+                                <input type="radio" value={t.id} {...register("template")} className="sr-only" />
+                                <div className={`relative p-4 sm:p-5 rounded-xl border-2 transition-all ${selectedTemplate === t.id ? 'border-green-500 bg-green-500/10 shadow-lg shadow-green-500/20' : 'border-zinc-700 bg-zinc-900/50 hover:border-zinc-600'}`}>
+                                    <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br ${t.color} flex items-center justify-center text-xl sm:text-2xl mb-2 sm:mb-3 group-hover:scale-110 transition-transform`}>{t.icon}</div>
+                                    <h3 className="font-bold text-white mb-1 text-sm sm:text-base">{t.name}</h3>
+                                    <p className="text-xs text-zinc-500">{t.desc}</p>
+                                    {selectedTemplate === t.id && <div className="absolute top-2 right-2 bg-green-500 rounded-full p-1"><svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg></div>}
                                 </div>
                             </label>
                         ))}
                     </div>
                 </div>
 
-                {/* Business Info */}
-                <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-5 sm:p-6 space-y-5 sm:space-y-6">
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
-                            1
-                        </div>
-                        <h2 className="text-base sm:text-lg font-bold text-white">Osnovne Informacije</h2>
-                    </div>
-
-                    <div className="grid sm:grid-cols-2 gap-5 sm:gap-6">
+                {/* ── 1. Basic Info ── */}
+                <Section number="1" title="Osnovne Informacije">
+                    <div className="grid sm:grid-cols-2 gap-5">
                         <div className="space-y-2">
                             <label className="text-zinc-300 text-sm font-medium">Naziv Biznisa</label>
-                            <input
-                                {...register("businessName")}
-                                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-green-500 transition-colors text-base"
-                                placeholder="npr. Rent a Web"
-                            />
+                            <input {...register("businessName")} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-green-500 text-base" placeholder="npr. Rent a Web" />
                             {errors.businessName && <span className="text-red-400 text-xs">{errors.businessName.message}</span>}
                         </div>
-
                         <div className="space-y-2">
                             <label className="text-zinc-300 text-sm font-medium">Industrija</label>
-                            <input
-                                {...register("industry")}
-                                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-green-500 transition-colors text-base"
-                                placeholder="npr. Web Dizajn"
-                            />
+                            <input {...register("industry")} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-green-500 text-base" placeholder="npr. Web Dizajn" />
                             {errors.industry && <span className="text-red-400 text-xs">{errors.industry.message}</span>}
                         </div>
                     </div>
-
                     <div className="space-y-2">
                         <label className="text-zinc-300 text-sm font-medium">Opis Biznisa</label>
-                        <textarea
-                            {...register("description")}
-                            rows={4}
-                            className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-green-500 transition-colors resize-none text-base"
-                            placeholder="Opišite što radite, vaše prednosti i ciljeve..."
-                        />
+                        <textarea {...register("description")} rows={4} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-green-500 resize-none text-base" placeholder="Opišite što radite, vaše prednosti i ciljeve..." />
                         {errors.description && <span className="text-red-400 text-xs">{errors.description.message}</span>}
                     </div>
+                </Section>
 
-                    <div className="space-y-2">
-                        <label className="text-zinc-300 text-sm font-medium flex items-center gap-2">
-                            <Palette size={16} className="text-green-500" />
-                            Primarna Boja
-                        </label>
-                        <div className="flex items-center gap-4">
-                            <input
-                                type="color"
-                                value={watch("primaryColor")}
-                                onChange={(e) => setValue("primaryColor", e.target.value)}
-                                className="w-16 h-16 rounded-xl cursor-pointer bg-transparent border-2 border-zinc-800"
-                            />
-                            <input
-                                type="text"
-                                {...register("primaryColor")}
-                                className="bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white w-32 focus:outline-none focus:border-green-500 text-base font-mono uppercase"
-                                placeholder="#22c55e"
-                            />
+                {/* ── Color Palette ── */}
+                <Section icon={<Palette size={16} />} title="Boje" subtitle="Primarna boja je najvažnija — ostale su opcionalne">
+                    <ColorPickerField label="✨ Primarna Boja" value={watch("primaryColor")} onChange={v => setValue("primaryColor", v)} />
+                    <button type="button" onClick={() => setShowAdvancedColors(!showAdvancedColors)} className="flex items-center gap-2 text-zinc-500 hover:text-zinc-300 text-sm transition-colors mt-2">
+                        {showAdvancedColors ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        Više boja (opcionalno)
+                    </button>
+                    {showAdvancedColors && (
+                        <div className="grid sm:grid-cols-3 gap-5 pt-2 border-t border-zinc-800 mt-3">
+                            <ColorPickerField label="Sekundarna" value={watch("secondaryColor")} onChange={v => setValue("secondaryColor", v)} />
+                            <ColorPickerField label="Pozadina" value={watch("backgroundColor")} onChange={v => setValue("backgroundColor", v)}
+                                presets={['#ffffff', '#f8fafc', '#f1f5f9', '#fafaf9', '#0a0a0a', '#18181b', '#1c1917', '#0c0a09', '#0f172a', '#1e1b4b', '#1a2e05', '#2e1065']} />
+                            <ColorPickerField label="Tekst" value={watch("textColor")} onChange={v => setValue("textColor", v)}
+                                presets={['#000000', '#18181b', '#27272a', '#3f3f46', '#52525b', '#71717a', '#a1a1aa', '#d4d4d8', '#e4e4e7', '#f4f4f5', '#fafafa', '#ffffff']} />
                         </div>
-                    </div>
-                </div>
+                    )}
+                </Section>
 
-                {/* Brand Assets & Section Images - Combined for better mobile flow */}
-                <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-5 sm:p-6 space-y-5 sm:space-y-6">
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
-                            2
-                        </div>
-                        <div className="flex-1">
-                            <h2 className="text-base sm:text-lg font-bold text-white">Slike</h2>
-                            <p className="text-zinc-500 text-xs sm:text-sm">Opcionalno - AI automatski odabire slike</p>
-                        </div>
-                    </div>
+                {/* ── Hero CTA ── */}
+                <Section icon="🚀" title="Glavni CTA Gumb" subtitle="Akcija za glavni gumb na vrhu stranice">
+                    <CtaSelector prefix="heroCta" register={register} watch={watch} setValue={setValue} />
+                </Section>
 
+                {/* ── 2. Images ── */}
+                <Section number="2" title="Slike" subtitle="Opcionalno - AI automatski odabire slike">
                     <div className="space-y-4">
                         <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">Brand</h3>
                         <div className="grid sm:grid-cols-2 gap-5">
@@ -425,7 +443,6 @@ export default function ContentForm({ project }) {
                             <ImageUploadBox field="heroImageUrl" label="Hero Slika" currentUrl={watch("heroImageUrl")} />
                         </div>
                     </div>
-
                     <div className="space-y-4 pt-4 border-t border-zinc-800">
                         <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">Sekcije</h3>
                         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -434,282 +451,269 @@ export default function ContentForm({ project }) {
                             <ImageUploadBox field="servicesBackgroundUrl" label="Usluge Pozadina" currentUrl={watch("servicesBackgroundUrl")} />
                         </div>
                     </div>
-                </div>
+                </Section>
 
-                {/* SEO Section */}
-                <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl overflow-hidden">
-                    <button
-                        type="button"
-                        onClick={() => setSeoExpanded(!seoExpanded)}
-                        className="w-full p-5 sm:p-6 flex items-center justify-between hover:bg-zinc-900/70 transition-colors"
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-sm font-bold text-green-500 flex-shrink-0">
-                                <Globe size={16} />
-                            </div>
-                            <div className="text-left">
-                                <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                                    SEO Podešavanja
-                                </h2>
-                                <p className="text-zinc-500 text-xs sm:text-sm">Opcionalno - za bolju vidljivost</p>
-                            </div>
-                        </div>
-                        {seoExpanded ? <ChevronUp className="text-zinc-500 flex-shrink-0" size={20} /> : <ChevronDown className="text-zinc-500 flex-shrink-0" size={20} />}
-                    </button>
-
-                    {seoExpanded && (
-                        <div className="p-5 sm:p-6 pt-0 space-y-5 sm:space-y-6 animate-in slide-in-from-top-2 fade-in">
-                            <div className="space-y-2">
-                                <label className="text-zinc-300 text-sm font-medium flex items-center justify-between">
-                                    <span>Meta Naslov</span>
-                                    <span className={`text-xs ${metaTitle?.length > 60 ? 'text-red-400' : 'text-zinc-600'}`}>
-                                        {metaTitle?.length || 0}/60
-                                    </span>
-                                </label>
-                                <input
-                                    {...register("metaTitle")}
-                                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-green-500 text-base"
-                                    placeholder="npr. Profesionalne Vodoinstalaterske Usluge"
-                                />
-                                {errors.metaTitle && <span className="text-red-400 text-xs">{errors.metaTitle.message}</span>}
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-zinc-300 text-sm font-medium flex items-center justify-between">
-                                    <span>Meta Opis</span>
-                                    <span className={`text-xs ${metaDescription?.length > 160 ? 'text-red-400' : 'text-zinc-600'}`}>
-                                        {metaDescription?.length || 0}/160
-                                    </span>
-                                </label>
-                                <textarea
-                                    {...register("metaDescription")}
-                                    rows={3}
-                                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-green-500 resize-none text-base"
-                                    placeholder="Kratak opis što radite..."
-                                />
-                                {errors.metaDescription && <span className="text-red-400 text-xs">{errors.metaDescription.message}</span>}
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* Contact */}
-                <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-5 sm:p-6 space-y-5 sm:space-y-6">
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-sm font-bold text-green-500 flex-shrink-0">
-                            📧
-                        </div>
-                        <h2 className="text-base sm:text-lg font-bold text-white">Kontakt</h2>
-                    </div>
-
-                    <div className="grid sm:grid-cols-2 gap-5 sm:gap-6">
-                        <div className="space-y-2">
-                            <label className="text-zinc-300 text-sm font-medium">Email</label>
-                            <input
-                                {...register("email")}
-                                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-green-500 text-base"
-                                placeholder="info@mojbiznis.hr"
-                            />
-                            {errors.email && <span className="text-red-400 text-xs">{errors.email.message}</span>}
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-zinc-300 text-sm font-medium">Telefon (Opcionalno)</label>
-                            <input
-                                {...register("phone")}
-                                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-green-500 text-base"
-                                placeholder="+385 91 123 4567"
-                            />
-                        </div>
-                    </div>
-
-                {/* Social Links */}
-                <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-5 sm:p-6 space-y-5 sm:space-y-6">
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-sm font-bold text-blue-500 flex-shrink-0">
-                            🌐
-                        </div>
-                        <div>
-                            <h2 className="text-base sm:text-lg font-bold text-white">Društvene Mreže</h2>
-                            <p className="text-zinc-500 text-xs sm:text-sm">Opcionalno</p>
-                        </div>
-                    </div>
-
-                    <div className="grid sm:grid-cols-2 gap-5 sm:gap-6">
-                        <div className="space-y-2">
-                            <label className="text-zinc-300 text-sm font-medium flex items-center gap-2">
-                                <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                                </svg>
-                                Facebook
-                            </label>
-                            <input
-                                {...register("socialLinks.facebook")}
-                                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-blue-500 text-base"
-                                placeholder="https://facebook.com/vasstranica"
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-zinc-300 text-sm font-medium flex items-center gap-2">
-                                <svg className="w-4 h-4 text-pink-500" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                                </svg>
-                                Instagram
-                            </label>
-                            <input
-                                {...register("socialLinks.instagram")}
-                                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-pink-500 text-base"
-                                placeholder="https://instagram.com/vasstranica"
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-zinc-300 text-sm font-medium flex items-center gap-2">
-                                <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                                </svg>
-                                LinkedIn
-                            </label>
-                            <input
-                                {...register("socialLinks.linkedin")}
-                                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-blue-600 text-base"
-                                placeholder="https://linkedin.com/company/vasstranica"
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-zinc-300 text-sm font-medium flex items-center gap-2">
-                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                                </svg>
-                                Twitter / X
-                            </label>
-                            <input
-                                {...register("socialLinks.twitter")}
-                                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-zinc-400 text-base"
-                                placeholder="https://twitter.com/vasstranica"
-                            />
-                        </div>
-                    </div>
-               </div>
-
-                </div>
-
-                {/* Services */}
-                <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-5 sm:p-6 space-y-5 sm:space-y-6">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
-                                3
-                            </div>
-                            <h2 className="text-base sm:text-lg font-bold text-white">Usluge / Proizvodi</h2>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => append({ name: "", description: "", imageUrl: "" })}
-                            className="text-green-500 font-bold flex items-center gap-2 hover:text-green-400 transition-colors px-3 sm:px-4 py-2 rounded-lg hover:bg-green-500/10"
-                        >
-                            <Plus size={18} />
-                            <span className="hidden sm:inline">Dodaj</span>
+                {/* ── 3. Services ── */}
+                <Section number="3" title="Usluge / Proizvodi">
+                    <div className="flex justify-end -mt-2">
+                        <button type="button" onClick={() => appendService({ name: "", description: "", imageUrl: "", cta: { type: 'contact', label: '', url: '' } })}
+                            className="text-green-500 font-bold flex items-center gap-2 hover:text-green-400 transition-colors px-3 py-2 rounded-lg hover:bg-green-500/10">
+                            <Plus size={18} /><span className="hidden sm:inline">Dodaj</span>
                         </button>
                     </div>
-
                     <div className="space-y-4">
-                        {fields.map((field, index) => (
+                        {serviceFields.map((field, i) => (
                             <div key={field.id} className="bg-zinc-950/50 border border-zinc-700 rounded-xl p-4 sm:p-5 space-y-4">
-                                <div className="flex items-center justify-between mb-3">
-                                    <span className="text-zinc-400 text-sm font-bold">Usluga #{index + 1}</span>
-                                    {fields.length > 1 && (
-                                        <button
-                                            type="button"
-                                            onClick={() => remove(index)}
-                                            className="text-red-400 hover:text-red-300 transition-colors p-2"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
-                                    )}
+                                <div className="flex items-center justify-between">
+                                    <span className="text-zinc-400 text-sm font-bold">Usluga #{i + 1}</span>
+                                    {serviceFields.length > 1 && <button type="button" onClick={() => removeService(i)} className="text-red-400 hover:text-red-300 p-2"><Trash2 size={16} /></button>}
                                 </div>
-
-                                <div className="space-y-4">
-                                    <input
-                                        {...register(`services.${index}.name`)}
-                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3.5 text-white focus:outline-none focus:border-green-500 text-base"
-                                        placeholder="Naziv usluge"
-                                    />
-
-                                    <textarea
-                                        {...register(`services.${index}.description`)}
-                                        rows={2}
-                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3.5 text-white focus:outline-none focus:border-green-500 resize-none text-base"
-                                        placeholder="Kratak opis (opcionalno)"
-                                    />
-
-                                    <ImageUploadBox
-                                        field={`services.${index}.imageUrl`}
-                                        label="Slika usluge (opcionalno)"
-                                        currentUrl={watch(`services.${index}.imageUrl`)}
-                                    />
-                                </div>
+                                <input {...register(`services.${i}.name`)} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3.5 text-white focus:outline-none focus:border-green-500 text-base" placeholder="Naziv usluge" />
+                                <textarea {...register(`services.${i}.description`)} rows={2} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3.5 text-white focus:outline-none focus:border-green-500 resize-none text-base" placeholder="Kratak opis (opcionalno)" />
+                                <ImageUploadBox field={`services.${i}.imageUrl`} label="Slika usluge (opcionalno)" currentUrl={watch(`services.${i}.imageUrl`)} />
+                                <CtaSelector prefix={`services.${i}.cta`} register={register} watch={watch} setValue={setValue} />
                             </div>
                         ))}
                     </div>
                     {errors.services && <span className="text-red-400 text-xs">{errors.services.message}</span>}
-                </div>
+                </Section>
 
-                {/* Submit - Sticky on mobile */}
+                {/* ── Contact ── */}
+                <Section icon="📧" title="Kontakt">
+                    <div className="grid sm:grid-cols-2 gap-5">
+                        <div className="space-y-2">
+                            <label className="text-zinc-300 text-sm font-medium">Email</label>
+                            <input {...register("email")} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-green-500 text-base" placeholder="info@mojbiznis.hr" />
+                            {errors.email && <span className="text-red-400 text-xs">{errors.email.message}</span>}
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-zinc-300 text-sm font-medium">Telefon (Opcionalno)</label>
+                            <input {...register("phone")} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-green-500 text-base" placeholder="+385 91 123 4567" />
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-zinc-300 text-sm font-medium flex items-center gap-2"><MapPin size={16} className="text-zinc-500" />Adresa (Opcionalno)</label>
+                        <input {...register("address")} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-green-500 text-base" placeholder="Ilica 1, 10000 Zagreb" />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-zinc-300 text-sm font-medium flex items-center gap-2"><MapPin size={16} className="text-zinc-500" />Google Maps Embed URL (Opcionalno)</label>
+                        <input {...register("mapEmbed")} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-green-500 text-sm" placeholder="https://www.google.com/maps/embed?pb=..." />
+                        <p className="text-zinc-600 text-xs">Kopirajte "src" iz Google Maps embed koda</p>
+                    </div>
+                </Section>
+
+                {/* ── Working Hours ── */}
+                <Section icon={<Clock size={16} />} title="Radno Vrijeme" subtitle="Opcionalno" collapsible defaultOpen={false}>
+                    {hoursFields.length === 0 ? (
+                        <button type="button" onClick={() => DEFAULT_HOURS.forEach((h, i) => { setValue(`workingHours.${i}`, h); })}
+                            className="w-full py-4 border-2 border-dashed border-zinc-700 rounded-xl text-zinc-500 hover:text-green-400 hover:border-green-500/50 transition-all flex items-center justify-center gap-2">
+                            <Plus size={18} />Dodaj radno vrijeme
+                        </button>
+                    ) : (
+                        <div className="space-y-2">
+                            {hoursFields.map((field, i) => {
+                                const isClosed = watch(`workingHours.${i}.closed`);
+                                return (
+                                    <div key={field.id} className="flex items-center gap-3 bg-zinc-950/50 border border-zinc-800 rounded-lg p-3">
+                                        <span className="w-24 text-sm text-zinc-300 font-medium flex-shrink-0">{watch(`workingHours.${i}.day`)}</span>
+                                        <label className="flex items-center gap-2 cursor-pointer flex-shrink-0">
+                                            <input type="checkbox" {...register(`workingHours.${i}.closed`)} className="accent-red-500 w-4 h-4" />
+                                            <span className="text-xs text-zinc-500">Zatvoreno</span>
+                                        </label>
+                                        {!isClosed && (
+                                            <div className="flex items-center gap-2 flex-1">
+                                                <input type="time" {...register(`workingHours.${i}.from`)} className="bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-white text-sm focus:outline-none focus:border-green-500" />
+                                                <span className="text-zinc-600">—</span>
+                                                <input type="time" {...register(`workingHours.${i}.to`)} className="bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-white text-sm focus:outline-none focus:border-green-500" />
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </Section>
+
+                {/* ── Social Links ── */}
+                <Section icon="🌐" title="Društvene Mreže" subtitle="Opcionalno" collapsible defaultOpen={false}>
+                    <div className="grid sm:grid-cols-2 gap-5">
+                        <div className="space-y-2">
+                            <label className="text-zinc-300 text-sm font-medium">Facebook</label>
+                            <input {...register("socialLinks.facebook")} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-blue-500 text-base" placeholder="https://facebook.com/..." />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-zinc-300 text-sm font-medium">Instagram</label>
+                            <input {...register("socialLinks.instagram")} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-pink-500 text-base" placeholder="https://instagram.com/..." />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-zinc-300 text-sm font-medium">LinkedIn</label>
+                            <input {...register("socialLinks.linkedin")} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-blue-600 text-base" placeholder="https://linkedin.com/..." />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-zinc-300 text-sm font-medium">Twitter / X</label>
+                            <input {...register("socialLinks.twitter")} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-zinc-400 text-base" placeholder="https://twitter.com/..." />
+                        </div>
+                    </div>
+                </Section>
+
+                {/* ── SEO ── */}
+                <Section icon={<Globe size={16} />} title="SEO Podešavanja" subtitle="Opcionalno - za bolju vidljivost" collapsible defaultOpen={false}>
+                    <div className="space-y-2">
+                        <label className="text-zinc-300 text-sm font-medium flex items-center justify-between">
+                            <span>Meta Naslov</span>
+                            <span className={`text-xs ${metaTitle?.length > 60 ? 'text-red-400' : 'text-zinc-600'}`}>{metaTitle?.length || 0}/60</span>
+                        </label>
+                        <input {...register("metaTitle")} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-green-500 text-base" placeholder="npr. Profesionalne Vodoinstalaterske Usluge" />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-zinc-300 text-sm font-medium flex items-center justify-between">
+                            <span>Meta Opis</span>
+                            <span className={`text-xs ${metaDescription?.length > 160 ? 'text-red-400' : 'text-zinc-600'}`}>{metaDescription?.length || 0}/160</span>
+                        </label>
+                        <textarea {...register("metaDescription")} rows={3} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-green-500 resize-none text-base" placeholder="Kratak opis..." />
+                    </div>
+                </Section>
+
+                {/* ── Testimonials ── */}
+                <Section icon={<Star size={16} />} title="Testimonijali / Recenzije" subtitle="Opcionalno" collapsible defaultOpen={false}>
+                    <div className="flex justify-end -mt-2">
+                        <button type="button" onClick={() => appendTestimonial({ name: "", text: "", role: "", rating: 5, imageUrl: "" })}
+                            className="text-green-500 font-bold flex items-center gap-2 hover:text-green-400 px-3 py-2 rounded-lg hover:bg-green-500/10"><Plus size={18} />Dodaj</button>
+                    </div>
+                    {testimonialFields.length === 0 ? (
+                        <p className="text-zinc-600 text-sm text-center py-4">Dodajte recenzije vaših klijenata</p>
+                    ) : (
+                        <div className="space-y-4">
+                            {testimonialFields.map((field, i) => (
+                                <div key={field.id} className="bg-zinc-950/50 border border-zinc-700 rounded-xl p-4 space-y-3">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-zinc-400 text-sm font-bold">Recenzija #{i + 1}</span>
+                                        <button type="button" onClick={() => removeTestimonial(i)} className="text-red-400 hover:text-red-300 p-1"><Trash2 size={16} /></button>
+                                    </div>
+                                    <div className="grid sm:grid-cols-2 gap-3">
+                                        <input {...register(`testimonials.${i}.name`)} placeholder="Ime klijenta" className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-green-500" />
+                                        <input {...register(`testimonials.${i}.role`)} placeholder="Pozicija / Tvrtka (opcionalno)" className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-green-500" />
+                                    </div>
+                                    <textarea {...register(`testimonials.${i}.text`)} rows={2} placeholder="Što klijent kaže..." className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-green-500 resize-none" />
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-zinc-500 text-xs">Ocjena:</span>
+                                        <div className="flex gap-1">
+                                            {[1, 2, 3, 4, 5].map(star => (
+                                                <button key={star} type="button" onClick={() => setValue(`testimonials.${i}.rating`, star)}
+                                                    className={`text-lg ${watch(`testimonials.${i}.rating`) >= star ? 'text-yellow-400' : 'text-zinc-700'} hover:text-yellow-400 transition-colors`}>★</button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </Section>
+
+                {/* ── FAQ ── */}
+                <Section icon={<HelpCircle size={16} />} title="FAQ — Često Postavljana Pitanja" subtitle="Opcionalno" collapsible defaultOpen={false}>
+                    <div className="flex justify-end -mt-2">
+                        <button type="button" onClick={() => appendFaq({ question: "", answer: "" })}
+                            className="text-green-500 font-bold flex items-center gap-2 hover:text-green-400 px-3 py-2 rounded-lg hover:bg-green-500/10"><Plus size={18} />Dodaj</button>
+                    </div>
+                    {faqFields.length === 0 ? (
+                        <p className="text-zinc-600 text-sm text-center py-4">Dodajte pitanja i odgovore za vašu stranicu</p>
+                    ) : (
+                        <div className="space-y-4">
+                            {faqFields.map((field, i) => (
+                                <div key={field.id} className="bg-zinc-950/50 border border-zinc-700 rounded-xl p-4 space-y-3">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-zinc-400 text-sm font-bold">Pitanje #{i + 1}</span>
+                                        <button type="button" onClick={() => removeFaq(i)} className="text-red-400 hover:text-red-300 p-1"><Trash2 size={16} /></button>
+                                    </div>
+                                    <input {...register(`faq.${i}.question`)} placeholder="Pitanje..." className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-green-500" />
+                                    <textarea {...register(`faq.${i}.answer`)} rows={2} placeholder="Odgovor..." className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-green-500 resize-none" />
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </Section>
+
+                {/* ── Gallery ── */}
+                <Section icon={<Images size={16} />} title="Galerija Slika" subtitle="Opcionalno — portfolio, proizvodi, reference" collapsible defaultOpen={false}>
+                    <div className="flex justify-end -mt-2">
+                        <button type="button" onClick={() => setMediaPickerField(`__gallery_${galleryFields.length}`)}
+                            className="text-green-500 font-bold flex items-center gap-2 hover:text-green-400 px-3 py-2 rounded-lg hover:bg-green-500/10"><Plus size={18} />Iz knjižnice</button>
+                    </div>
+                    {mediaPickerField?.startsWith('__gallery_') && (
+                        <MediaPickerModal onSelect={url => { appendGallery({ imageUrl: url, caption: "" }); setMediaPickerField(null); }} onClose={() => setMediaPickerField(null)} />
+                    )}
+                    {galleryFields.length === 0 ? (
+                        <p className="text-zinc-600 text-sm text-center py-4">Dodajte slike iz Media knjižnice za galeriju</p>
+                    ) : (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                            {galleryFields.map((field, i) => (
+                                <div key={field.id} className="relative group rounded-xl overflow-hidden border border-zinc-800">
+                                    <img src={watch(`gallery.${i}.imageUrl`)} alt="" className="w-full aspect-square object-cover" />
+                                    <button type="button" onClick={() => removeGallery(i)} className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={12} /></button>
+                                    <input {...register(`gallery.${i}.caption`)} placeholder="Opis..." className="absolute bottom-0 inset-x-0 bg-black/70 text-white text-xs px-2 py-1.5 focus:outline-none" />
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </Section>
+
+                {/* ── Pricing ── */}
+                <Section icon={<DollarSign size={16} />} title="Cjenik / Paketi" subtitle="Opcionalno" collapsible defaultOpen={false}>
+                    <div className="flex justify-end -mt-2">
+                        <button type="button" onClick={() => appendPricing({ name: "", price: "", description: "", features: [], highlighted: false })}
+                            className="text-green-500 font-bold flex items-center gap-2 hover:text-green-400 px-3 py-2 rounded-lg hover:bg-green-500/10"><Plus size={18} />Dodaj paket</button>
+                    </div>
+                    {pricingFields.length === 0 ? (
+                        <p className="text-zinc-600 text-sm text-center py-4">Dodajte cjenik ili pakete usluga</p>
+                    ) : (
+                        <div className="space-y-4">
+                            {pricingFields.map((field, i) => (
+                                <div key={field.id} className="bg-zinc-950/50 border border-zinc-700 rounded-xl p-4 space-y-3">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-zinc-400 text-sm font-bold">Paket #{i + 1}</span>
+                                        <div className="flex items-center gap-3">
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <input type="checkbox" {...register(`pricing.${i}.highlighted`)} className="accent-green-500 w-4 h-4" />
+                                                <span className="text-xs text-zinc-500">Istaknuto</span>
+                                            </label>
+                                            <button type="button" onClick={() => removePricing(i)} className="text-red-400 hover:text-red-300 p-1"><Trash2 size={16} /></button>
+                                        </div>
+                                    </div>
+                                    <div className="grid sm:grid-cols-2 gap-3">
+                                        <input {...register(`pricing.${i}.name`)} placeholder="Naziv paketa" className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-green-500" />
+                                        <input {...register(`pricing.${i}.price`)} placeholder="npr. 99€/mj" className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-green-500" />
+                                    </div>
+                                    <input {...register(`pricing.${i}.description`)} placeholder="Kratki opis paketa (opcionalno)" className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-green-500" />
+                                    <div className="space-y-1">
+                                        <label className="text-zinc-500 text-xs">Značajke (po jedna u redu)</label>
+                                        <textarea
+                                            value={(watch(`pricing.${i}.features`) || []).join('\n')}
+                                            onChange={e => setValue(`pricing.${i}.features`, e.target.value.split('\n').filter(Boolean))}
+                                            rows={3} placeholder={"✓ Neograničeni pozivi\n✓ 24/7 podrška\n✓ Besplatna instalacija"}
+                                            className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-green-500 resize-none font-mono" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </Section>
+
+                {/* ── Submit Buttons ── */}
                 <div className="sticky bottom-0 left-0 right-0 bg-black/90 backdrop-blur-md border-t border-zinc-800 p-4 sm:relative sm:bg-transparent sm:backdrop-blur-none sm:border-t-0 sm:pt-8 sm:p-0 -mx-4 sm:mx-0">
                     <div className="flex items-center justify-end gap-3 sm:gap-4">
-                        {/* Save Button - Always visible */}
-                        <button
-                            type="button"
-                            onClick={handleSubmit(onSave)}
-                            disabled={uploading || generating || saving || updating}
-                            className="flex-1 sm:flex-none bg-zinc-800 hover:bg-zinc-700 text-white px-6 sm:px-8 py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {(saving || updating) ? (
-                                <>
-                                    <Loader2 className="animate-spin" size={18} />
-                                    <span className="hidden sm:inline">
-                                        {updating ? 'Ažuriranje...' : 'Spremanje...'}
-                                    </span>
-                                    <span className="sm:hidden">...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                                    </svg>
-                                    <span className="hidden sm:inline">
-                                        {project.hasGenerated ? 'Ažuriraj Web Stranicu' : 'Spremi Podatke'}
-                                    </span>
-                                    <span className="sm:hidden">
-                                        {project.hasGenerated ? 'Ažuriraj' : 'Spremi'}
-                                    </span>
-                                </>
+                        <button type="button" onClick={handleSubmit(onSave)} disabled={uploading || generating || saving || updating}
+                            className="flex-1 sm:flex-none bg-zinc-800 hover:bg-zinc-700 text-white px-6 sm:px-8 py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50">
+                            {(saving || updating) ? <><Loader2 className="animate-spin" size={18} /><span className="hidden sm:inline">{updating ? 'Ažuriranje...' : 'Spremanje...'}</span></> : (
+                                <><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                                <span className="hidden sm:inline">{project.hasGenerated ? 'Ažuriraj Web Stranicu' : 'Spremi Podatke'}</span>
+                                <span className="sm:hidden">{project.hasGenerated ? 'Ažuriraj' : 'Spremi'}</span></>
                             )}
                         </button>
-
-                        {/* Generate Button - Only if not already generated */}
                         {!project.hasGenerated && (
-                            <button
-                                type="submit"
-                                disabled={uploading || generating || saving || updating}
-                                className="flex-1 sm:flex-none bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white px-8 sm:px-10 py-4 rounded-xl font-bold flex items-center justify-center gap-3 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-green-500/30 hover:shadow-green-500/50 hover:scale-105"
-                            >
-                                {generating ? (
-                                    <>
-                                        <Loader2 className="animate-spin" size={20} />
-                                        <span className="hidden sm:inline">Generiranje...</span>
-                                        <span className="sm:hidden">...</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Sparkles size={20} />
-                                        <span className="hidden sm:inline">Generiraj Web Stranicu</span>
-                                        <span className="sm:hidden">Generiraj</span>
-                                    </>
-                                )}
+                            <button type="submit" disabled={uploading || generating || saving || updating}
+                                className="flex-1 sm:flex-none bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white px-8 sm:px-10 py-4 rounded-xl font-bold flex items-center justify-center gap-3 transition-all disabled:opacity-50 shadow-lg shadow-green-500/30 hover:shadow-green-500/50 hover:scale-105">
+                                {generating ? <><Loader2 className="animate-spin" size={20} /><span className="hidden sm:inline">Generiranje...</span></> : <><Sparkles size={20} /><span className="hidden sm:inline">Generiraj Web Stranicu</span><span className="sm:hidden">Generiraj</span></>}
                             </button>
                         )}
                     </div>

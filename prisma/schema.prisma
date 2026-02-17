@@ -23,11 +23,14 @@ model User {
   stripeCustomerId   String?  @unique
   planName           String?  // Starter, Advanced, Web Shop Start
   phoneNumber        String?
+  role               String   @default("USER")  // USER, ADMIN
+  lastDripEmailSent  Int      @default(0)       // Track drip campaign step (0, 3, 7, 14)
 
   sessions         Session[]
   accounts         Account[]
   projects         Project[]
   invoices         Invoice[]
+  media            Media[]
 
   @@map("user")
 }
@@ -55,6 +58,16 @@ model Project {
   // Editor Token System
   editorTokens         Int      @default(500)  // Remaining tokens for AI edits (500 initial)
   editorTokensUsed     Int      @default(0)    // Total tokens consumed
+
+  // Blog
+  blogPosts            BlogPost[]
+  blogCategories       BlogCategory[]
+  blogPostsUsedThisMonth Int    @default(0)    // Monthly AI blog generation counter
+  blogPostsResetAt     DateTime?               // When the monthly counter was last reset
+
+  // Cancellation / Grace Period
+  cancelledAt          DateTime?
+  deletionReminders    String   @default("") // Comma-separated reminder days sent, e.g. "30,60,83"
 
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
@@ -133,4 +146,54 @@ model Invoice {
   updatedAt        DateTime @updatedAt
 
   @@map("invoice")
+}
+
+model Media {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId String?
+  filename  String
+  url       String
+  size      Int
+  type      String   // image/png, video/mp4, application/pdf, etc.
+  createdAt DateTime @default(now())
+
+  @@map("media")
+}
+
+model BlogPost {
+  id              String        @id @default(cuid())
+  projectId       String
+  project         Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title           String
+  slug            String
+  excerpt         String?
+  content         String        @db.Text
+  coverImage      String?
+  categoryId      String?
+  category        BlogCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  tags            String?       @db.Text  // Comma-separated tags
+  status          String        @default("DRAFT") // DRAFT, PUBLISHED
+  publishedAt     DateTime?
+  metaTitle       String?
+  metaDescription String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@unique([projectId, slug])
+  @@map("blog_post")
+}
+
+model BlogCategory {
+  id        String     @id @default(cuid())
+  projectId String
+  project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name      String
+  slug      String
+  posts     BlogPost[]
+  createdAt DateTime   @default(now())
+
+  @@unique([projectId, slug])
+  @@map("blog_category")
 }

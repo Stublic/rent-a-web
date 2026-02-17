@@ -49,20 +49,19 @@ const plans = [
     buttonColor: "bg-green-500 text-white hover:bg-green-400"
   },
   {
-    name: "Web Shop Start",
-    price: "199",
+    name: "Growth",
+    price: "59",
     features: [
-      "Web shop do 20 proizvoda",
-      "Košarica i checkout",
-      "Kartično plaćanje (Stripe)",
-      "Hosting i održavanje",
-      "Osnovni SEO",
-      "Moderan, responzivan dizajn",
-      "Integracija sa E-računi, SOLO, Synesis..."
+      "Sve iz Advanced paketa",
+      "Blog sustav (20 članaka/mj)",
+      "AI pisanje blog članaka",
+      "Premium SEO optimizacija",
+      "Prioritetna podrška",
+      "Custom domena uključena"
     ],
-    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_WEBSHOP,
-    description: "Krenite u online prodaju bez velikog ulaganja.",
-    targetAudience: "Mali webshopovi, prodaja proizvoda",
+    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_BUSINESS,
+    description: "Za biznise koji žele rasti i privlačiti klijente putem sadržaja.",
+    targetAudience: "Rastući biznisi, uslužne djelatnosti",
     color: "bg-zinc-800",
     textColor: "text-white",
     buttonColor: "bg-white text-black hover:bg-zinc-200"

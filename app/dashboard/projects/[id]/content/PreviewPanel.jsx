@@ -16,10 +16,10 @@ export default function PreviewPanel({ project }) {
         return null;
     }
 
+    const previewUrl = `/api/site/${project.id}/preview`;
+
     const openInNewTab = () => {
-        const blob = new Blob([project.generatedHtml], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
+        window.open(previewUrl, '_blank');
     };
 
     return (
@@ -97,7 +97,11 @@ function PreviewIframe({ html, iframeKey }) {
                                     element.scrollIntoView({ behavior: 'smooth' });
                                 }
                             }
-                            // Block app routes
+                            // Blog/API links open in new tab
+                            else if (href.startsWith('/api/site/')) {
+                                window.open(href, '_blank');
+                            }
+                            // Block other app routes
                             else if (href.startsWith('/')) {
                                 console.log('Prevented navigation to:', href);
                             }

@@ -41,17 +41,28 @@ export async function POST(req) {
             console.log(`💰 Price ID from Stripe: ${priceId}`);
             console.log(`📋 Env Starter: ${process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_STARTER}`);
             console.log(`📋 Env Advanced: ${process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_ADVANCED}`);
-            console.log(`📋 Env Webshop: ${process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_WEBSHOP}`);
+            console.log(`📋 Env Business: ${process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_BUSINESS}`);
 
-            // Map price ID to plan name
-            let planName = "Custom";
-            if (priceId === process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_STARTER) planName = "Starter - Landing stranica";
-            else if (priceId === process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_ADVANCED) planName = "Advanced - Landing stranica + Google oglasi";
-            else if (priceId === process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_WEBSHOP) planName = "Web Shop Start";
+            // Map price ID to plan name using env vars + hardcoded fallback
+            const PRICE_PLAN_MAP = {
+                [process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_STARTER]: "Starter - Landing stranica",
+                [process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_ADVANCED]: "Advanced - Landing stranica + Google oglasi",
+                [process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_BUSINESS]: "Growth",
+                // Hardcoded fallbacks in case env vars are not set
+                'price_1SxaGbKhkXukXczcwVqlzrOx': "Starter - Landing stranica",
+                'price_1SxaHAKhkXukXczc0cPpLMH2': "Advanced - Landing stranica + Google oglasi",
+                'price_1T0S19KhkXukXczcZhmjaqSF': "Growth",
+            };
 
-            console.log(`🏷️ Determined Plan Name: ${planName}`);
+            // Check if this is a renewal — use planName from metadata if available
+            const renewProjectId = session.metadata?.renewProjectId;
+            const metadataPlanName = session.metadata?.planName;
 
+            let planName = metadataPlanName || PRICE_PLAN_MAP[priceId] || "Custom";
+
+            console.log(`🏷️ Determined Plan Name: ${planName} (from ${metadataPlanName ? 'metadata' : 'price map'})`);
             console.log(`💰 Subscription created: ${planName} for ${customerEmail}`);
+            if (renewProjectId) console.log(`🔄 Renewal request for project: ${renewProjectId}`);
 
             // 2. Find or create user
             let user = await prisma.user.findUnique({
@@ -65,21 +76,63 @@ export async function POST(req) {
             }
 
             if (user) {
-                // Create new project for this subscription
-                const projectCount = await prisma.project.count({
-                    where: { userId: user.id }
-                });
-                const newProjectName = `${planName} Web`;
+                let newProject;
 
-                const newProject = await prisma.project.create({
-                    data: {
-                        userId: user.id,
-                        name: newProjectName,
-                        planName: planName,
-                        stripeSubscriptionId: subscriptionId,
-                        status: 'DRAFT',
+                if (renewProjectId) {
+                    // Reactivate existing cancelled project
+                    const existingProject = await prisma.project.findFirst({
+                        where: { id: renewProjectId, userId: user.id }
+                    });
+
+                    if (existingProject) {
+                        newProject = await prisma.project.update({
+                            where: { id: renewProjectId },
+                            data: {
+                                stripeSubscriptionId: subscriptionId,
+                                cancelledAt: null,
+                                deletionReminders: '',
+                                planName: planName,
+                            }
+                        });
+                        console.log(`🔄 Renewed project: ${newProject.name} (${newProject.id})`);
+                    } else {
+                        // Project not found — try without userId filter (maybe user was found via different path)
+                        const projectAny = await prisma.project.findUnique({
+                            where: { id: renewProjectId }
+                        });
+                        if (projectAny) {
+                            newProject = await prisma.project.update({
+                                where: { id: renewProjectId },
+                                data: {
+                                    stripeSubscriptionId: subscriptionId,
+                                    cancelledAt: null,
+                                    deletionReminders: '',
+                                    planName: planName,
+                                }
+                            });
+                            console.log(`🔄 Renewed project (cross-user match): ${newProject.name} (${newProject.id})`);
+                        } else {
+                            console.log(`⚠️ Renewal requested but project ${renewProjectId} not found — skipping project creation`);
+                        }
                     }
-                });
+                    // NEVER create a new project for renewals — either reactivate or skip
+                }
+
+                if (!newProject && !renewProjectId) {
+                    // Create new project ONLY for fresh subscriptions (NOT renewals)
+                    const newProjectName = `${planName} Web`;
+
+                    newProject = await prisma.project.create({
+                        data: {
+                            userId: user.id,
+                            name: newProjectName,
+                            planName: planName,
+                            stripeSubscriptionId: subscriptionId,
+                            status: 'DRAFT',
+                        }
+                    });
+                    console.log(`✅ Created project: ${newProject.name} (${newProject.id})`);
+                }
 
                 // Update user subscription status
                 await prisma.user.update({
@@ -91,7 +144,6 @@ export async function POST(req) {
                     }
                 });
 
-                console.log(`✅ Created project: ${newProject.name} (${newProject.id})`);
 
                 // 3. Solo fiscal receipt
                 let invoiceNumber = null;
@@ -242,6 +294,66 @@ export async function POST(req) {
             }
         } catch (error) {
             console.error('❌ Webhook processing error:', error.message);
+        }
+    }
+
+    // Handle subscription cancellation
+    if (event.type === 'customer.subscription.deleted') {
+        const subscription = event.data.object;
+        const subscriptionId = subscription.id;
+
+        console.log(`🗑️ Subscription deleted: ${subscriptionId}`);
+
+        try {
+            const project = await prisma.project.findFirst({
+                where: { stripeSubscriptionId: subscriptionId }
+            });
+
+            if (project) {
+                await prisma.project.update({
+                    where: { id: project.id },
+                    data: {
+                        stripeSubscriptionId: null,
+                        cancelledAt: project.cancelledAt || new Date(),
+                        deletionReminders: project.deletionReminders || '',
+                    }
+                });
+                console.log(`✅ Cleared subscription from project: ${project.name} (${project.id})`);
+            } else {
+                console.log(`⚠️ No project found for subscription: ${subscriptionId}`);
+            }
+        } catch (error) {
+            console.error('❌ Error handling subscription deletion:', error.message);
+        }
+    }
+
+    // Handle subscription status updates (e.g. canceled but not yet deleted)
+    if (event.type === 'customer.subscription.updated') {
+        const subscription = event.data.object;
+        const subscriptionId = subscription.id;
+
+        if (subscription.status === 'canceled' || subscription.cancel_at_period_end) {
+            console.log(`⚠️ Subscription canceled/canceling: ${subscriptionId}`);
+
+            try {
+                const project = await prisma.project.findFirst({
+                    where: { stripeSubscriptionId: subscriptionId }
+                });
+
+                if (project && subscription.status === 'canceled') {
+                    await prisma.project.update({
+                        where: { id: project.id },
+                        data: {
+                            stripeSubscriptionId: null,
+                            cancelledAt: project.cancelledAt || new Date(),
+                            deletionReminders: project.deletionReminders || '',
+                        }
+                    });
+                    console.log(`✅ Cleared subscription from project: ${project.name} (${project.id})`);
+                }
+            } catch (error) {
+                console.error('❌ Error handling subscription update:', error.message);
+            }
         }
     }
 

@@ -32,9 +32,11 @@ export async function updateContentAction(projectId: string, formData: any) {
         return { error: 'Neispravni podaci.' };
     }
 
-    // 4. Get project
+    // 4. Get project (admin can access any project)
+    const currentUser = await prisma.user.findUnique({ where: { id: session.user.id }, select: { role: true } });
+    const isAdmin = currentUser?.role === 'ADMIN';
     const project = await prisma.project.findUnique({
-        where: { id: projectId, userId: session.user.id }
+        where: isAdmin ? { id: projectId } : { id: projectId, userId: session.user.id }
     });
 
     if (!project) {
@@ -73,6 +75,33 @@ export async function updateContentAction(projectId: string, formData: any) {
         }
         if (JSON.stringify(oldData?.socialLinks) !== JSON.stringify(data.socialLinks)) {
             changes.push(`Social links updated`);
+        }
+        if (oldData?.primaryColor !== data.primaryColor || oldData?.secondaryColor !== data.secondaryColor || oldData?.backgroundColor !== data.backgroundColor || oldData?.textColor !== data.textColor) {
+            changes.push(`Colors updated: primary=${data.primaryColor}${data.secondaryColor ? `, secondary=${data.secondaryColor}` : ''}${data.backgroundColor ? `, bg=${data.backgroundColor}` : ''}${data.textColor ? `, text=${data.textColor}` : ''}`);
+        }
+        if (JSON.stringify(oldData?.heroCta) !== JSON.stringify(data.heroCta)) {
+            changes.push(`Hero CTA updated: type=${data.heroCta?.type}, label="${data.heroCta?.label || ''}"`);
+        }
+        if (oldData?.address !== data.address) {
+            changes.push(`Address: "${oldData?.address || 'N/A'}" → "${data.address || 'N/A'}"`);
+        }
+        if (oldData?.mapEmbed !== data.mapEmbed) {
+            changes.push(`Google Maps embed updated`);
+        }
+        if (JSON.stringify(oldData?.workingHours) !== JSON.stringify(data.workingHours)) {
+            changes.push(`Working hours updated`);
+        }
+        if (JSON.stringify(oldData?.testimonials) !== JSON.stringify(data.testimonials)) {
+            changes.push(`Testimonials updated (${oldData?.testimonials?.length || 0} → ${data.testimonials?.length || 0})`);
+        }
+        if (JSON.stringify(oldData?.faq) !== JSON.stringify(data.faq)) {
+            changes.push(`FAQ updated (${oldData?.faq?.length || 0} → ${data.faq?.length || 0})`);
+        }
+        if (JSON.stringify(oldData?.gallery) !== JSON.stringify(data.gallery)) {
+            changes.push(`Gallery updated (${oldData?.gallery?.length || 0} → ${data.gallery?.length || 0})`);
+        }
+        if (JSON.stringify(oldData?.pricing) !== JSON.stringify(data.pricing)) {
+            changes.push(`Pricing updated (${oldData?.pricing?.length || 0} → ${data.pricing?.length || 0})`);
         }
 
         if (changes.length === 0) {

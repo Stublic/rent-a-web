@@ -170,12 +170,12 @@ const AIConsultant = () => {
 
       const prompt = `Ti si vrhunski prodajni strateg i web dizajner. Korisnik opisuje svoj posao: "${businessInput}".
         
-        Tvoj cilj je oduševiti korisnika i pokazati mu da je web stranica investicija, a ne trošak. Guraj najčešće Advanced paket, Web Shop Start isključivo ako je online prodaja.
+        Tvoj cilj je oduševiti korisnika i pokazati mu da je web stranica investicija, a ne trošak. Guraj najčešće Advanced paket, Paket za poduzetnike za korisnike koji trebaju više web stranica.
         Vrati SAMO JSON objekt (bez markdowna) sa sljedećim poljima na hrvatskom:
 
         {
           "slogan": "Kreativan i pamtljiv slogan",
-          "package": "Starter, Advanced ili Web Shop Start",
+          "package": "Starter, Advanced ili Paket za poduzetnike",
           "reason": "Zašto baš taj paket",
           "roi_analysis": {
              "break_even": "Koliko prodaja/usluga je potrebno da se pokrije mjesečna pretplata (npr. 'Samo 2 šišanja mjesečno pokrivaju trošak!')",
@@ -556,7 +556,7 @@ const ContactForm = () => {
           onChange={handleChange}
           required
           className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500/50 transition-all placeholder:text-zinc-600 resize-none"
-          placeholder="Zanima me paket Web Shop Start..."
+          placeholder="Zanima me paket za poduzetnike..."
         ></textarea>
       </div>
 
@@ -968,22 +968,21 @@ const App = () => {
 
             <FadeIn delay={300} className="h-full">
               <PricingCard
-                title="Web Shop Start"
-                price="199"
+                title="Paket za poduzetnike"
+                price="399"
                 icon={ShoppingBag}
-                priceId="price_1SxaHkKhkXukXczcEyO1eXFe"
+                priceId="price_1T0S19KhkXukXczcZhmjaqSF"
                 onCheckout={handleCheckout}
                 loading={checkoutLoading}
-                description="Krenite u online prodaju bez velikog ulaganja."
-                targetAudience="Mali webshopovi, prodaja proizvoda"
+                description="Za poduzetnike s više brendova ili lokacija."
+                targetAudience="Agencije, franšize, više lokacija"
                 features={[
-                  "Web shop do 20 proizvoda",
-                  "Košarica i checkout",
-                  "Kartično plaćanje (Stripe)",
-                  "Hosting i održavanje",
-                  "Osnovni SEO",
-                  "Moderan, responzivan dizajn",
-                  "Integracija sa E-računi, SOLO, Synesis..."
+                  "5 profesionalnih web stranica",
+                  "Sve iz Advanced paketa × 5",
+                  "Zajednički dashboard za upravljanje",
+                  "Google Ads za sve stranice",
+                  "Prioritetna podrška",
+                  "Hosting i domene uključeni"
                 ]}
               />
             </FadeIn>
@@ -992,7 +991,7 @@ const App = () => {
           {/* EXTRAS */}
           <FadeIn delay={350}>
             <div className="max-w-4xl mx-auto mb-20">
-              <h3 className="text-xl font-bold text-white mb-6 text-center">Dodatne opcije za Web Shop</h3>
+              <h3 className="text-xl font-bold text-white mb-6 text-center">Dodatne opcije</h3>
               <div className="flex flex-col sm:flex-row justify-center gap-6">
                 <div className="flex items-center gap-3 bg-zinc-900 border border-zinc-800 p-4 rounded-xl flex-1">
                   <div className="p-2 bg-zinc-800 text-white rounded-lg"><Zap size={20} /></div>
@@ -1141,7 +1140,7 @@ const App = () => {
                 },
                 {
                   q: "Koliko brzo dobivam web stranicu?",
-                  a: "Landing page je gotov unutar 48 sati od trenutka kada zaprimimo sve podatke.\n\nWeb stranice i webshopovi u roku 5–7 radnih dana, ovisno o paketu."
+                  a: "Landing page je gotov unutar 48 sati od trenutka kada zaprimimo sve podatke.\n\nWeb stranice u roku 5–7 radnih dana, ovisno o paketu."
                 },
                 {
                   q: "Što ako želim prestati koristiti uslugu?",
@@ -1169,7 +1168,7 @@ const App = () => {
                 },
                 {
                   q: "Što je s Google oglasima?",
-                  a: "U Advanced paketu Google Ads su uključeni.\n\nZa Web Shop paket Google Ads se mogu dodati kao opcija uz dodatnu mjesečnu naknadu. Budžet za oglase nije uključen."
+                  a: "U Advanced paketu Google Ads su uključeni.\n\nZa Paket za poduzetnike Google Ads su uključeni za sve stranice. Budžet za oglase nije uključen."
                 },
                 {
                   q: "Jesu li cijene konačne?",
@@ -1233,8 +1232,8 @@ const App = () => {
           </div>
           <div className="flex gap-8 text-sm font-medium">
             <a href="/auth/login" className="hover:text-white transition-colors">Korisnici</a>
-            <a href="#" className="hover:text-white transition-colors">Politika privatnosti</a>
-            <a href="#" className="hover:text-white transition-colors">Uvjeti korištenja</a>
+            <a href="/politika-privatnosti" className="hover:text-white transition-colors">Politika privatnosti</a>
+            <a href="/uvjeti-koristenja" className="hover:text-white transition-colors">Uvjeti korištenja</a>
             <a href="#contact" className="hover:text-white transition-colors">Kontakt</a>
           </div>
           <div className="text-sm">

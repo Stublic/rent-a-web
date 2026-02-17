@@ -1,10 +1,7 @@
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { prisma } from '@/lib/prisma';
-import Stripe from 'stripe';
 import { NextResponse } from 'next/server';
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export async function GET() {
     try {
@@ -24,15 +21,31 @@ export async function GET() {
             return NextResponse.json({ error: "User not found" }, { status: 404 });
         }
 
+        // Fetch all projects with subscription info
+        const projects = await prisma.project.findMany({
+            where: { userId: session.user.id },
+            select: {
+                id: true,
+                name: true,
+                planName: true,
+                stripeSubscriptionId: true,
+                status: true,
+                editorTokens: true,
+                hasGenerated: true,
+                cancelledAt: true,
+                createdAt: true,
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        // Fetch invoices
         let invoices = [];
         try {
-            console.log(`🔍 Fetching invoices for user: ${session.user.id}`);
             const dbInvoices = await prisma.invoice.findMany({
                 where: { userId: session.user.id },
                 orderBy: { createdAt: 'desc' },
-                take: 12
+                take: 20
             });
-            console.log(`📊 Found ${dbInvoices.length} invoices in DB for user ${session.user.id}`);
 
             invoices = dbInvoices.map(inv => ({
                 id: inv.id,
@@ -40,7 +53,8 @@ export async function GET() {
                 amount: inv.amount.toFixed(2),
                 currency: "EUR",
                 status: inv.status,
-                pdfUrl: inv.pdfUrl
+                pdfUrl: inv.pdfUrl,
+                description: inv.description,
             }));
         } catch (dbError) {
             console.error("Database invoice fetch error:", dbError);
@@ -49,6 +63,7 @@ export async function GET() {
         return NextResponse.json({
             subscriptionStatus: user.subscriptionStatus,
             planName: user.planName,
+            projects,
             invoices
         });
 

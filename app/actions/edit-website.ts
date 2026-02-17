@@ -28,9 +28,11 @@ export async function editWebsiteAction(projectId: string, editRequest: string) 
         return { error: 'Niste prijavljeni.' };
     }
 
-    // 3. Get project
+    // 3. Get project (admin can access any project)
+    const currentUser = await prisma.user.findUnique({ where: { id: session.user.id }, select: { role: true } });
+    const isAdmin = currentUser?.role === 'ADMIN';
     const project = await prisma.project.findUnique({
-        where: { id: projectId, userId: session.user.id }
+        where: isAdmin ? { id: projectId } : { id: projectId, userId: session.user.id }
     });
 
     if (!project || !project.generatedHtml) {
@@ -173,8 +175,10 @@ export async function undoLastEditAction(projectId: string) {
         return { error: 'Niste prijavljeni.' };
     }
 
+    const currentUser = await prisma.user.findUnique({ where: { id: session.user.id }, select: { role: true } });
+    const isAdmin = currentUser?.role === 'ADMIN';
     const project = await prisma.project.findUnique({
-        where: { id: projectId, userId: session.user.id }
+        where: isAdmin ? { id: projectId } : { id: projectId, userId: session.user.id }
     });
 
     if (!project) {

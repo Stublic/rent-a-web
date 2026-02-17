@@ -131,6 +131,55 @@ export async function generateWebsiteAction(projectId: string, formData: any) {
         const templateInstructions = getTemplatePrompt(data.template || 'modern', data.industry);
 
         // 8. Generate Content with Gemini
+        // Build clean data payload (filter out empty arrays to reduce prompt size)
+        const cleanData: any = { ...data, stockImages };
+        ['testimonials', 'faq', 'gallery', 'pricing', 'workingHours'].forEach(key => {
+            if (Array.isArray(cleanData[key]) && cleanData[key].length === 0) delete cleanData[key];
+        });
+        if (!cleanData.address) delete cleanData.address;
+        if (!cleanData.mapEmbed) delete cleanData.mapEmbed;
+        if (!cleanData.secondaryColor) delete cleanData.secondaryColor;
+        if (!cleanData.backgroundColor) delete cleanData.backgroundColor;
+        if (!cleanData.textColor) delete cleanData.textColor;
+
+        // Build conditional section instructions
+        const conditionalSections: string[] = [];
+        let sectionNum = 7;
+
+        if (data.testimonials && data.testimonials.length > 0) {
+            conditionalSections.push(`${sectionNum++}. **Testimonials Section**: Display customer testimonials as cards with name, role, text and star rating (1-5). Use attractive card layout.`);
+        }
+        if (data.faq && data.faq.length > 0) {
+            conditionalSections.push(`${sectionNum++}. **FAQ Section**: Render FAQ as an interactive accordion. Each question expands/collapses on click using vanilla JS.`);
+        }
+        if (data.gallery && data.gallery.length > 0) {
+            conditionalSections.push(`${sectionNum++}. **Gallery Section**: Photo gallery grid with lightbox effect (click to enlarge). Show captions if provided.`);
+        }
+        if (data.pricing && data.pricing.length > 0) {
+            conditionalSections.push(`${sectionNum++}. **Pricing Section**: Pricing cards in a row. If "highlighted" is true, make that card visually prominent. Show features as a list with checkmarks.`);
+        }
+        if (data.workingHours && data.workingHours.length > 0) {
+            conditionalSections.push(`${sectionNum++}. **Working Hours**: Show business hours in the contact section as a clean table (day + hours, or "Zatvoreno" if closed).`);
+        }
+        if (data.mapEmbed) {
+            conditionalSections.push(`${sectionNum++}. **Map**: Embed Google Maps iframe in the contact section using the provided mapEmbed URL.`);
+        }
+
+        // Build CTA instruction
+        const heroCta = data.heroCta || { type: 'contact', label: '', url: '' };
+        let ctaInstruction = '';
+        if (heroCta.type === 'contact') ctaInstruction = `Main CTA button scrolls to the contact form section. Label: "${heroCta.label || 'Kontaktirajte nas'}"\n`;
+        else if (heroCta.type === 'phone') ctaInstruction = `Main CTA button links to tel:${data.phone}. Label: "${heroCta.label || 'Nazovite nas'}"\n`;
+        else if (heroCta.type === 'email') ctaInstruction = `Main CTA button links to mailto:${data.email}. Label: "${heroCta.label || 'Pošaljite email'}"\n`;
+        else if (heroCta.type === 'whatsapp') ctaInstruction = `Main CTA button links to https://wa.me/${(data.phone || '').replace(/[^0-9]/g, '')}. Label: "${heroCta.label || 'WhatsApp'}"\n`;
+        else if (heroCta.type === 'link') ctaInstruction = `Main CTA button links to ${heroCta.url}. Label: "${heroCta.label || 'Saznaj više'}"\n`;
+
+        // Colors instruction
+        let colorInstruction = `Primary brand color: ${data.primaryColor}.`;
+        if (data.secondaryColor) colorInstruction += ` Secondary/accent color: ${data.secondaryColor}.`;
+        if (data.backgroundColor) colorInstruction += ` Page background: ${data.backgroundColor}.`;
+        if (data.textColor) colorInstruction += ` Main text color: ${data.textColor}.`;
+
         const prompt = `
 You are a Senior Frontend Engineer and UI/UX Designer.
 Your task: Generate a SINGLE, self-contained HTML file for a landing page based on the client's data.
@@ -139,7 +188,7 @@ Your task: Generate a SINGLE, self-contained HTML file for a landing page based 
 1.  **Output:** Return ONLY valid HTML code. Start with <!DOCTYPE html>. Do NOT use markdown tags (\`\`\`html).
 2.  **Framework:** Use Tailwind CSS via CDN.
     - <script src="https://cdn.tailwindcss.com"></script>
-    - Configure Tailwind theme in a <script> tag to use the client's \`primaryColor\` as the main brand color.
+    - Configure Tailwind theme in a <script> tag. ${colorInstruction}
 3.  **Animations:** Use GSAP + ScrollTrigger via CDN.
     - <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     - <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
@@ -148,64 +197,37 @@ Your task: Generate a SINGLE, self-contained HTML file for a landing page based 
     - Use metaTitle for <title> tag (or generate from businessName if empty)
     - Use metaDescription for <meta name="description"> (or generate if empty)
     - Include Open Graph tags for social sharing
-    - Add meta keywords if provided
 5.  **Images:**
     - logoUrl: ${data.logoUrl || 'none'}
     - heroImageUrl: ${data.heroImageUrl || stockImages.hero || 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1200'}
     - aboutImageUrl: ${data.aboutImageUrl || stockImages.about || 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800'}
     - featuresImageUrl: ${data.featuresImageUrl || stockImages.features || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200'}
     - servicesBackgroundUrl: ${data.servicesBackgroundUrl || stockImages.servicesBackground || ''}
-    - For each service with imageUrl, use that image. If missing, use Unsplash/Pexels URLs related to the service name.
 6.  **Design Template:**
 ${templateInstructions}
 
+**CTA BUTTONS:**
+${ctaInstruction}For each service that has a cta config, add a matching CTA button to that service card.
+CTA types: contact = scroll to contact, phone = tel: link, email = mailto: link, whatsapp = wa.me link, link = external href.
+
 **CONTENT STRUCTURE:**
-1. **Navbar**: Logo (if provided), navigation links (O nama, Usluge, Galerija, Kontakt), CTA button
-2. **Hero Section**: 
-   - Large, impactful heading with business name
-   - Compelling subheading based on description
-   - 2 CTA buttons (Kontaktirajte nas, Naše usluge)
-   - Background: heroImageUrl with overlay
-3. **About Section**:
-   - Heading "O nama" or creative variant
-   - Expand on the description with persuasive copy
-   - Include aboutImageUrl on the side
-4. **Features Section**:
-   - 3-4 key benefits/features (infer from industry and description)
-   - Icon grid or card layout
-   - Use featuresImageUrl as background if provided
-5. **Services Section**:
-   - List all services from the services array
-   - Each service should have:
-     * Icon or image (use service.imageUrl if provided, otherwise infer)
-     * Name (service.name)
-     * Description (service.description or generate compelling one)
-   - Use servicesBackgroundUrl if provided
-6. **Contact Form Section**:
-   - Working HTML form with fields: Name, Email, Phone, Message
-   - Form does NOT need to submit (just HTML)
-   - Display contact email and phone
-7. **Footer**:
-   - Business name
-   - Contact information
-   - Copyright year
-   - Social media placeholders (if relevant)
+1. **Navbar**: Logo (if provided), navigation links, CTA button
+2. **Hero Section**: Large heading, compelling subheading, CTA buttons, heroImageUrl background with overlay
+3. **About Section**: "O nama" heading, persuasive copy, aboutImageUrl
+4. **Features Section**: 3-4 key benefits, icon/card layout, featuresImageUrl
+5. **Services Section**: All services with name, description, image, and CTA button if configured
+6. **Contact Section**: HTML form (Name, Email, Phone, Message - non-functional), display email/phone${data.address ? '/address' : ''}
+${conditionalSections.join('\n')}
+${sectionNum}. **Footer**: Business name, contact info, copyright, social links
 
 **TONE & COPY:**
-Write professional, persuasive marketing copy in Croatian language that:
-- Builds trust and credibility
-- Highlights unique value proposition
-- Uses industry-appropriate terminology
-- Includes strong CTAs
+Professional, persuasive marketing copy in Croatian language. Strong CTAs, industry-appropriate terminology.
 
-**CLIENT DATA (JSON):**
-${JSON.stringify({
-            ...data,
-            stockImages, // Include fetched stock images
-        }, null, 2)}
+**CLIENT DATA:**
+${JSON.stringify(cleanData, null, 2)}
 
 **OUTPUT:**
-Only the HTML code. No explanations, no markdown, no comments outside HTML comments.
+Only the HTML code. No explanations, no markdown.
 `;
 
         console.log('🤖 Calling Gemini API...');
@@ -213,7 +235,7 @@ Only the HTML code. No explanations, no markdown, no comments outside HTML comme
         const result = await Promise.race([
             model.generateContent(prompt),
             new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('AI timeout')), 60000) // 60 second timeout
+                setTimeout(() => reject(new Error('AI timeout')), 120000) // 120 second timeout
             )
         ]) as any;
 

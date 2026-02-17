@@ -89,7 +89,7 @@ async function main() {
                             let planName = "Custom Plan";
                             if (price.id === process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_STARTER) planName = "Starter";
                             if (price.id === process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_ADVANCED) planName = "Advanced";
-                            if (price.id === process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_WEBSHOP) planName = "Web Shop Start";
+                            if (price.id === process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_BUSINESS) planName = "Paket za poduzetnike";
 
                             // Fallback to fetching product
                             if (planName === "Custom Plan") {
