@@ -199,7 +199,7 @@ function PhaseResult({ site }) {
                 muted
                 playsInline
                 loop
-                className="w-full h-full object-cover object-top"
+                className="w-full h-full object-contain bg-black"
                 initial={{ opacity: 0, scale: 1.02 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.6, ease: 'easeOut' }}

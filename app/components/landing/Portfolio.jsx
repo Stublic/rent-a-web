@@ -130,6 +130,14 @@ function PreviewPanel({ project }) {
                         onLoad={() => setLoaded(true)}
                         sandbox="allow-scripts allow-same-origin allow-forms"
                     />
+                    {/* Transparent overlay — absorbs horizontal swipe gestures so the page
+                        doesn't scroll inside the iframe. touch-action:pan-y passes vertical
+                        panning to the OS but blocks horizontal swipes. */}
+                    <div
+                        className="absolute inset-0"
+                        style={{ touchAction: 'pan-y', pointerEvents: 'auto' }}
+                        aria-hidden="true"
+                    />
                 </div>
 
                 {/* ── Footer ── */}
