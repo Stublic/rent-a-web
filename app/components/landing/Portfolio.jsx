@@ -109,7 +109,7 @@ function PreviewPanel({ project }) {
                 </div>
 
                 {/* ── Iframe ── */}
-                <div className="relative w-full" style={{ height: 560, overflowX: 'hidden' }}>
+                <div className="relative w-full" style={{ height: 560, overflowX: 'hidden', touchAction: 'pan-y' }}>
                     {!loaded && (
                         <div
                             className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10"
@@ -343,7 +343,7 @@ export default function Portfolio() {
                     {/* Scrollable strip */}
                     <div
                         ref={scrollRef}
-                        className="flex gap-3 overflow-x-auto pb-2"
+                        className="flex flex-nowrap gap-3 overflow-x-auto pb-2"
                         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                     >
                         {loading

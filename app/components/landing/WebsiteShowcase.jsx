@@ -420,8 +420,8 @@ export default function WebsiteShowcase() {
                     </motion.div>
                 </div>
 
-                {/* Content area */}
-                <div className="relative aspect-[16/9]">
+                {/* Content area — fixed height so content isn't cut on narrow screens */}
+                <div className="relative" style={{ height: 360 }}>
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={`${site.id}-${phase}`}
