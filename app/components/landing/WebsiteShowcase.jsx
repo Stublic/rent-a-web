@@ -17,7 +17,7 @@ const SITES = [
         color: '#f59e0b',
         prompt: 'Kistić i Sin — obiteljska građevinska firma s 20+ godina iskustva u Zagrebu.',
         img: '/examples/kisticisin.png',
-        video: '/examples/kistic-i-sin.mov',
+        video: 'https://e0rdnm7yvj57qqp1.public.blob.vercel-storage.com/examples/kistic-i-sin.mov',
         logs: [
             'Analiziranje industrije...',
             'Generiranje navigacije...',
@@ -45,7 +45,7 @@ const SITES = [
         color: '#ec4899',
         prompt: 'Mama Blogerica — blog o roditeljstvu, receptima i obiteljskim avanturama.',
         img: '/examples/mama-blogerica.png',
-        video: '/examples/mama-blogerica.mov',
+        video: 'https://e0rdnm7yvj57qqp1.public.blob.vercel-storage.com/examples/mama-blogerica.mov',
         logs: [
             'Analiziranje teme...',
             'Generiranje blog layouta...',
