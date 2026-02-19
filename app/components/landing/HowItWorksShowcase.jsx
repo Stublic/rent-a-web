@@ -668,8 +668,10 @@ function MobileStepWrapper({ step, index: i, StepMockup }) {
 ───────────────────────────────────────────── */
 export default function HowItWorksShowcase() {
     const [active, setActive] = useState(0);
-    const [autoplay, setAutoplay] = useState(true);
+    const [autoplay, setAutoplay] = useState(false); // starts false, enabled when in view
     const timerRef = useRef(null);
+    const sectionRef = useRef(null);
+    const isInView = useInView(sectionRef, { margin: '-20% 0px -20% 0px' });
 
     const startAutoplay = () => {
         clearInterval(timerRef.current);
@@ -678,10 +680,17 @@ export default function HowItWorksShowcase() {
         }, 5500);
     };
 
+    // Pause when out of view, resume when back in view
     useEffect(() => {
-        if (autoplay) startAutoplay();
+        if (isInView) {
+            setAutoplay(true);
+            startAutoplay();
+        } else {
+            setAutoplay(false);
+            clearInterval(timerRef.current);
+        }
         return () => clearInterval(timerRef.current);
-    }, [autoplay]);
+    }, [isInView]);
 
     const handleStepClick = (i) => {
         setActive(i);
@@ -694,6 +703,7 @@ export default function HowItWorksShowcase() {
     return (
         <section
             id="how-it-works"
+            ref={sectionRef}
             className="py-24 relative overflow-hidden"
             style={{ background: 'var(--lp-bg)', borderTop: '1px solid var(--lp-border)' }}
         >

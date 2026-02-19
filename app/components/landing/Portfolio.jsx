@@ -109,7 +109,7 @@ function PreviewPanel({ project }) {
                 </div>
 
                 {/* ── Iframe ── */}
-                <div className="relative w-full" style={{ height: 560 }}>
+                <div className="relative w-full" style={{ height: 560, overflowX: 'hidden' }}>
                     {!loaded && (
                         <div
                             className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10"
@@ -126,6 +126,7 @@ function PreviewPanel({ project }) {
                         src={project.url}
                         title={project.name}
                         className="absolute inset-0 w-full h-full border-0"
+                        style={{ overflowX: 'hidden' }}
                         onLoad={() => setLoaded(true)}
                         sandbox="allow-scripts allow-same-origin allow-forms"
                     />
@@ -316,7 +317,7 @@ export default function Portfolio() {
                 {active && <PreviewPanel project={active} />}
 
                 {/* ── Horizontal card strip ── */}
-                <div className="mt-6 relative">
+                <div className="mt-8 relative">
                     {/* Prev / Next arrows */}
                     {projects.length > 1 && (
                         <>

@@ -1,13 +1,56 @@
 'use client';
-import { ArrowRight, Star } from 'lucide-react';
+import { ArrowRight, Star, Zap } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import WebsiteShowcase from './WebsiteShowcase';
+
+function HeroBadge() {
+  const [count, setCount] = useState(null);
+
+  useEffect(() => {
+    fetch('/api/stats/count')
+      .then(r => r.json())
+      .then(d => setCount(d.count ?? null))
+      .catch(() => {});
+  }, []);
+
+  return (
+    <div className="flex justify-center lg:justify-start mb-8">
+      <div
+        className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full shadow-sm"
+        style={{
+          background: 'var(--lp-surface)',
+          border: '1px solid var(--lp-border)',
+          animation: 'fade-up 0.7s ease-out',
+          color: 'var(--lp-text)',
+        }}
+      >
+        {/* Live pulse dot */}
+        <span className="relative flex h-2 w-2 flex-shrink-0">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+        </span>
+
+        <span className="text-xs font-semibold" style={{ color: 'var(--lp-text-secondary)' }}>
+          {count !== null ? (
+            <>
+              <strong style={{ color: 'var(--lp-heading)' }}>{count}</strong>
+              {' '}stranica je online
+            </>
+          ) : (
+            'Webica je online'
+          )}
+          {' '}— pridruži se i ti!
+        </span>
+      </div>
+    </div>
+  );
+}
 
 export default function Hero() {
   return (
     <section className="relative pt-32 pb-20 lg:pt-40 lg:pb-32 px-6 overflow-hidden" style={{ background: 'var(--lp-bg)' }}>
 
-      {/* ── Background pattern — light mode: subtle grid, dark mode: dot grid ── */}
-      {/* Grid lines (light mode) */}
+      {/* ── Background grid ── */}
       <div
         className="absolute inset-0 z-0 pointer-events-none"
         style={{
@@ -16,7 +59,6 @@ export default function Hero() {
           maskImage: 'radial-gradient(ellipse 80% 60% at 50% 50%, black 30%, transparent 100%)',
         }}
       />
-      {/* Dot grid overlay (dark mode via --lp-dot-color) */}
       <div
         className="absolute inset-0 z-0 pointer-events-none"
         style={{
@@ -25,43 +67,24 @@ export default function Hero() {
           maskImage: 'radial-gradient(ellipse 80% 60% at 50% 50%, black 30%, transparent 100%)',
         }}
       />
-      {/* Radial gradient glow in the center */}
       <div
         className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] pointer-events-none z-0"
-        style={{
-          background: 'radial-gradient(ellipse at center top, var(--lp-hero-glow, transparent), transparent 70%)',
-        }}
+        style={{ background: 'radial-gradient(ellipse at center top, var(--lp-hero-glow, transparent), transparent 70%)' }}
       />
 
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
 
-        {/* Text Content */}
+        {/* ── Text ── */}
         <div className="text-center lg:text-left">
-          {/* Badge */}
-          <div className="flex justify-center lg:justify-start mb-8">
-            <div
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full shadow-sm"
-              style={{
-                background: 'var(--lp-surface)',
-                border: '1px solid var(--lp-border)',
-                animation: 'fade-up 0.7s ease-out',
-                color: 'var(--lp-text)'
-              }}
-            >
-              <span className="flex h-2 w-2 rounded-full animate-pulse bg-current" />
-              <span className="text-xs font-semibold uppercase tracking-wide opacity-80">
-                Dostupno odmah · Bez obveze
-              </span>
-            </div>
-          </div>
+          <HeroBadge />
 
-          {/* Headline */}
           <h1
             className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight mb-6 leading-[1.1]"
             style={{ color: 'var(--lp-heading)', animation: 'fade-up 0.7s ease-out 0.1s both' }}
           >
-            Pokreni web stranicu u <span className="underline decoration-wavy decoration-2 underline-offset-4 decoration-current opacity-80">5 minuta</span>,
-            <br className="hidden lg:block"/>već od 39€/mjesečno.
+            Pokreni web stranicu u{' '}
+            <span className="underline decoration-wavy decoration-2 underline-offset-4 decoration-current opacity-80">5 minuta</span>,
+            <br className="hidden lg:block" />već od 39€/mjesečno.
           </h1>
 
           <p
@@ -76,28 +99,20 @@ export default function Hero() {
             <a
               href="/try"
               className="w-full sm:w-auto px-8 py-4 rounded-xl font-bold shadow-lg transition-all transform hover:-translate-y-0.5 hover:shadow-xl flex items-center justify-center gap-2"
-              style={{
-                background: 'var(--lp-heading)',
-                color: 'var(--lp-bg)',
-                boxShadow: '0 8px 30px rgba(0,0,0,0.1)'
-              }}
+              style={{ background: 'var(--lp-heading)', color: 'var(--lp-bg)', boxShadow: '0 8px 30px rgba(0,0,0,0.1)' }}
             >
-              Isprobaj besplatno
-              <ArrowRight size={18} />
+              Isprobaj besplatno <ArrowRight size={18} />
             </a>
             <a
               href="#pricing"
               className="w-full sm:w-auto px-8 py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 hover:bg-[var(--lp-surface-hover)]"
-              style={{
-                border: '1px solid var(--lp-border)',
-                color: 'var(--lp-text)',
-              }}
+              style={{ border: '1px solid var(--lp-border)', color: 'var(--lp-text)' }}
             >
               Pogledaj cijene
             </a>
           </div>
 
-          {/* Social Proof */}
+          {/* Social proof */}
           <div className="mt-10 flex items-center justify-center lg:justify-start gap-4" style={{ animation: 'fade-up 0.7s ease-out 0.4s both' }}>
             <div className="flex -space-x-3">
               {[1, 2, 3, 4].map(i => (
@@ -115,8 +130,14 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* Showcase */}
-        <div className="relative mt-12 lg:mt-0" style={{ animation: 'fade-up 0.7s ease-out 0.5s both' }}>
+        {/* ── Showcase ──
+            Na mobitelu: normalna visina bez ograničenja (showcase sam definira aspect-ratio).
+            Na desktopu: mt-0 da se vertikalno centrira s tekstom.
+        ── */}
+        <div
+          className="relative mt-8 lg:mt-0 w-full"
+          style={{ animation: 'fade-up 0.7s ease-out 0.5s both' }}
+        >
           <WebsiteShowcase />
         </div>
       </div>
