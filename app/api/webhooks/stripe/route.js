@@ -118,20 +118,32 @@ export async function POST(req) {
                     // NEVER create a new project for renewals — either reactivate or skip
                 }
 
+
                 if (!newProject && !renewProjectId) {
                     // Create new project ONLY for fresh subscriptions (NOT renewals)
-                    const newProjectName = `${planName} Web`;
+                    const trialBusinessName = session.metadata?.trialBusinessName;
+                    const trialBusinessDescription = session.metadata?.trialBusinessDescription;
+                    const newProjectName = trialBusinessName || `${planName} Web`;
 
-                    newProject = await prisma.project.create({
-                        data: {
-                            userId: user.id,
-                            name: newProjectName,
-                            planName: planName,
-                            stripeSubscriptionId: subscriptionId,
-                            status: 'DRAFT',
-                        }
-                    });
-                    console.log(`✅ Created project: ${newProject.name} (${newProject.id})`);
+                    const projectData = {
+                        userId: user.id,
+                        name: newProjectName,
+                        planName: planName,
+                        stripeSubscriptionId: subscriptionId,
+                        status: 'DRAFT',
+                    };
+
+                    // If trial data exists, pre-fill contentData
+                    if (trialBusinessName) {
+                        projectData.contentData = {
+                            businessName: trialBusinessName,
+                            businessDescription: trialBusinessDescription || '',
+                        };
+                        console.log(`🆓 Trial data attached: "${trialBusinessName}"`);
+                    }
+
+                    newProject = await prisma.project.create({ data: projectData });
+                    console.log(`✅ Created project: ${newProject.name} (${newProject.id})${trialBusinessName ? ' [from trial]' : ''}`);
                 }
 
                 // Update user subscription status

@@ -13,7 +13,18 @@ export async function POST(req) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { priceId } = await req.json();
+        const { priceId, trialData } = await req.json();
+
+        // Build metadata — include trial info if coming from /try flow
+        const metadata = {
+            userId: session.user.id,
+        };
+        if (trialData?.businessName) {
+            metadata.trialBusinessName = trialData.businessName.substring(0, 500);
+        }
+        if (trialData?.businessDescription) {
+            metadata.trialBusinessDescription = trialData.businessDescription.substring(0, 500);
+        }
 
         // Create Checkout Session
         const checkoutSession = await stripe.checkout.sessions.create({
@@ -26,11 +37,9 @@ export async function POST(req) {
                     quantity: 1,
                 },
             ],
-            success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?success=true`,
+            success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?success=true&fromTrial=${trialData ? 'true' : 'false'}`,
             cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/new-project?canceled=true`,
-            metadata: {
-                userId: session.user.id,
-            },
+            metadata,
         });
 
         return NextResponse.json({ url: checkoutSession.url });

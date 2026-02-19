@@ -5,12 +5,7 @@
   --foreground: #171717;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+
 
 @media (prefers-color-scheme: dark) {
   :root {
@@ -29,24 +24,50 @@ body {
 .tiptap {
   outline: none;
 }
+
 .tiptap p {
   margin: 0.75em 0;
 }
-.tiptap h1, .tiptap h2, .tiptap h3 {
+
+.tiptap h1,
+.tiptap h2,
+.tiptap h3 {
   font-weight: 700;
   margin: 1.25em 0 0.5em;
   line-height: 1.3;
 }
-.tiptap h1 { font-size: 2em; }
-.tiptap h2 { font-size: 1.5em; color: #a3e635; }
-.tiptap h3 { font-size: 1.25em; }
-.tiptap ul, .tiptap ol {
+
+.tiptap h1 {
+  font-size: 2em;
+}
+
+.tiptap h2 {
+  font-size: 1.5em;
+  color: #a3e635;
+}
+
+.tiptap h3 {
+  font-size: 1.25em;
+}
+
+.tiptap ul,
+.tiptap ol {
   padding-left: 1.5em;
   margin: 0.75em 0;
 }
-.tiptap ul { list-style-type: disc; }
-.tiptap ol { list-style-type: decimal; }
-.tiptap li { margin: 0.25em 0; }
+
+.tiptap ul {
+  list-style-type: disc;
+}
+
+.tiptap ol {
+  list-style-type: decimal;
+}
+
+.tiptap li {
+  margin: 0.25em 0;
+}
+
 .tiptap blockquote {
   border-left: 3px solid #22c55e;
   padding-left: 1em;
@@ -54,19 +75,255 @@ body {
   color: #a1a1aa;
   font-style: italic;
 }
-.tiptap a { color: #22c55e; text-decoration: underline; }
+
+.tiptap a {
+  color: #22c55e;
+  text-decoration: underline;
+}
+
 .tiptap img {
   max-width: 100%;
   height: auto;
   border-radius: 0.75rem;
   margin: 1em 0;
 }
-.tiptap strong { font-weight: 700; }
-.tiptap em { font-style: italic; }
+
+.tiptap strong {
+  font-weight: 700;
+}
+
+.tiptap em {
+  font-style: italic;
+}
+
 .tiptap p.is-editor-empty:first-child::before {
   color: #3f3f46;
   content: attr(data-placeholder);
   float: left;
   height: 0;
   pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════
+   LANDING PAGE THEME SYSTEM
+   ═══════════════════════════════════════════════════════ */
+
+[data-landing="true"] {
+  --lp-bg: #000000;
+  --lp-bg-alt: #09090b;
+  --lp-surface: #18181b;
+  --lp-surface-hover: #27272a;
+  --lp-border: #27272a;
+  --lp-border-hover: #3f3f46;
+  --lp-text: #fafafa;
+  --lp-text-secondary: #a1a1aa;
+  --lp-text-muted: #71717a;
+  --lp-heading: #ffffff;
+  --lp-card: #09090b;
+  --lp-card-border: #27272a;
+  --lp-nav-bg: rgba(0, 0, 0, 0.8);
+
+  /* Semantic Colors ONLY - No longer used as primary accents */
+  --lp-accent-green: #22c55e;
+  --lp-accent-orange: #f59e0b;
+  --lp-accent-red: #ef4444;
+  --lp-accent-blue: #3b82f6;
+
+  /* Monochrome Gradients */
+  --lp-gradient-1: #18181b;
+  --lp-gradient-2: #000000;
+  --lp-selection-bg: rgba(255, 255, 255, 0.2);
+  --lp-selection-text: #fff;
+
+  /* Hero background pattern — dark mode */
+  --lp-grid-line: rgba(255, 255, 255, 0.04);
+  --lp-dot-color: rgba(139, 92, 246, 0.18);
+  --lp-hero-glow: rgba(109, 40, 217, 0.12);
+}
+
+/* Fix light mode selector to match what ThemeProvider sets */
+:root[data-theme="light"] [data-landing="true"],
+[data-landing="true"][data-theme="light"] {
+  --lp-bg: #ffffff;
+  --lp-bg-alt: #fafafa;
+  --lp-surface: #f4f4f5;
+  --lp-surface-hover: #e4e4e7;
+  --lp-border: #e4e4e7;
+  --lp-border-hover: #d4d4d8;
+  --lp-text: #09090b;
+  --lp-text-secondary: #52525b;
+  --lp-text-muted: #71717a;
+  --lp-heading: #000000;
+  --lp-card: #ffffff;
+  --lp-card-border: #e4e4e7;
+  --lp-nav-bg: rgba(255, 255, 255, 0.8);
+
+  --lp-gradient-1: #f4f4f5;
+  --lp-gradient-2: #ffffff;
+  --lp-selection-bg: #000000;
+  --lp-selection-text: #ffffff;
+
+  /* Hero background pattern — light mode */
+  --lp-grid-line: rgba(0, 0, 0, 0.06);
+  --lp-dot-color: transparent;
+  --lp-hero-glow: transparent;
+}
+
+/* ═══════════════════════════════════════════════════════
+   KEYFRAME ANIMATIONS
+   ═══════════════════════════════════════════════════════ */
+
+@keyframes gradient-move {
+
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.7;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes word-swap {
+
+  0%,
+  20% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  25%,
+  30% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+
+  35%,
+  55% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  60%,
+  65% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+
+  70%,
+  90% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  95%,
+  100% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes step-draw {
+  0% {
+    stroke-dashoffset: 100;
+  }
+
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   UTILITY CLASSES
+   ═══════════════════════════════════════════════════════ */
+
+.lp-grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+  opacity: 0.04;
+  pointer-events: none;
+  z-index: 1;
+  mix-blend-mode: overlay;
+}
+
+.lp-marquee {
+  animation: marquee 30s linear infinite;
+}
+
+.lp-marquee:hover {
+  animation-play-state: paused;
+}
+
+.lp-gradient-text {
+  background: linear-gradient(135deg, var(--lp-heading) 0%, var(--lp-text-muted) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.lp-glass {
+  background: var(--lp-nav-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }

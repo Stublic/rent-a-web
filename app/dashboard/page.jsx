@@ -69,6 +69,59 @@ export default function DashboardPage() {
         }
     }, []);
 
+    // Handle trial claim after purchase
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const fromTrial = params.get('fromTrial');
+        const success = params.get('success');
+
+        if (success === 'true' && fromTrial === 'true') {
+            try {
+                const trialRaw = localStorage.getItem('rentaweb_trial');
+                if (trialRaw) {
+                    const trialData = JSON.parse(trialRaw);
+                    if (trialData.generatedHtml) {
+                        // Find the newest project (just created by webhook) and claim trial HTML
+                        fetch('/api/projects')
+                            .then(res => res.json())
+                            .then(projects => {
+                                if (Array.isArray(projects) && projects.length > 0) {
+                                    const newest = projects[0]; // Already sorted by createdAt desc
+                                    if (!newest.hasGenerated) {
+                                        fetch('/api/try/claim', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                                projectId: newest.id,
+                                                generatedHtml: trialData.generatedHtml,
+                                                businessName: trialData.businessName,
+                                                businessDescription: trialData.businessDescription,
+                                            }),
+                                        }).then(res => res.json()).then(data => {
+                                            if (data.success) {
+                                                console.log('✅ Trial claimed for project:', newest.id);
+                                                localStorage.removeItem('rentaweb_trial');
+                                                // Refresh to show the project with generated HTML
+                                                window.location.reload();
+                                            }
+                                        }).catch(err => console.error('Trial claim error:', err));
+                                    }
+                                }
+                            })
+                            .catch(err => console.error('Failed to fetch projects for trial claim:', err));
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to parse trial data:', e);
+            }
+
+            // Clean up URL params
+            const url = new URL(window.location.href);
+            url.searchParams.delete('fromTrial');
+            window.history.replaceState({}, '', url.pathname + url.search);
+        }
+    }, []);
+
     if (isPending) {
         return (
             <div className="min-h-screen bg-black flex items-center justify-center">
