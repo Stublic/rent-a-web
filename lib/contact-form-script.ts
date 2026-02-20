@@ -3,12 +3,12 @@
  * This script intercepts all contact-like forms and POSTs to the Webica API.
  */
 export function getContactFormScript(projectId: string): string {
-    return `
+  return `
 <script data-webica-contact-v2>
 // ─── Webica Contact Form Handler v2 ─────────────────────────────────────
 (function() {
   var PROJECT_ID = '${projectId}';
-  var API_URL = 'https://webica.hr/api/site/' + PROJECT_ID + '/contact';
+  var API_URL = '/api/site/' + PROJECT_ID + '/contact';
 
   document.querySelectorAll('form').forEach(function(form) {
     if (form.dataset.webicaHandled) return;
@@ -80,19 +80,19 @@ export function getContactFormScript(projectId: string): string {
  * Safe to call multiple times — checks for existing v2 marker.
  */
 export function injectContactFormScript(html: string, projectId: string): string {
-    // Already has v2
-    if (html.includes('webica-contact-v2')) return html;
+  // Already has v2
+  if (html.includes('webica-contact-v2')) return html;
 
-    // Remove old v1 if present
-    let baseHtml = html;
-    if (baseHtml.includes('Webica Contact Form Handler')) {
-        baseHtml = baseHtml.replace(/<script>\s*\/\/ ─── Webica Contact Form Handler[\s\S]*?<\/script>/g, '');
-    }
+  // Remove old v1 if present
+  let baseHtml = html;
+  if (baseHtml.includes('Webica Contact Form Handler')) {
+    baseHtml = baseHtml.replace(/<script>\s*\/\/ ─── Webica Contact Form Handler[\s\S]*?<\/script>/g, '');
+  }
 
-    const script = getContactFormScript(projectId);
+  const script = getContactFormScript(projectId);
 
-    if (baseHtml.includes('</body>')) {
-        return baseHtml.replace('</body>', script + '\n</body>');
-    }
-    return baseHtml + '\n' + script;
+  if (baseHtml.includes('</body>')) {
+    return baseHtml.replace('</body>', script + '\n</body>');
+  }
+  return baseHtml + '\n' + script;
 }
