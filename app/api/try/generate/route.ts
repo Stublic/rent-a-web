@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 const genAI = GOOGLE_API_KEY ? new GoogleGenerativeAI(GOOGLE_API_KEY) : null;
 // Use same model as main generator
-const model = genAI ? genAI.getGenerativeModel({ model: 'gemini-2.5-pro-exp-03-25' }) : null;
+const model = genAI ? genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' }) : null;
 
 // Simple in-memory rate limiting
 const rateLimitMap = new Map<string, { windowStart: number; count: number }>();
