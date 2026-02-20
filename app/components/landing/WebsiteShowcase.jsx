@@ -70,7 +70,7 @@ const SITES = [
 /* ─── Phase durations (ms) ──────────────────────────────────── */
 const PHASE_TYPING = 3200;
 const PHASE_GEN = 1800;
-const PHASE_RESULT = 3500;
+const PHASE_RESULT = 6000;  // longer so the video is properly visible
 const PHASE_RESULTS = 5000;
 const CYCLE = PHASE_TYPING + PHASE_GEN + PHASE_RESULT + PHASE_RESULTS;
 
@@ -148,6 +148,14 @@ function PhaseGenerating({ site }) {
 
     return (
         <div className="flex flex-col gap-4 p-5 h-full">
+            {/* Hidden video preload — starts buffering while the loading animation plays */}
+            <video
+                src={site.video}
+                preload="auto"
+                muted
+                playsInline
+                style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
+            />
             <div className="flex items-center gap-3 mb-1">
                 <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: site.color + '20', border: `1px solid ${site.color}40` }}>
                     <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>
@@ -183,27 +191,52 @@ function PhaseGenerating({ site }) {
 /* ─── PhaseResult ────────────────────────────────────────────── */
 function PhaseResult({ site }) {
     const videoRef = useRef(null);
+    const [ready, setReady] = useState(false);
 
     useEffect(() => {
-        if (videoRef.current) {
-            videoRef.current.currentTime = 0;
-            videoRef.current.play().catch(() => {});
+        const v = videoRef.current;
+        if (!v) return;
+        v.currentTime = 0;
+
+        const onCanPlay = () => {
+            setReady(true);
+            v.play().catch(() => {});
+        };
+
+        // If already buffered (preloaded during generating phase), canplay fires instantly
+        if (v.readyState >= 3) {
+            onCanPlay();
+        } else {
+            v.addEventListener('canplay', onCanPlay, { once: true });
+            v.load();
         }
+
+        return () => v.removeEventListener('canplay', onCanPlay);
     }, [site.id]);
 
     return (
         <div className="relative h-full overflow-hidden">
-            <motion.video
+            <video
                 ref={videoRef}
                 src={site.video}
+                preload="auto"
                 muted
                 playsInline
                 loop
                 className="w-full h-full object-contain bg-black"
-                initial={{ opacity: 0, scale: 1.02 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.6, ease: 'easeOut' }}
+                style={{ opacity: ready ? 1 : 0, transition: 'opacity 0.2s ease' }}
             />
+            {/* Poster skeleton while buffering */}
+            {!ready && (
+                <div className="absolute inset-0 bg-zinc-900 flex items-center justify-center">
+                    <motion.div
+                        animate={{ opacity: [0.4, 0.9, 0.4] }}
+                        transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+                    >
+                        <Sparkles size={28} className="text-zinc-600" />
+                    </motion.div>
+                </div>
+            )}
             {/* Flash glow on reveal */}
             <motion.div
                 className="absolute inset-0 pointer-events-none"
@@ -218,7 +251,7 @@ function PhaseResult({ site }) {
                 style={{ background: '#16a34a22', border: '1px solid #16a34a60', color: '#4ade80' }}
                 initial={{ opacity: 0, scale: 0.8, y: -6 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                transition={{ delay: 0.5, duration: 0.4 }}
+                transition={{ delay: 0.3, duration: 0.4 }}
             >
                 <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
                 Stranica uživo
