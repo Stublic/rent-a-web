@@ -4,7 +4,7 @@
  */
 export function getContactFormScript(projectId: string): string {
   return `
-<script data-webica-contact-v2>
+<script data-webica-contact-v3>
 // ─── Webica Contact Form Handler v2 ─────────────────────────────────────
 (function() {
   var PROJECT_ID = '${projectId}';
@@ -80,11 +80,12 @@ export function getContactFormScript(projectId: string): string {
  * Safe to call multiple times — checks for existing v2 marker.
  */
 export function injectContactFormScript(html: string, projectId: string): string {
-  // Already has v2
-  if (html.includes('webica-contact-v2')) return html;
+  // Already has v3
+  if (html.includes('webica-contact-v3')) return html;
 
-  // Remove old v1 if present
+  // Remove old v1/v2 if present
   let baseHtml = html;
+  baseHtml = baseHtml.replace(/<script[^>]*data-webica-contact-v[12][^>]*>[\s\S]*?<\/script>/g, '');
   if (baseHtml.includes('Webica Contact Form Handler')) {
     baseHtml = baseHtml.replace(/<script>\s*\/\/ ─── Webica Contact Form Handler[\s\S]*?<\/script>/g, '');
   }
