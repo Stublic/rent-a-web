@@ -109,7 +109,7 @@ function PreviewPanel({ project }) {
                 </div>
 
                 {/* ── Iframe ── */}
-                <div className="relative w-full" style={{ height: 560, overflowX: 'hidden', touchAction: 'pan-y' }}>
+                <div className="relative w-full" style={{ height: 560 }}>
                     {!loaded && (
                         <div
                             className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10"
@@ -126,17 +126,8 @@ function PreviewPanel({ project }) {
                         src={project.url}
                         title={project.name}
                         className="absolute inset-0 w-full h-full border-0"
-                        style={{ overflowX: 'hidden' }}
                         onLoad={() => setLoaded(true)}
                         sandbox="allow-scripts allow-same-origin allow-forms"
-                    />
-                    {/* Transparent overlay — absorbs horizontal swipe gestures so the page
-                        doesn't scroll inside the iframe. touch-action:pan-y passes vertical
-                        panning to the OS but blocks horizontal swipes. */}
-                    <div
-                        className="absolute inset-0"
-                        style={{ touchAction: 'pan-y', pointerEvents: 'auto' }}
-                        aria-hidden="true"
                     />
                 </div>
 

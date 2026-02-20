@@ -357,15 +357,13 @@ function MockupChat() {
                         ))}
                     </div>
 
-                    {/* Review — animates in when AI adds it */}
-                    <div className="px-3 pb-3">
+                    <div className="px-3 pb-3" style={{ minHeight: 56 }}>
                         <AnimatePresence>
                             {showReview && (
                                 <motion.div
-                                    initial={{ opacity: 0, height: 0, y: 6 }}
-                                    animate={{ opacity: 1, height: 'auto', y: 0 }}
-                                    transition={{ duration: 0.45, ease: 'easeOut' }}
-                                    className="overflow-hidden"
+                                    initial={{ opacity: 0, scale: 0.96, y: 6 }}
+                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                    transition={{ duration: 0.4, ease: 'easeOut' }}
                                 >
                                     <motion.div
                                         className="border rounded-lg p-2"
@@ -383,7 +381,7 @@ function MockupChat() {
                                                     <span className="text-[8px] text-yellow-400">★★★★★</span>
                                                 </div>
                                                 <p className="text-[8px] text-zinc-500 leading-relaxed">
-                                                    "Odličan salon, Petra je prava profesionalka!"
+                                                    &quot;Odličan salon, Petra je prava profesionalka!&quot;
                                                 </p>
                                             </div>
                                         </div>

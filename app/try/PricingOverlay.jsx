@@ -111,29 +111,31 @@ export default function PricingOverlay({ onClose, trialData }) {
             <div className="absolute inset-0 bg-black/80 backdrop-blur-md" />
 
             {/* Content */}
-            <div className="relative z-10 max-w-5xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-                {/* Close button */}
-                {onClose && (
-                    <button
-                        onClick={onClose}
-                        className="absolute -top-2 -right-2 z-20 w-10 h-10 bg-zinc-800 hover:bg-zinc-700 rounded-full flex items-center justify-center text-zinc-400 hover:text-white transition-colors border border-zinc-700"
-                    >
-                        <X size={18} />
-                    </button>
-                )}
-
+            <div className="relative z-10 max-w-5xl w-full mx-4 max-h-[90dvh] overflow-y-auto rounded-2xl">
                 {/* Header */}
-                <div className="text-center mb-8">
-                    <h2 className="text-3xl font-bold text-white mb-3">
-                        Sviđa ti se? Nastavi graditi. 🚀
-                    </h2>
-                    <p className="text-zinc-400 text-lg">
-                        Tvoja stranica je spremna. Odaberi paket i preuzmi ju.
-                    </p>
+                <div className="sticky top-0 z-10 flex items-start justify-between gap-4 mb-8 pt-6 px-4 sm:px-6"
+                    style={{ background: 'inherit' }}
+                >
+                    <div>
+                        <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+                            Sviđa ti se? Nastavi graditi. 🚀
+                        </h2>
+                        <p className="text-zinc-400">
+                            Tvoja stranica je spremna. Odaberi paket i preuzmi ju.
+                        </p>
+                    </div>
+                    {onClose && (
+                        <button
+                            onClick={onClose}
+                            className="flex-shrink-0 w-9 h-9 bg-zinc-800 hover:bg-zinc-700 rounded-full flex items-center justify-center text-zinc-400 hover:text-white transition-colors border border-zinc-700 mt-1"
+                        >
+                            <X size={16} />
+                        </button>
+                    )}
                 </div>
 
                 {/* Plans */}
-                <div className="grid md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 px-4 sm:px-6">
                     {plans.map((plan) => {
                         const Icon = plan.icon;
                         return (
@@ -194,7 +196,7 @@ export default function PricingOverlay({ onClose, trialData }) {
                     })}
                 </div>
 
-                <p className="text-center text-xs text-zinc-600 mt-6">
+                <p className="text-center text-xs text-zinc-600 mt-6 pb-6 px-4">
                     Tvoja generirana stranica bit će sačuvana i čekati te u dashboardu nakon kupnje.
                 </p>
             </div>
