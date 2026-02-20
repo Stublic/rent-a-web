@@ -7,6 +7,7 @@ import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { contentSchema } from '@/lib/schemas';
+import { injectContactFormScript } from '@/lib/contact-form-script';
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 const genAI = GOOGLE_API_KEY ? new GoogleGenerativeAI(GOOGLE_API_KEY) : null;
@@ -202,12 +203,13 @@ ${changes.map(c => `- ${c}`).join('\n')}
             return { error: 'AI nije vratio ispravan HTML. Pokušajte ponovno.' };
         }
 
-        // 10. Update database
+        // 10. Update database — inject contact form JS
+        const finalHtml = injectContactFormScript(updatedHtml, projectId);
         await prisma.project.update({
             where: { id: projectId },
             data: {
                 contentData: data as any,
-                generatedHtml: updatedHtml,
+                generatedHtml: finalHtml,
                 name: data.businessName,
                 aiVersion: { increment: 1 }
             }

@@ -9,6 +9,7 @@ import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { generatePageImages } from '@/lib/ai-images';
 import { STYLES } from '@/app/try/StylePicker';
+import { injectContactFormScript } from '@/lib/contact-form-script';
 
 import { contentSchema } from '@/lib/schemas';
 
@@ -270,14 +271,15 @@ Only the HTML code. No explanations, no markdown.
 
         console.log('✅ HTML validated and sanitized');
 
-        // 8. Update Project with Result
+        // 8. Update Project with Result — inject contact form JS
+        const finalHtml = injectContactFormScript(text, projectId);
         await prisma.project.update({
             where: { id: projectId },
             data: {
-                generatedHtml: text,
+                generatedHtml: finalHtml,
                 status: "GENERATED",
-                name: data.businessName, // Osiguraj da ime ostane ažurirano
-                hasGenerated: true, // Označi da je web stranica generirana
+                name: data.businessName,
+                hasGenerated: true,
                 aiVersion: { increment: 1 }
             }
         });

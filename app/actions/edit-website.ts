@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
+import { injectContactFormScript } from '@/lib/contact-form-script';
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 if (!GOOGLE_API_KEY) {
@@ -120,10 +121,11 @@ ${project.generatedHtml}
         });
 
         // 9. Update database - consume tokens on success
+        const finalHtml = injectContactFormScript(modifiedHtml, projectId);
         await prisma.project.update({
             where: { id: projectId },
             data: {
-                generatedHtml: modifiedHtml,
+                generatedHtml: finalHtml,
                 editHistory: editHistory as any,
                 lastEditedAt: new Date(),
                 editorTokens: { decrement: TOKENS_PER_EDIT },
