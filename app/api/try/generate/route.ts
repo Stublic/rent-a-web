@@ -1,11 +1,12 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextResponse } from 'next/server';
+import { generatePageImages } from '@/lib/ai-images';
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 const genAI = GOOGLE_API_KEY ? new GoogleGenerativeAI(GOOGLE_API_KEY) : null;
 const model = genAI ? genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' }) : null;
 
-// ─── Rate limiting ────────────────────────────────────────────
+// ─── Rate limiting ─────────────────────────────────────────────────────────────
 const rateLimitMap = new Map<string, { windowStart: number; count: number }>();
 const RATE_LIMIT = 5;
 const RATE_WINDOW = 60 * 60 * 1000;
@@ -23,7 +24,7 @@ function checkRateLimit(ip: string) {
     return true;
 }
 
-// ─── Pexels-only image search ─────────────────────────────────
+// ─── Pexels fallback (passed to generatePageImages if AI gen fails) ────────────
 async function searchPexels(query: string): Promise<string | null> {
     const key = process.env.PEXELS_API_KEY;
     if (!key) return null;
@@ -39,136 +40,7 @@ async function searchPexels(query: string): Promise<string | null> {
     } catch { return null; }
 }
 
-// ─── Industry → base subject (English) ───────────────────────
-// Matches Croatian keywords to a concise English subject used in image queries
-const INDUSTRY_SUBJECTS: Array<{ kw: string[]; subject: string; env: string }> = [
-    {
-        kw: ['frizer', 'salon', 'šiš', 'boja', 'kos', 'hair', 'friz'],
-        subject: 'hairdresser', env: 'beauty salon'
-    },
-    {
-        kw: ['restoran', 'pizzeria', 'pizza', 'caffe', 'café', 'kafić', 'bistro', 'konoba', 'grill', 'kuhinja', 'chef'],
-        subject: 'chef cooking', env: 'restaurant'
-    },
-    {
-        kw: ['auto', 'mehaničar', 'automobil', 'vozil', 'gume', 'motor', 'servis auto'],
-        subject: 'car mechanic', env: 'garage workshop'
-    },
-    {
-        kw: ['odvjetn', 'pravn', 'sud', 'ugovor', 'pravo', 'notarsk'],
-        subject: 'lawyer professional', env: 'law office'
-    },
-    {
-        kw: ['liječn', 'doktor', 'klinik', 'stomatolog', 'zubar', 'medicin', 'zdravl', 'psiholog', 'terapeut', 'savjetovanj'],
-        subject: 'therapist consultation', env: 'calm office'
-    },
-    {
-        kw: ['coach', 'treneri', 'kouč', 'mentori', 'personal', 'savjet', 'nfp', 'life'],
-        subject: 'life coach consultation', env: 'bright cozy space'
-    },
-    {
-        kw: ['dom', 'prostor', 'interijer', 'uređenj', 'home', 'stanovan'],
-        subject: 'cozy home interior', env: 'bright living room'
-    },
-    {
-        kw: ['fitness', 'teretana', 'gym', 'trening', 'sport', 'trener', 'pilates', 'yoga', 'wellness'],
-        subject: 'fitness training', env: 'modern gym studio'
-    },
-    {
-        kw: ['kozmet', 'ljepot', 'beauty', 'manikur', 'pedikur', 'spa', 'masaž', 'nega'],
-        subject: 'beauty treatment', env: 'luxury spa salon'
-    },
-    {
-        kw: ['građevin', 'gradi', 'renovacij', 'soboslikar', 'ličilac', 'fasad', 'krov', 'zidar'],
-        subject: 'construction worker skilled', env: 'renovation site'
-    },
-    {
-        kw: ['vodoinstalater', 'instal', 'kupaon', 'sanitarij'],
-        subject: 'plumber professional', env: 'modern bathroom'
-    },
-    {
-        kw: ['računovod', 'porez', 'financij', 'reviz', 'knjigovod'],
-        subject: 'accountant professional', env: 'clean office'
-    },
-    {
-        kw: ['fotografij', 'fotograf', 'video', 'sniman', 'vjenčanj', 'wedding', 'portret'],
-        subject: 'photographer camera', env: 'photo studio'
-    },
-    {
-        kw: ['nekretnin', 'stan', 'kuć', 'real estate', 'prodaj', 'najam stan'],
-        subject: 'real estate property', env: 'modern house interior'
-    },
-    {
-        kw: ['pekar', 'pekara', 'kruh', 'kolač', 'torta', 'slastičar', 'desert'],
-        subject: 'artisan bread pastry', env: 'bakery interior'
-    },
-    {
-        kw: ['cvjeć', 'flower', 'buket', 'florist'],
-        subject: 'florist flowers', env: 'flower shop'
-    },
-    {
-        kw: ['softver', 'razvoj', 'programer', 'web', 'app', 'digital', 'startup', 'tech', 'it', 'saas'],
-        subject: 'developer working', env: 'modern tech office'
-    },
-    {
-        kw: ['čišćen', 'posprem', 'clean', 'higijena', 'dezinfek'],
-        subject: 'cleaning professional', env: 'clean bright home'
-    },
-    {
-        kw: ['prijevoz', 'dostava', 'taxi', 'logistik', 'kamion', 'kurirsk'],
-        subject: 'delivery driver', env: 'logistics warehouse'
-    },
-    {
-        kw: ['hotel', 'hostel', 'smještaj', 'apartman', 'resort'],
-        subject: 'hotel lobby luxury', env: 'elegant accommodation'
-    },
-    {
-        kw: ['turizam', 'putovanj', 'travel', 'odmor', 'izlet', 'agencij'],
-        subject: 'travel scenery', env: 'beautiful destination'
-    },
-    {
-        kw: ['hrana', 'catering', 'dostava jela', 'meal'],
-        subject: 'food catering', env: 'kitchen preparation'
-    },
-    {
-        kw: ['vrtlar', 'vrt', 'cvijeće', 'hortikultur', 'uređenj vrta'],
-        subject: 'garden landscaping', env: 'beautiful garden'
-    },
-    {
-        kw: ['glazb', 'glazben', 'glazbenik', 'studio', 'sniman glazb', 'bend'],
-        subject: 'music studio musician', env: 'recording studio'
-    },
-    {
-        kw: ['tiskara', 'tisak', 'dizajn', 'grafičk', 'print'],
-        subject: 'graphic design print', env: 'creative studio'
-    },
-];
-
-// Style → aesthetic modifier that shapes photo mood
-const STYLE_IMAGE_MODS: Record<string, string> = {
-    organic: 'natural light warm earthy tones plants',
-    luxury: 'minimalist elegant white marble gold',
-    scandinavian: 'bright clean white minimal airy',
-    cyberpunk: 'dark neon moody dramatic',
-    dark_web3: 'dark moody dramatic blue purple',
-    retro: 'vintage warm film grain nostalgic',
-    playful: 'bright colorful vibrant cheerful',
-    corporate: 'professional formal clean blue',
-    glassmorphism: 'bright airy colorful blurred background',
-    bento: 'clean minimal white organised flat lay',
-    neo_brutalism: 'bold graphic high contrast punchy',
-    editorial: 'artistic editorial fashion editorial',
-    typography_first: 'minimal graphic typographic',
-    neumorphism: 'soft gray pastel low contrast',
-    monochrome: 'black white high contrast dramatic',
-    industrial: 'industrial metal concrete dark',
-    ecommerce: 'product photography clean white background',
-    portfolio: 'creative artistic dramatic moody',
-    material: 'clean flat colorful layered',
-    handmade: 'handmade craft artisan rustic',
-};
-
-// Style → design system for the prompt
+// ─── Style → HTML design system ───────────────────────────────────────────────
 const STYLE_PROMPTS: Record<string, string> = {
     bento: 'Bento grid layout. Soft rounded corners (rounded-2xl). Subtle drop shadows. Glassmorphism cards (backdrop-blur). Minimalist Apple-like aesthetic. Lots of whitespace. Light background.',
     dark_web3: 'Strictly dark mode (bg-slate-950 or bg-black). Glowing gradient accents (cyan, purple, blue). Neon borders. High contrast. Futuristic tech feel. No light sections.',
@@ -191,38 +63,6 @@ const STYLE_PROMPTS: Record<string, string> = {
     material: 'Material Design. Distinct card layers with elevation (shadow-md, shadow-xl). Flat vibrant accent colors. FAB button. Clear visual hierarchy with elevation.',
     handmade: 'Handmade scrapbook. Slightly rotated elements (-rotate-1, rotate-2). Overlapping layered cards. Handwritten accent font (Caveat, Patrick Hand). Warm, casual, personal.',
 };
-
-// Build up to 3 Pexels queries from business + style
-function buildImageQueries(
-    businessName: string,
-    businessDescription: string,
-    styleKey: string | null
-): { hero: string; about: string; features: string } {
-    const text = `${businessName} ${businessDescription}`.toLowerCase();
-    const styleMod = styleKey ? (STYLE_IMAGE_MODS[styleKey] ?? '') : '';
-
-    // Match industry
-    const matched = INDUSTRY_SUBJECTS.find(e => e.kw.some(kw => text.includes(kw)));
-
-    if (matched) {
-        // Style mod shifts the photo mood — e.g. "hairdresser natural light warm earthy tones plants"
-        const mod = styleMod ? ` ${styleMod}` : '';
-        return {
-            hero: `${matched.env}${mod}`,
-            about: `${matched.subject}${mod}`,
-            features: `${matched.env} detail${mod}`,
-        };
-    }
-
-    // No industry match — use business name + style mood as fallback
-    const nameWords = businessName.replace(/[^a-zA-Z\s]/g, ' ').trim().split(/\s+/).slice(0, 2).join(' ');
-    const base = nameWords || 'professional service';
-    return {
-        hero: `${base} ${styleMod || 'professional background'}`,
-        about: `${base} ${styleMod || 'team people'}`,
-        features: `${base} ${styleMod || 'work detail'}`,
-    };
-}
 
 export async function POST(req: Request) {
     try {
@@ -248,32 +88,18 @@ export async function POST(req: Request) {
         }
 
         const styleGuide = styleKey ? (STYLE_PROMPTS[styleKey] ?? '') : '';
-        const styleMod = styleKey ? (STYLE_IMAGE_MODS[styleKey] ?? '') : '';
 
         console.log(`🎨 Trial | style: ${styleKey ?? 'auto'} | "${businessName}"`);
 
-        // Fetch Pexels images — style-aware + industry-aware queries
-        const queries = buildImageQueries(businessName, businessDescription, styleKey);
-        console.log(`🔍 Pexels queries:`, queries);
+        // Generate AI images (gemini-3-pro-image-preview) with Pexels as fallback
+        const photos = await generatePageImages(
+            businessName,
+            businessDescription,
+            styleKey,
+            searchPexels
+        );
 
-        const [heroImg, aboutImg, featuresImg] = await Promise.all([
-            searchPexels(queries.hero),
-            searchPexels(queries.about),
-            searchPexels(queries.features),
-        ]);
-
-        // Fallbacks that at least match the style mood
-        const heroFallback = `https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=1400`;
-        const aboutFallback = `https://images.pexels.com/photos/4350057/pexels-photo-4350057.jpeg?auto=compress&cs=tinysrgb&w=900`;
-        const featuresFallback = `https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=1000`;
-
-        const photos = {
-            hero: heroImg ?? heroFallback,
-            about: aboutImg ?? aboutFallback,
-            features: featuresImg ?? featuresFallback,
-        };
-
-        console.log(`📸 hero: ${photos.hero.slice(0, 70)}`);
+        console.log(`📸 hero: ${photos.hero.slice(0, 70)}...`);
 
         const styleSection = styleGuide
             ? `\n## YOUR VISUAL STYLE BIBLE — FOLLOW THIS EXACTLY\nStyle key: "${styleKey}"\nDesign system: ${styleGuide}\nThis style must be applied EVERYWHERE — colors, fonts, spacing, shadows, borders, shapes, decorations, hero layout, card style. A reader should be able to identify the style at a glance.`
@@ -307,7 +133,7 @@ This is a demo page to impress a potential client — it must WOW them immediate
 ## STOCK IMAGES — use these exact URLs, they are pre-selected to match the business and style
 - HERO image: ${photos.hero}
 - ABOUT / "O nama" image: ${photos.about}
-- SERVICES / features image: ${photos.features}
+- SERVICES / features image: ${photos.services}
 
 Place images prominently. Use CSS object-fit: cover. Add a style-appropriate overlay for text readability.
 ${styleSection}

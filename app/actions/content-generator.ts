@@ -216,7 +216,29 @@ CTA types: contact = scroll to contact, phone = tel: link, email = mailto: link,
 3. **About Section**: "O nama" heading, persuasive copy, aboutImageUrl
 4. **Features Section**: 3-4 key benefits, icon/card layout, featuresImageUrl
 5. **Services Section**: All services with name, description, image, and CTA button if configured
-6. **Contact Section**: HTML form (Name, Email, Phone, Message - non-functional), display email/phone${data.address ? '/address' : ''}
+6. **Contact Section**: Functional HTML contact form that submits via JavaScript fetch() to our API. 
+   The form MUST:
+   - POST JSON to: https://webica.hr/api/site/${projectId}/contact
+   - Include a honeypot hidden field: <input type="text" name="_gotcha" style="display:none!important" tabindex="-1" autocomplete="off">
+   - Fields: name (text, required), email (email, required), phone (tel, optional), message (textarea, required)
+   - On submit: call fetch(), show a loading state on the button (disable it, change text to "Slanje...")
+   - On success: replace the form with a success message: "✓ Hvala! Javit ćemo vam se uskoro."
+   - On error: show an error message below the form: "Greška pri slanju. Pokušajte ponovno."
+   - Also display contact email and phone as clickable links (mailto: / tel:)
+   The JS for the form should be a self-contained <script> block at the bottom of the page, e.g.:
+   <script>
+   document.getElementById('contact-form').addEventListener('submit', async function(e) {
+     e.preventDefault();
+     const btn = this.querySelector('button[type="submit"]');
+     btn.disabled = true; btn.textContent = 'Slanje...';
+     const data = { name: this.name.value, email: this.email.value, phone: this.phone.value, message: this.message.value, _gotcha: this._gotcha?.value };
+     try {
+       const res = await fetch('https://webica.hr/api/site/${projectId}/contact', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
+       if (res.ok) { this.innerHTML = '<div class="text-center py-8"><p class="text-green-500 text-xl font-semibold">✓ Hvala!</p><p class="text-zinc-400 mt-2">Javit ćemo vam se uskoro.</p></div>'; }
+       else { btn.disabled=false; btn.textContent='Pošalji'; document.getElementById('form-error').classList.remove('hidden'); }
+     } catch { btn.disabled=false; btn.textContent='Pošalji'; document.getElementById('form-error').classList.remove('hidden'); }
+   });
+   </script>
 ${conditionalSections.join('\n')}
 ${sectionNum}. **Footer**: Business name, contact info, copyright, social links
 

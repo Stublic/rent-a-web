@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Sparkles, Pencil, Settings, ArrowLeft, FileText, Lock, Clock, RefreshCw } from 'lucide-react';
+import { Sparkles, Pencil, Settings, ArrowLeft, FileText, Lock, Clock, RefreshCw, Inbox } from 'lucide-react';
 import RenewButton from '@/app/dashboard/components/RenewButton';
 import { use } from 'react';
 import { prisma } from '@/lib/prisma';
@@ -112,6 +112,16 @@ export default async function ProjectLayout({ children, params }) {
                                   <span>Editor</span>
                                   <span className="hidden md:inline text-xs">(Uskoro)</span>
                               </span>
+                          )}
+
+                          {project?.hasGenerated && (
+                              <Link
+                                href={`/dashboard/projects/${id}/inquiries`}
+                                className="text-zinc-400 hover:text-white font-medium py-2 md:py-5 flex items-center gap-2 text-sm whitespace-nowrap px-2 md:px-0 transition-colors"
+                              >
+                                  <Inbox size={16} />
+                                  <span>Upiti</span>
+                              </Link>
                           )}
 
                           {isGrowthPlan && (

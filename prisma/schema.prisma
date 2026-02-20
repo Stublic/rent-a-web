@@ -65,6 +65,7 @@ model Project {
   // Blog
   blogPosts            BlogPost[]
   blogCategories       BlogCategory[]
+  contactSubmissions   ContactSubmission[]
   blogPostsUsedThisMonth Int    @default(0)    // Monthly AI blog generation counter
   blogPostsResetAt     DateTime?               // When the monthly counter was last reset
 
@@ -199,4 +200,18 @@ model BlogCategory {
 
   @@unique([projectId, slug])
   @@map("blog_category")
+}
+
+model ContactSubmission {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name      String
+  email     String
+  phone     String?
+  message   String   @db.Text
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("contact_submission")
 }
