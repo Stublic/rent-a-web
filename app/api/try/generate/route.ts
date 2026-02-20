@@ -3,10 +3,9 @@ import { NextResponse } from 'next/server';
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 const genAI = GOOGLE_API_KEY ? new GoogleGenerativeAI(GOOGLE_API_KEY) : null;
-// Use same model as main generator
 const model = genAI ? genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' }) : null;
 
-// Simple in-memory rate limiting
+// ─── Rate limiting ────────────────────────────────────────────
 const rateLimitMap = new Map<string, { windowStart: number; count: number }>();
 const RATE_LIMIT = 5;
 const RATE_WINDOW = 60 * 60 * 1000;
@@ -24,182 +23,209 @@ function checkRateLimit(ip: string) {
     return true;
 }
 
-// Search Pexels — returns best landscape photo URL or null
+// ─── Pexels-only image search ─────────────────────────────────
 async function searchPexels(query: string): Promise<string | null> {
     const key = process.env.PEXELS_API_KEY;
     if (!key) return null;
     try {
         const r = await fetch(
-            `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=3&orientation=landscape`,
-            { headers: { Authorization: key }, next: { revalidate: 3600 } }
+            `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=5&orientation=landscape`,
+            { headers: { Authorization: key } }
         );
         if (!r.ok) return null;
         const d = await r.json();
-        // Prefer large2x, fallback large
         const photo = d.photos?.[0];
         return photo?.src?.large2x ?? photo?.src?.large ?? null;
     } catch { return null; }
 }
 
-// Search Unsplash — returns best landscape photo URL or null
-async function searchUnsplash(query: string): Promise<string | null> {
-    const key = process.env.UNSPLASH_ACCESS_KEY;
-    if (!key) return null;
-    try {
-        const r = await fetch(
-            `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=3&orientation=landscape&content_filter=high`,
-            { headers: { Authorization: `Client-ID ${key}` }, next: { revalidate: 3600 } }
-        );
-        if (!r.ok) return null;
-        const d = await r.json();
-        // Prefer full size, fallback regular
-        const photo = d.results?.[0];
-        return photo?.urls?.full ?? photo?.urls?.regular ?? null;
-    } catch { return null; }
-}
-
-// Fetch best stock image: race Pexels and Unsplash, take whichever resolves first
-async function fetchStockImage(query: string, fallback: string): Promise<string> {
-    const [pexels, unsplash] = await Promise.all([
-        searchPexels(query),
-        searchUnsplash(query),
-    ]);
-    return pexels ?? unsplash ?? fallback;
-}
-
-// Croatian industry → specific English photo queries
-const INDUSTRY_MAP = [
+// ─── Industry → base subject (English) ───────────────────────
+// Matches Croatian keywords to a concise English subject used in image queries
+const INDUSTRY_SUBJECTS: Array<{ kw: string[]; subject: string; env: string }> = [
     {
-        kw: ['frizer', 'salon', 'šiš', 'boja', 'kos', 'hair'],
-        hero: 'modern hair salon interior', about: 'hairdresser cutting client hair', features: 'hair styling tools products'
+        kw: ['frizer', 'salon', 'šiš', 'boja', 'kos', 'hair', 'friz'],
+        subject: 'hairdresser', env: 'beauty salon'
     },
     {
-        kw: ['restoran', 'pizzeria', 'pizza', 'caffe', 'café', 'kafić', 'bistro', 'konoba', 'grill'],
-        hero: 'elegant restaurant dining ambience', about: 'chef cooking professional kitchen', features: 'fresh gourmet food plating'
+        kw: ['restoran', 'pizzeria', 'pizza', 'caffe', 'café', 'kafić', 'bistro', 'konoba', 'grill', 'kuhinja', 'chef'],
+        subject: 'chef cooking', env: 'restaurant'
     },
     {
-        kw: ['auto', 'servis', 'mehaničar', 'automobil', 'vozil', 'gume', 'motor'],
-        hero: 'professional car garage mechanic', about: 'mechanic working car engine', features: 'car repair tools workshop'
+        kw: ['auto', 'mehaničar', 'automobil', 'vozil', 'gume', 'motor', 'servis auto'],
+        subject: 'car mechanic', env: 'garage workshop'
     },
     {
-        kw: ['odvjetn', 'pravn', 'sud', 'ugovor', 'pravo'],
-        hero: 'law office professional interior', about: 'lawyer consultation meeting', features: 'legal books scales justice'
+        kw: ['odvjetn', 'pravn', 'sud', 'ugovor', 'pravo', 'notarsk'],
+        subject: 'lawyer professional', env: 'law office'
     },
     {
-        kw: ['liječn', 'doktor', 'klinik', 'stomatolog', 'zubar', 'medicin', 'zdravl', 'terapeut'],
-        hero: 'modern medical clinic interior', about: 'doctor patient consultation', features: 'medical equipment healthcare'
+        kw: ['liječn', 'doktor', 'klinik', 'stomatolog', 'zubar', 'medicin', 'zdravl', 'psiholog', 'terapeut', 'savjetovanj'],
+        subject: 'therapist consultation', env: 'calm office'
     },
     {
-        kw: ['fitness', 'teretana', 'gym', 'trening', 'sport', 'trener', 'pilates', 'yoga'],
-        hero: 'modern gym fitness center', about: 'personal trainer workout session', features: 'gym equipment weights'
+        kw: ['coach', 'treneri', 'kouč', 'mentori', 'personal', 'savjet', 'nfp', 'life'],
+        subject: 'life coach consultation', env: 'bright cozy space'
     },
     {
-        kw: ['kozmet', 'ljepot', 'beauty', 'manikur', 'pedikur', 'spa', 'masaž'],
-        hero: 'luxury beauty spa salon', about: 'beauty treatment professional', features: 'skincare cosmetics products'
+        kw: ['dom', 'prostor', 'interijer', 'uređenj', 'home', 'stanovan'],
+        subject: 'cozy home interior', env: 'bright living room'
     },
     {
-        kw: ['građevin', 'gradi', 'renovacij', 'soboslikar', 'ličilac', 'fasad', 'krovopokrivač'],
-        hero: 'construction renovation professional workers', about: 'construction team renovation', features: 'construction tools materials'
+        kw: ['fitness', 'teretana', 'gym', 'trening', 'sport', 'trener', 'pilates', 'yoga', 'wellness'],
+        subject: 'fitness training', env: 'modern gym studio'
     },
     {
-        kw: ['vodoinstalater', 'vod', 'pluмber', 'kupaon'],
-        hero: 'professional plumber bathroom', about: 'plumber pipe repair work', features: 'plumbing tools equipment'
+        kw: ['kozmet', 'ljepot', 'beauty', 'manikur', 'pedikur', 'spa', 'masaž', 'nega'],
+        subject: 'beauty treatment', env: 'luxury spa salon'
     },
     {
-        kw: ['računovod', 'porez', 'financij'],
-        hero: 'professional accountant office business', about: 'financial advisor meeting', features: 'accounting finance documents charts'
+        kw: ['građevin', 'gradi', 'renovacij', 'soboslikar', 'ličilac', 'fasad', 'krov', 'zidar'],
+        subject: 'construction worker skilled', env: 'renovation site'
     },
     {
-        kw: ['fotografij', 'fotograf', 'video', 'sniman', 'vjenčanj', 'wedding'],
-        hero: 'professional photographer studio camera', about: 'photographer shooting portrait', features: 'camera lens photography gear'
+        kw: ['vodoinstalater', 'instal', 'kupaon', 'sanitarij'],
+        subject: 'plumber professional', env: 'modern bathroom'
     },
     {
-        kw: ['nekretnin', 'stan', 'kuć', 'real estate'],
-        hero: 'luxury real estate modern house exterior', about: 'real estate agent showing property', features: 'modern interior living room design'
+        kw: ['računovod', 'porez', 'financij', 'reviz', 'knjigovod'],
+        subject: 'accountant professional', env: 'clean office'
     },
     {
-        kw: ['pekar', 'pekara', 'kruh', 'kolač', 'torta', 'slastičar'],
-        hero: 'artisan bakery fresh bread pastry', about: 'baker baking oven professional', features: 'fresh pastry bread close-up'
+        kw: ['fotografij', 'fotograf', 'video', 'sniman', 'vjenčanj', 'wedding', 'portret'],
+        subject: 'photographer camera', env: 'photo studio'
     },
     {
-        kw: ['cvjeć', 'flower', 'buket'],
-        hero: 'flower shop bouquet colorful', about: 'florist arranging flowers', features: 'fresh flowers close-up colorful'
+        kw: ['nekretnin', 'stan', 'kuć', 'real estate', 'prodaj', 'najam stan'],
+        subject: 'real estate property', env: 'modern house interior'
     },
     {
-        kw: ['it', 'softver', 'razvoj', 'programer', 'web', 'app', 'digital', 'startup', 'tech'],
-        hero: 'modern tech startup office coworking', about: 'developer team laptop programming', features: 'code screen technology dark'
+        kw: ['pekar', 'pekara', 'kruh', 'kolač', 'torta', 'slastičar', 'desert'],
+        subject: 'artisan bread pastry', env: 'bakery interior'
     },
     {
-        kw: ['čišćen', 'posprem', 'clean', 'higijena'],
-        hero: 'professional cleaning service home', about: 'cleaning team at work uniform', features: 'cleaning products equipment'
+        kw: ['cvjeć', 'flower', 'buket', 'florist'],
+        subject: 'florist flowers', env: 'flower shop'
     },
     {
-        kw: ['prijevoz', 'dostava', 'taxi', 'logistik', 'kamion'],
-        hero: 'logistics delivery truck fleet', about: 'delivery driver vehicle professional', features: 'transport vehicles warehouse'
+        kw: ['softver', 'razvoj', 'programer', 'web', 'app', 'digital', 'startup', 'tech', 'it', 'saas'],
+        subject: 'developer working', env: 'modern tech office'
     },
     {
-        kw: ['hotel', 'hostel', 'smještaj', 'apartman'],
-        hero: 'luxury hotel lobby elegant', about: 'hotel staff reception warm', features: 'hotel room amenities bed'
+        kw: ['čišćen', 'posprem', 'clean', 'higijena', 'dezinfek'],
+        subject: 'cleaning professional', env: 'clean bright home'
+    },
+    {
+        kw: ['prijevoz', 'dostava', 'taxi', 'logistik', 'kamion', 'kurirsk'],
+        subject: 'delivery driver', env: 'logistics warehouse'
+    },
+    {
+        kw: ['hotel', 'hostel', 'smještaj', 'apartman', 'resort'],
+        subject: 'hotel lobby luxury', env: 'elegant accommodation'
     },
     {
         kw: ['turizam', 'putovanj', 'travel', 'odmor', 'izlet', 'agencij'],
-        hero: 'travel destination scenic landscape', about: 'travel guide tourist adventure', features: 'map travel passport destination'
+        subject: 'travel scenery', env: 'beautiful destination'
+    },
+    {
+        kw: ['hrana', 'catering', 'dostava jela', 'meal'],
+        subject: 'food catering', env: 'kitchen preparation'
+    },
+    {
+        kw: ['vrtlar', 'vrt', 'cvijeće', 'hortikultur', 'uređenj vrta'],
+        subject: 'garden landscaping', env: 'beautiful garden'
+    },
+    {
+        kw: ['glazb', 'glazben', 'glazbenik', 'studio', 'sniman glazb', 'bend'],
+        subject: 'music studio musician', env: 'recording studio'
+    },
+    {
+        kw: ['tiskara', 'tisak', 'dizajn', 'grafičk', 'print'],
+        subject: 'graphic design print', env: 'creative studio'
     },
 ];
 
-// Build contextually relevant English image search queries from business info
-function buildImageQueries(businessName: string, businessDescription: string) {
-    const text = `${businessName} ${businessDescription}`.toLowerCase();
+// Style → aesthetic modifier that shapes photo mood
+const STYLE_IMAGE_MODS: Record<string, string> = {
+    organic: 'natural light warm earthy tones plants',
+    luxury: 'minimalist elegant white marble gold',
+    scandinavian: 'bright clean white minimal airy',
+    cyberpunk: 'dark neon moody dramatic',
+    dark_web3: 'dark moody dramatic blue purple',
+    retro: 'vintage warm film grain nostalgic',
+    playful: 'bright colorful vibrant cheerful',
+    corporate: 'professional formal clean blue',
+    glassmorphism: 'bright airy colorful blurred background',
+    bento: 'clean minimal white organised flat lay',
+    neo_brutalism: 'bold graphic high contrast punchy',
+    editorial: 'artistic editorial fashion editorial',
+    typography_first: 'minimal graphic typographic',
+    neumorphism: 'soft gray pastel low contrast',
+    monochrome: 'black white high contrast dramatic',
+    industrial: 'industrial metal concrete dark',
+    ecommerce: 'product photography clean white background',
+    portfolio: 'creative artistic dramatic moody',
+    material: 'clean flat colorful layered',
+    handmade: 'handmade craft artisan rustic',
+};
 
-    // Try to match a Croatian industry keyword
-    const matched = INDUSTRY_MAP.find(entry => entry.kw.some(kw => text.includes(kw)));
+// Style → design system for the prompt
+const STYLE_PROMPTS: Record<string, string> = {
+    bento: 'Bento grid layout. Soft rounded corners (rounded-2xl). Subtle drop shadows. Glassmorphism cards (backdrop-blur). Minimalist Apple-like aesthetic. Lots of whitespace. Light background.',
+    dark_web3: 'Strictly dark mode (bg-slate-950 or bg-black). Glowing gradient accents (cyan, purple, blue). Neon borders. High contrast. Futuristic tech feel. No light sections.',
+    neo_brutalism: 'Neo-brutalist. Hard black drop shadows (box-shadow: 4px 4px 0 black). Thick black borders everywhere (border-2 border-black or border-4). Bold punchy fill colors (yellow, hot pink, electric blue, lime). Raw, loud, unapologetic. No subtle gradients.',
+    corporate: 'Highly professional corporate. Strictly navy/slate/blue color palette. Structured 3-col grids. Zero playful elements. Clean sans-serif. Trust-building layout.',
+    glassmorphism: 'Glassmorphism. Frosted glass cards (background: rgba(255,255,255,0.1), backdrop-filter: blur(20px)). Colorful blurred blobs behind everything. Light, dreamy aesthetic.',
+    editorial: 'Editorial magazine layout. Oversized serif headings (Playfair Display or similar). Asymmetric grids. Horizontal rules as dividers. Pull quotes in large italic. Classic and refined.',
+    typography_first: 'Typography-driven. Massive display fonts (10rem+ headings). Minimal imagery. Brutalist font weights. All visual hierarchy comes from type scale and spacing.',
+    playful: 'Playful, friendly app-like. Fully rounded everything (rounded-full). Vibrant primary colors (coral, sky, lime). Big bouncy buttons. Soft card shadows. Minimal borders. Fun.',
+    cyberpunk: 'Cyberpunk. Pitch black background (#000). Neon green (#00ff41) or hot pink/magenta text. Monospaced font (Courier New, JetBrains Mono). Visible grid lines overlay. Terminal scanline effect.',
+    retro: 'Retro 90s/70s. Warm cream/sepia background. Classic serif or slab fonts. Muted earthy palette (mustard, rust, forest green). Slight grain texture. Nostalgic and warm.',
+    luxury: 'Ultra-luxury. Extremely minimal. Black, white, and gold/champagne only. Thin elegant serif font (Cormorant Garamond). Massive whitespace (padding: 8rem+). No decorative clutter.',
+    organic: 'Organic and earthy. Sage green, sand, terracotta, warm cream palette. Soft rounded corners. Natural textures (linen, stone). Flowing organic shapes as SVG decorations. Calm, grounded, nurturing feel. Nature-inspired section dividers.',
+    monochrome: 'Strictly black and white. No colors whatsoever. All hierarchy from font weight (100–900) and generous spacing. Sharp, architectural, bold.',
+    neumorphism: 'Neumorphism (soft UI). Light neutral gray background (#e0e5ec). Elements have extruded soft shadow (box-shadow: 6px 6px 12px #b8bec7, -6px -6px 12px #ffffff). Very low contrast. Calm and tactile.',
+    scandinavian: 'Scandinavian minimalism. Off-white/light stone background. Maximum white space. Single accent color (dusty blue or forest green). Strictly sans-serif. Functional, airy, IKEA-like clarity.',
+    industrial: 'Industrial. Dark steel-gray background. Blueprint grid overlay (CSS background-image grid). Monospaced fonts. Slate and steel-blue palette. Technical drawings aesthetic.',
+    ecommerce: 'E-commerce conversion-focused. Clean product cards with strong CTA buttons. Urgency elements (badges, timers). Trust signals (reviews, guarantees). Clear pricing tables.',
+    portfolio: 'Portfolio visual-first. Oversized imagery. Minimal navigation that disappears. Dark background so photos pop. Hover reveals on project cards. Gallery masonry grid.',
+    material: 'Material Design. Distinct card layers with elevation (shadow-md, shadow-xl). Flat vibrant accent colors. FAB button. Clear visual hierarchy with elevation.',
+    handmade: 'Handmade scrapbook. Slightly rotated elements (-rotate-1, rotate-2). Overlapping layered cards. Handwritten accent font (Caveat, Patrick Hand). Warm, casual, personal.',
+};
+
+// Build up to 3 Pexels queries from business + style
+function buildImageQueries(
+    businessName: string,
+    businessDescription: string,
+    styleKey: string | null
+): { hero: string; about: string; features: string } {
+    const text = `${businessName} ${businessDescription}`.toLowerCase();
+    const styleMod = styleKey ? (STYLE_IMAGE_MODS[styleKey] ?? '') : '';
+
+    // Match industry
+    const matched = INDUSTRY_SUBJECTS.find(e => e.kw.some(kw => text.includes(kw)));
+
     if (matched) {
-        return { hero: matched.hero, about: matched.about, features: matched.features };
+        // Style mod shifts the photo mood — e.g. "hairdresser natural light warm earthy tones plants"
+        const mod = styleMod ? ` ${styleMod}` : '';
+        return {
+            hero: `${matched.env}${mod}`,
+            about: `${matched.subject}${mod}`,
+            features: `${matched.env} detail${mod}`,
+        };
     }
 
-    // Fallback: extract English-only words (won't work for Croatian, but covers bilingual inputs)
-    const engWords = `${businessName} ${businessDescription}`
-        .replace(/[^a-zA-Z\s]/g, ' ')
-        .split(/\s+/)
-        .filter(w => w.length > 4)
-        .slice(0, 3)
-        .join(' ');
-
-    const core = engWords || businessName.split(' ').slice(0, 2).join(' ');
+    // No industry match — use business name + style mood as fallback
+    const nameWords = businessName.replace(/[^a-zA-Z\s]/g, ' ').trim().split(/\s+/).slice(0, 2).join(' ');
+    const base = nameWords || 'professional service';
     return {
-        hero: `${core} professional business`,
-        about: `${core} team office`,
-        features: `${core} service work`,
+        hero: `${base} ${styleMod || 'professional background'}`,
+        about: `${base} ${styleMod || 'team people'}`,
+        features: `${base} ${styleMod || 'work detail'}`,
     };
 }
 
-// Style prompt keywords map
-const STYLE_PROMPTS: Record<string, string> = {
-    bento: 'Use a Bento grid layout, soft rounded corners (rounded-2xl), subtle drop shadows, glassmorphism effects (backdrop-blur), minimalist Apple-like aesthetic, lots of whitespace.',
-    dark_web3: 'Strictly dark mode (bg-slate-950), glowing gradients (bg-gradient-to-r), neon accent colors (cyan or purple), tech-focused, high contrast.',
-    neo_brutalism: 'Neo-brutalist style, hard black shadows (shadow-[4px_4px_0px_black]), thick solid borders (border-2 border-black), bold punchy colors (yellow, pink, blue), aggressive and playful.',
-    corporate: 'Highly professional, trustworthy corporate design, strictly blue and slate color palette, structured grid, crisp edges, no playful elements.',
-    glassmorphism: 'Glassmorphism UI, frosted glass cards (bg-white/10 backdrop-blur-md), blurred colorful blobs in the background, semi-transparent borders.',
-    editorial: 'Editorial magazine layout, elegant Serif typography (e.g., Playfair Display) for large headings, asymmetrical grids, prominent pull quotes.',
-    typography_first: 'Typography-centric design, massive oversized headings, minimal to zero images, brutalist font choices, tight tracking (tracking-tighter).',
-    playful: 'Playful and friendly app aesthetic, fully rounded buttons (rounded-full), vibrant primary colors, soft bouncy UI, minimal borders.',
-    cyberpunk: 'Cyberpunk aesthetic, pitch black background, neon green or magenta text, monospaced typography (font-mono), grid lines, terminal-like UI.',
-    retro: 'Retro 90s aesthetic, warm sepia undertones, classic serif fonts, slightly muted color palette, textured or grainy background feel.',
-    luxury: 'Ultra-luxury high-end aesthetic, extremely minimalist, black, white, and gold/silver accents, elegant serif fonts, massive whitespace (p-24).',
-    organic: 'Organic and earthy vibe, soft pastel colors (sage green, sand, terracotta), heavily rounded image corners, nature-inspired, calm.',
-    monochrome: 'Strictly monochromatic, black and white only, rely entirely on font weights and spacing for visual hierarchy, sharp and architectural.',
-    neumorphism: 'Neumorphic soft UI, very low contrast, elements look extruded from the background, inset shadows, soft gray-blue palette.',
-    scandinavian: 'Scandinavian minimalism, extremely clean, off-white backgrounds (bg-stone-50), highly functional, sans-serif only, airy.',
-    industrial: 'Industrial blueprint style, visible grid background, technical monospaced fonts, slate and steel blue colors.',
-    ecommerce: 'E-commerce focused, extremely clear product cards, highly visible and contrasting CTA buttons, urgency elements, clean pricing tables.',
-    portfolio: 'Visual-first portfolio, masonry image grid, hidden or minimal navigation, focus entirely on imagery, dark background to make photos pop.',
-    material: 'Material design principles, distinct overlapping layers with clear drop shadows (shadow-md, shadow-lg), flat vibrant accent colors.',
-    handmade: 'Handmade scrapbook feel, slightly rotated images (-rotate-2), overlapping cards, playful handwritten-style fonts for accents, casual vibe.',
-};
-
 export async function POST(req: Request) {
     try {
-        // Rate limiting
         const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
         if (!checkRateLimit(ip)) {
             return NextResponse.json(
@@ -217,86 +243,103 @@ export async function POST(req: Request) {
         if (!businessName || !businessDescription) {
             return NextResponse.json({ error: 'Naziv i opis biznisa su obavezni.' }, { status: 400 });
         }
-
         if (businessName.length > 100 || businessDescription.length > 1000) {
             return NextResponse.json({ error: 'Tekst je predugačak.' }, { status: 400 });
         }
 
-        const styleInstruction = styleKey && STYLE_PROMPTS[styleKey]
-            ? `\n**VISUAL STYLE — CRITICAL (apply this THROUGHOUT the ENTIRE design, every section):**\n${STYLE_PROMPTS[styleKey]}`
-            : '';
+        const styleGuide = styleKey ? (STYLE_PROMPTS[styleKey] ?? '') : '';
+        const styleMod = styleKey ? (STYLE_IMAGE_MODS[styleKey] ?? '') : '';
 
-        console.log(`� Trial generate | style: ${styleKey ?? 'AI decides'} | "${businessName}"`);
+        console.log(`🎨 Trial | style: ${styleKey ?? 'auto'} | "${businessName}"`);
 
-        // Build smart, context-aware image queries
-        const queries = buildImageQueries(businessName, businessDescription);
-        console.log(`🔍 Image queries:`, queries);
+        // Fetch Pexels images — style-aware + industry-aware queries
+        const queries = buildImageQueries(businessName, businessDescription, styleKey);
+        console.log(`🔍 Pexels queries:`, queries);
 
         const [heroImg, aboutImg, featuresImg] = await Promise.all([
-            fetchStockImage(queries.hero, 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1400&auto=format&fit=crop'),
-            fetchStockImage(queries.about, 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=900&auto=format&fit=crop'),
-            fetchStockImage(queries.features, 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1000&auto=format&fit=crop'),
+            searchPexels(queries.hero),
+            searchPexels(queries.about),
+            searchPexels(queries.features),
         ]);
 
-        console.log(`📸 Images resolved: hero=${heroImg.slice(0, 60)}...`);
+        // Fallbacks that at least match the style mood
+        const heroFallback = `https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=1400`;
+        const aboutFallback = `https://images.pexels.com/photos/4350057/pexels-photo-4350057.jpeg?auto=compress&cs=tinysrgb&w=900`;
+        const featuresFallback = `https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=1000`;
 
-        const prompt = `
-You are a Senior Frontend Engineer and UI/UX Designer creating a PREMIUM landing page.
-Your task: Generate a SINGLE, complete, self-contained HTML file based on the business information below.
-This is a preview for a potential client — it must look STUNNING and PROFESSIONAL.
+        const photos = {
+            hero: heroImg ?? heroFallback,
+            about: aboutImg ?? aboutFallback,
+            features: featuresImg ?? featuresFallback,
+        };
 
-**TECHNICAL REQUIREMENTS:**
-1. **Output:** Return ONLY valid HTML. Start with <!DOCTYPE html>. Do NOT wrap in markdown code blocks.
-2. **Tailwind CSS** via CDN:
-   <script src="https://cdn.tailwindcss.com"></script>
-   Configure a custom Tailwind theme in a <script> block with industry-appropriate brand colors.
-3. **GSAP + ScrollTrigger** via CDN for animations:
-   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-   Apply scroll-triggered fade-in, slide-up, and stagger animations to every section.
-   Add counter animations for statistics using GSAP ScrollTrigger.
-4. **Lucide Icons** via CDN:
-   <script src="https://unpkg.com/lucide@latest"></script>
-   Use <i data-lucide="icon-name"></i> and call lucide.createIcons() at end of body.
-5. **Google Fonts:** Load Inter (body) and Space Grotesk or Sora (headings).
-6. **Stock Images — USE THESE EXACT URLs:**
-   - Hero background: ${heroImg}
-   - About section image: ${aboutImg}
-   - Features/Services section: ${featuresImg}
-   Place each image using a regular <img> tag or as a CSS background-image.
-   Always add a semi-transparent overlay on top of background images for text legibility.
-   Images MUST be visible and prominent in the design — don't hide them.
-7. **SEO:** Include <title>, <meta name="description">, and Open Graph tags.
-8. **Responsiveness:** Mobile-first. The site must look perfect on mobile (375px) and desktop (1440px).
+        console.log(`📸 hero: ${photos.hero.slice(0, 70)}`);
 
-**BUSINESS INFORMATION:**
-- Business Name: "${businessName}"
+        const styleSection = styleGuide
+            ? `\n## YOUR VISUAL STYLE BIBLE — FOLLOW THIS EXACTLY\nStyle key: "${styleKey}"\nDesign system: ${styleGuide}\nThis style must be applied EVERYWHERE — colors, fonts, spacing, shadows, borders, shapes, decorations, hero layout, card style. A reader should be able to identify the style at a glance.`
+            : `\n## YOUR VISUAL STYLE BIBLE\nYou have full creative freedom. Choose a sophisticated, unique visual style that perfectly matches this specific business. Make it memorable and premium.`;
+
+        const prompt = `You are a world-class UI/UX designer and senior frontend engineer.
+
+Your mission: Create a visually STUNNING, complete, production-ready HTML landing page for the business below.
+This is a demo page to impress a potential client — it must WOW them immediately.
+
+## HARD RULES (never break these)
+- Output ONLY valid HTML. Start with <!DOCTYPE html>. No markdown code fences.
+- All text content must be in CROATIAN language.
+- Do NOT use <img> src placeholders. Use the exact image URLs provided below.
+- The page must be fully responsive (mobile 375px and desktop 1440px).
+- No broken layouts, no text overflow, no overlapping elements.
+- Every section must be complete and polished — no "lorem ipsum" or "[placeholder]".
+
+## CDN STACK (load all of these)
+\`\`\`html
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Space+Grotesk:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { theme: { extend: { /* your custom colors/fonts here */ } } }</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+\`\`\`
+- Use <i data-lucide="icon-name"></i> for icons, call lucide.createIcons() at end of body.
+- GSAP ScrollTrigger: animate every section in (fade + slide-up, stagger children). Add number counter animations for stats.
+
+## STOCK IMAGES — use these exact URLs, they are pre-selected to match the business and style
+- HERO image: ${photos.hero}
+- ABOUT / "O nama" image: ${photos.about}
+- SERVICES / features image: ${photos.features}
+
+Place images prominently. Use CSS object-fit: cover. Add a style-appropriate overlay for text readability.
+${styleSection}
+
+## BUSINESS INFORMATION
+- Name: "${businessName}"
 - Description: "${businessDescription}"
-- All text content MUST be written in Croatian language.
-- Infer the industry, tone, and target audience from the description. Generate appropriate fake-but-realistic content (services, pricing, testimonials, statistics).
 
-**SECTIONS TO GENERATE:**
-1. **Navbar:** Sticky, glassmorphism (backdrop-blur + bg-white/10), logo text, nav links (Usluge, O nama, Kontakt), CTA button.
-2. **Hero:** Full-viewport height, background image with dark overlay, large bold heading with gradient text, compelling 2-line subheadline, two CTA buttons (primary + outline ghost), animated scroll indicator.
-3. **Stats Bar:** 3–4 impressive statistics with animated counters (e.g. "500+ klijenata", "10+ godina iskustva"). Dark contrasting background.
-4. **About / O nama:** Two-column layout — compelling long-form copy on left, about image on right. Include a small badge/pill "Zašto mi?".
-5. **Services / Usluge:** 3–4 service cards with Lucide icon, name, description, price hint, hover lift effect. Use features image as a background accent.
-6. **Testimonials:** 3 realistic testimonials with Croatian names, star ratings (★★★★★), short quote, role/location. Card layout with subtle shadow.
-7. **FAQ:** 3–4 relevant questions with expandable accordion (vanilla JS toggle).
-8. **CTA Section:** Full-width gradient band, bold headline, subtext, prominent "Kontaktirajte nas" button.
-9. **Contact Form:** Name, Email, Phone, Message fields + submit button (non-functional). Display business email and phone as text.
-10. **Footer:** Business name, short tagline, nav links, contact info, copyright line, social icons (Lucide).
+From the description, infer: industry, target audience, tone of voice, key services, and typical pricing.
+Generate realistic, persuasive Croatian marketing copy — like a real copywriter wrote it.
 
-**DESIGN EXCELLENCE — NON-NEGOTIABLE:**
-- Sophisticated, industry-appropriate color palette using HSL harmony
-- Generous whitespace (py-20 to py-32 for sections)
-- Cards with rounded-2xl, subtle borders, hover:scale-[1.02] transitions
-- Smooth CSS transitions on all interactive elements
-- Decorative CSS blur blobs (absolute, blur-3xl, opacity-20) as background accents
-- The page must look like it was built by a top-tier €5000+ agency${styleInstruction}
+## DESIGN FREEDOM — THIS IS KEY
+You are NOT constrained to a fixed template. Based on the style guide above and the business type, YOU decide:
+- What sections to include and in what order
+- What layout each section uses (grid, flex, full-bleed, split, cards, masonry, etc.)
+- What decorative elements to add (SVG shapes, gradients, textures, patterns)
+- How typography is sized and weighted
+- What micro-interactions and hover effects to add
 
-**OUTPUT:** ONLY the complete HTML document. No explanations, no markdown.
-`;
+REQUIRED sections (adapt their look to the style): navbar, hero, services/offers, about, testimonials, contact/CTA, footer.
+OPTIONAL (add if they fit): stats bar, FAQ accordion, gallery, pricing table, process steps, team section.
+
+## CONTENT QUALITY
+- Write 3–5 unique services with realistic Croatian names and descriptions
+- Write 3 testimonials with Croatian names (e.g. "Marija K., Zagreb"), star ratings ★★★★★, genuine-sounding quotes
+- Write 2–3 FAQ items with real questions the target audience would ask
+- Generate 3–4 impressive statistics (e.g. "200+ zadovoljnih klijenata", "5+ godina iskustva")
+- Hero headline: bold, short (max 8 words), emotionally resonant for the target audience
+- Hero subheadline: 1–2 sentences, persuasive, benefit-focused
+
+## OUTPUT
+Return ONLY the HTML document. Nothing else.`;
 
         const result = await Promise.race([
             model.generateContent(prompt),
@@ -308,7 +351,6 @@ This is a preview for a potential client — it must look STUNNING and PROFESSIO
         const response = await result.response;
         let html: string = response.text();
 
-        // Clean up markdown wrappers if model adds them
         html = html.replace(/```html/gi, '').replace(/```/g, '').trim();
 
         if (!html.includes('<!DOCTYPE') && !html.includes('<html')) {
@@ -321,19 +363,16 @@ This is a preview for a potential client — it must look STUNNING and PROFESSIO
         if (html.length > 300000) html = html.substring(0, 300000);
 
         console.log(`✅ Trial HTML: ${html.length} chars | "${businessName}"`);
-
         return NextResponse.json({ html });
 
     } catch (error: any) {
         console.error('❌ Trial generate error:', error);
-
         if (error.message === 'AI timeout') {
             return NextResponse.json(
                 { error: 'Generiranje je predugo trajalo. Pokušajte ponovno.' },
                 { status: 504 }
             );
         }
-
         return NextResponse.json(
             { error: 'Greška pri generiranju. Pokušajte ponovno.' },
             { status: 500 }
