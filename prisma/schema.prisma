@@ -41,6 +41,7 @@ model Project {
   domain               String?
   subdomain            String?  @unique   // e.g. "moj-projekt" → moj-projekt.webica.hr
   customDomain         String?  @unique   // e.g. "mojadomela.hr"
+  contactEmail         String?            // Email for contact form inquiries (overrides user.email)
   publishedAt          DateTime?          // When the site was published
   status               String   @default("DRAFT") // DRAFT, SUBMITTED, GENERATED, PUBLISHED, LIVE
   planName             String

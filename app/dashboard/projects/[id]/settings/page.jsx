@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Globe, ExternalLink, Copy, Check, Loader2, AlertTriangle, Trash2, Rocket, CloudOff, Link2 } from "lucide-react";
+import { Globe, ExternalLink, Copy, Check, Loader2, AlertTriangle, Trash2, Rocket, CloudOff, Link2, Mail, RefreshCw, AlertCircle } from "lucide-react";
 
 export default function SettingsPage({ params }) {
     const [projectId, setProjectId] = useState(null);
@@ -16,12 +16,30 @@ export default function SettingsPage({ params }) {
     const [copied, setCopied] = useState(false);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
+    const [contactEmail, setContactEmail] = useState("");
+    const [savingEmail, setSavingEmail] = useState(false);
+    const [republishing, setRepublishing] = useState(false);
+    const [hasUnpushedChanges, setHasUnpushedChanges] = useState(false);
 
     useEffect(() => {
         async function init() {
             const p = await params;
             setProjectId(p.id);
             await fetchStatus(p.id);
+            // Load existing contactEmail
+            const res = await fetch(`/api/project-settings?projectId=${p.id}`);
+            if (res.ok) {
+                const d = await res.json();
+                if (d.contactEmail) setContactEmail(d.contactEmail);
+            }
+            // Auto-fix contact form for legacy projects (silently)
+            fetch('/api/fix-contact-form', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ projectId: p.id }),
+            }).then(r => r.json()).then(d => {
+                if (d.success) console.log('[Settings] Contact form injected into legacy HTML');
+            }).catch(() => {});
         }
         init();
     }, [params]);
@@ -33,6 +51,7 @@ export default function SettingsPage({ params }) {
             const data = await res.json();
             if (res.ok) {
                 setStatus(data);
+                setHasUnpushedChanges(data.hasUnpushedChanges ?? false);
             } else {
                 setError(data.error);
             }
@@ -167,6 +186,44 @@ export default function SettingsPage({ params }) {
         }
     }
 
+    async function handleRepublish() {
+        setRepublishing(true);
+        setError(null);
+        try {
+            const res = await fetch('/api/domains', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ projectId, action: 'republish' }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setSuccess('Promjene su objavljene na stranici!');
+                setHasUnpushedChanges(false);
+                await fetchStatus(projectId);
+            } else {
+                setError(data.error);
+            }
+        } catch { setError('Greška pri ažuriranju'); }
+        finally { setRepublishing(false); }
+    }
+
+    async function handleSaveContactEmail(e) {
+        e.preventDefault();
+        setSavingEmail(true);
+        setError(null);
+        try {
+            const res = await fetch('/api/project-settings', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ projectId, contactEmail: contactEmail.trim() || null }),
+            });
+            const data = await res.json();
+            if (res.ok) setSuccess('Email za upite je ažuriran!');
+            else setError(data.error);
+        } catch { setError('Greška pri spremanju'); }
+        finally { setSavingEmail(false); }
+    }
+
     function copyToClipboard(text) {
         navigator.clipboard.writeText(text);
         setCopied(true);
@@ -200,6 +257,36 @@ export default function SettingsPage({ params }) {
                 </div>
             )}
 
+            {/* ─── Contact Email Section ─── */}
+            <section className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 mb-6">
+                <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-violet-500/10 border border-violet-500/20 rounded-xl flex items-center justify-center">
+                        <Mail size={20} className="text-violet-400" />
+                    </div>
+                    <div>
+                        <h2 className="text-lg font-semibold text-white">Email za upite</h2>
+                        <p className="text-zinc-500 text-sm">Kamo idu upiti s kontakt forme na vašoj stranici</p>
+                    </div>
+                </div>
+                <form onSubmit={handleSaveContactEmail} className="space-y-3">
+                    <input
+                        type="email"
+                        value={contactEmail}
+                        onChange={e => setContactEmail(e.target.value)}
+                        placeholder="info@mojbiznis.hr (ostavite prazno za vaš registracijski email)"
+                        className="w-full px-4 py-2.5 bg-zinc-800 border border-zinc-700 rounded-xl text-white text-sm placeholder:text-zinc-500 focus:outline-none focus:border-violet-500 transition-colors"
+                    />
+                    <button
+                        type="submit"
+                        disabled={savingEmail}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-500 text-white font-medium rounded-xl text-sm transition-colors disabled:opacity-50"
+                    >
+                        {savingEmail ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                        Spremi email
+                    </button>
+                </form>
+            </section>
+
             {/* ─── Publish Section ─── */}
             <section className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 mb-6">
                 <div className="flex items-center gap-3 mb-4">
@@ -219,6 +306,12 @@ export default function SettingsPage({ params }) {
                                 <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
                                 Objavljeno
                             </span>
+                            {hasUnpushedChanges && (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-full text-xs font-medium">
+                                    <AlertCircle size={11} />
+                                    Ima nepushanih promjena
+                                </span>
+                            )}
                         </div>
 
                         {status.subdomainUrl && (
@@ -254,14 +347,26 @@ export default function SettingsPage({ params }) {
                             </div>
                         )}
 
-                        <button
-                            onClick={handleUnpublish}
-                            disabled={unpublishing}
-                            className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 rounded-xl text-sm transition-colors disabled:opacity-50"
-                        >
-                            {unpublishing ? <Loader2 size={16} className="animate-spin" /> : <CloudOff size={16} />}
-                            Ukloni s interneta
-                        </button>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                            {hasUnpushedChanges && (
+                                <button
+                                    onClick={handleRepublish}
+                                    disabled={republishing}
+                                    className="flex items-center gap-2 px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 rounded-xl text-sm transition-colors disabled:opacity-50"
+                                >
+                                    {republishing ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+                                    Ažuriraj promjene
+                                </button>
+                            )}
+                            <button
+                                onClick={handleUnpublish}
+                                disabled={unpublishing}
+                                className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 rounded-xl text-sm transition-colors disabled:opacity-50"
+                            >
+                                {unpublishing ? <Loader2 size={16} className="animate-spin" /> : <CloudOff size={16} />}
+                                Ukloni s interneta
+                            </button>
+                        </div>
                     </div>
                 ) : (
                     <button

@@ -224,12 +224,13 @@ export async function generateAndUploadImage(
  * Generate all 3 page images in parallel.
  * Falls back to Pexels or static URL on failure.
  */
-export async function generatePageImages(
-    businessName: string,
-    businessDescription: string,
-    styleKey: string | null,
-    pexelsFallback: (query: string) => Promise<string | null>
-): Promise<{ hero: string; about: string; services: string }> {
+export async function generatePageImages(config: {
+    businessName: string;
+    businessDescription: string;
+    industry?: string;
+    styleKey: string | null;
+}): Promise<{ hero: string; about: string; services: string }> {
+    const { businessName, businessDescription, styleKey } = config;
     const prompts = buildAIImagePrompts(businessName, businessDescription, styleKey);
 
     // Use short slug for filenames
@@ -241,14 +242,28 @@ export async function generatePageImages(
         generateAndUploadImage(prompts.services, `${slug}-services`),
     ]);
 
-    // Fallback chain: AI → Pexels → static Unsplash
+    // Internal Pexels fallback
+    async function pexelsFallback(query: string): Promise<string | null> {
+        try {
+            const key = process.env.PEXELS_API_KEY;
+            if (!key) return null;
+            const res = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=5&orientation=landscape`, {
+                headers: { Authorization: key }
+            });
+            const data = await res.json();
+            const photos = data?.photos;
+            if (!photos?.length) return null;
+            const photo = photos[Math.floor(Math.random() * photos.length)];
+            return photo.src.large2x || photo.src.large || null;
+        } catch { return null; }
+    }
+
     const FALLBACKS = {
         hero: 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=1400',
         about: 'https://images.pexels.com/photos/4350057/pexels-photo-4350057.jpeg?auto=compress&cs=tinysrgb&w=900',
         services: 'https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=1000',
     };
 
-    // Build Pexels queries from industry map for fallback
     const text = `${businessName} ${businessDescription}`.toLowerCase();
     const ind = INDUSTRY_IMAGE_MAP.find(e => e.kw.some(kw => text.includes(kw)));
     const styleMod = styleKey ? (STYLE_IMAGE_MODS[styleKey] ?? '') : '';

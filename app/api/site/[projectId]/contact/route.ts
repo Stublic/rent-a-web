@@ -46,16 +46,16 @@ export async function POST(
             return NextResponse.json({ success: true }); // Silently discard
         }
 
-        // Validate required fields
-        if (!name?.trim() || !email?.trim() || !message?.trim()) {
+        // Validate required fields (email is optional — some forms don't have it)
+        if (!name?.trim() || !message?.trim()) {
             return NextResponse.json(
-                { error: 'Ime, email i poruka su obavezni.' },
+                { error: 'Ime i poruka su obavezni.' },
                 { status: 400 }
             );
         }
 
-        // Basic email format check
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        // Basic email format check (only when provided)
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             return NextResponse.json(
                 { error: 'Email adresa nije ispravna.' },
                 { status: 400 }
@@ -74,7 +74,7 @@ export async function POST(
         // Verify project exists and get owner email
         const project = await prisma.project.findUnique({
             where: { id: projectId },
-            select: { id: true, name: true, user: { select: { email: true } } },
+            select: { id: true, name: true, contactEmail: true, user: { select: { email: true } } },
         });
 
         if (!project) {
@@ -86,14 +86,14 @@ export async function POST(
             data: {
                 projectId,
                 name: name.trim().slice(0, 200),
-                email: email.trim().slice(0, 200),
+                email: (email || '').trim().slice(0, 200),
                 phone: phone?.trim().slice(0, 50) || null,
                 message: message.trim().slice(0, 5000),
             },
         });
 
-        // Send email to site owner via Resend
-        const ownerEmail = project.user.email;
+        // Use contactEmail if set, otherwise fall back to user's registration email
+        const ownerEmail = project.contactEmail || project.user.email;
         if (ownerEmail && process.env.RESEND_API_KEY) {
             await resend.emails.send({
                 from: 'Webica <noreply@webica.hr>',

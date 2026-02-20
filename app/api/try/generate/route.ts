@@ -92,12 +92,11 @@ export async function POST(req: Request) {
         console.log(`🎨 Trial | style: ${styleKey ?? 'auto'} | "${businessName}"`);
 
         // Generate AI images (gemini-3-pro-image-preview) with Pexels as fallback
-        const photos = await generatePageImages(
+        const photos = await generatePageImages({
             businessName,
             businessDescription,
             styleKey,
-            searchPexels
-        );
+        });
 
         console.log(`📸 hero: ${photos.hero.slice(0, 70)}...`);
 

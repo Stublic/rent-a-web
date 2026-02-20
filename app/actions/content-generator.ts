@@ -7,6 +7,8 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
+import { generatePageImages } from '@/lib/ai-images';
+import { STYLES } from '@/app/try/StylePicker';
 
 import { contentSchema } from '@/lib/schemas';
 
@@ -79,7 +81,7 @@ export async function generateWebsiteAction(projectId: string, formData: any) {
         where: { id: projectId }
     });
 
-    if (!project || project.userId !== session.user.id) {
+    if (!project || (project.userId !== session.user.id && (session.user as any).role !== 'ADMIN')) {
         return { error: 'Nemate pristup ovom projektu.' };
     }
 
@@ -104,31 +106,22 @@ export async function generateWebsiteAction(projectId: string, formData: any) {
 
         console.log('✅ Project status updated to PROCESSING');
 
-        // 6. Fetch stock images if needed
-        const { searchStockImages, getIndustryImageQueries } = await import('@/lib/stock-images');
-        const { getTemplatePrompt } = await import('@/lib/templates');
+        // 6. Generate AI images (first-time generation) OR get stock images as fallback
+        console.log(`📸 Generating images for: ${data.businessName} (${data.industry})`);
+        const aiImages = await generatePageImages({
+            businessName: data.businessName,
+            businessDescription: data.description,
+            industry: data.industry,
+            styleKey: (data as any).styleKey || null,
+        });
+        const stockImages = aiImages; // generatePageImages already handles Pexels fallback
 
-        const imageQueries = getIndustryImageQueries(data.industry);
-        const stockImages: any = {};
-
-        // Fetch missing images from stock APIs
-        if (!data.heroImageUrl) {
-            stockImages.hero = await searchStockImages(imageQueries.hero);
-        }
-        if (!data.aboutImageUrl) {
-            stockImages.about = await searchStockImages(imageQueries.about);
-        }
-        if (!data.featuresImageUrl) {
-            stockImages.features = await searchStockImages(imageQueries.features);
-        }
-        if (!data.servicesBackgroundUrl) {
-            stockImages.servicesBackground = await searchStockImages(imageQueries.services);
-        }
-
-        console.log(`📸 Stock images fetched:`, stockImages);
-
-        // 7. Get template-specific prompt
-        const templateInstructions = getTemplatePrompt(data.template || 'modern', data.industry);
+        // 7. Build style instructions
+        const styleKey = (data as any).styleKey as string | null;
+        const styleEntry = styleKey ? (STYLES as any)[styleKey] : null;
+        const templateInstructions = styleEntry
+            ? `DESIGN STYLE — apply strictly:\n${styleEntry.prompt}`
+            : 'Use a modern, professional, visually impressive design. Be creative with layout.';
 
         // 8. Generate Content with Gemini
         // Build clean data payload (filter out empty arrays to reduce prompt size)
@@ -201,8 +194,8 @@ Your task: Generate a SINGLE, self-contained HTML file for a landing page based 
     - logoUrl: ${data.logoUrl || 'none'}
     - heroImageUrl: ${data.heroImageUrl || stockImages.hero || 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1200'}
     - aboutImageUrl: ${data.aboutImageUrl || stockImages.about || 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800'}
-    - featuresImageUrl: ${data.featuresImageUrl || stockImages.features || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200'}
-    - servicesBackgroundUrl: ${data.servicesBackgroundUrl || stockImages.servicesBackground || ''}
+    - featuresImageUrl: ${data.featuresImageUrl || stockImages.services || 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200'}
+    - servicesBackgroundUrl: ${data.servicesBackgroundUrl || ''}
 6.  **Design Template:**
 ${templateInstructions}
 

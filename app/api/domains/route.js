@@ -43,7 +43,7 @@ export async function POST(req) {
         if (action === 'publish') {
             // Generate subdomain and publish
             if (project.publishedAt && project.subdomain) {
-                return NextResponse.json({ error: 'Site is already published' }, { status: 400 });
+                return NextResponse.json({ error: 'Site is already published. Use republish to push content changes.' }, { status: 400 });
             }
 
             let subdomain = project.subdomain || generateSubdomain(project.name);
@@ -75,6 +75,19 @@ export async function POST(req) {
                 subdomain,
                 url: `https://${domain}`,
             });
+
+        } else if (action === 'republish') {
+            // Content has changed — just bump publishedAt (HTML is already updated in DB)
+            if (!project.subdomain || !project.publishedAt) {
+                return NextResponse.json({ error: 'Site must be published first' }, { status: 400 });
+            }
+
+            await prisma.project.update({
+                where: { id: projectId },
+                data: { publishedAt: new Date() },
+            });
+
+            return NextResponse.json({ success: true });
 
         } else if (action === 'unpublish') {
             if (!project.subdomain) {
@@ -202,7 +215,7 @@ export async function GET(req) {
     });
     const isAdmin = currentUser?.role === 'ADMIN';
 
-    const selectFields = { subdomain: true, customDomain: true, publishedAt: true, status: true };
+    const selectFields = { subdomain: true, customDomain: true, publishedAt: true, updatedAt: true, status: true };
     const project = isAdmin
         ? await prisma.project.findUnique({ where: { id: projectId }, select: selectFields })
         : await prisma.project.findFirst({ where: { id: projectId, userId: session.user.id }, select: selectFields });
@@ -225,6 +238,11 @@ export async function GET(req) {
 
     return NextResponse.json({
         published: !!project.publishedAt,
+        publishedAt: project.publishedAt,
+        updatedAt: project.updatedAt,
+        hasUnpushedChanges: project.publishedAt && project.updatedAt
+            ? (new Date(project.updatedAt).getTime() - new Date(project.publishedAt).getTime()) > 2000
+            : false,
         subdomain: project.subdomain,
         subdomainUrl: project.subdomain ? `https://${project.subdomain}.${ROOT_DOMAIN}` : null,
         customDomain: project.customDomain,

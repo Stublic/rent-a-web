@@ -7,15 +7,9 @@ import { contentSchema } from "@/lib/schemas";
 import { uploadImageAction, generateWebsiteAction } from "@/app/actions/content-generator";
 import { saveContentAction } from "@/app/actions/save-content";
 import { updateContentAction } from "@/app/actions/update-content";
-import { Loader2, Upload, Trash2, Plus, Sparkles, Palette, Globe, Image, ChevronDown, ChevronUp, X, FolderOpen, Phone, Mail, Link2, MessageCircle, Clock, MapPin, Star, HelpCircle, Images, DollarSign, ExternalLink } from "lucide-react";
+import { Loader2, Upload, Trash2, Plus, Sparkles, Palette, Globe, Image, ChevronDown, ChevronUp, X, FolderOpen, Phone, Mail, Link2, MessageCircle, Clock, MapPin, Star, HelpCircle, Images, DollarSign, ExternalLink, Lock } from "lucide-react";
 import { useRouter } from "next/navigation";
-
-const templates = [
-    { id: 'modern', name: 'Modern', desc: 'Gradients, bold design', icon: '🎨', color: 'from-purple-500 to-pink-500' },
-    { id: 'professional', name: 'Professional', desc: 'Classic & trustworthy', icon: '💼', color: 'from-blue-600 to-indigo-700' },
-    { id: 'creative', name: 'Creative', desc: 'Artistic & unique', icon: '✨', color: 'from-orange-500 to-red-500' },
-    { id: 'minimal', name: 'Minimal', desc: 'Clean & simple', icon: '⚪', color: 'from-zinc-600 to-zinc-800' },
-];
+import StylePicker, { STYLES } from "@/app/try/StylePicker";
 
 const CTA_TYPES = [
     { value: 'contact', label: 'Kontakt forma', icon: Mail, desc: 'Šalje na kontakt sekciju' },
@@ -198,6 +192,10 @@ export default function ContentForm({ project }) {
     const [uploadError, setUploadError] = useState("");
     const [mediaPickerField, setMediaPickerField] = useState(null);
     const [showAdvancedColors, setShowAdvancedColors] = useState(false);
+    // styleKey: from project.contentData (locked if hasGenerated), or user picks
+    const [styleKey, setStyleKey] = useState(() => {
+        return project.contentData?.styleKey ?? null;
+    });
     const router = useRouter();
 
     const defaults = project.contentData || {
@@ -228,6 +226,41 @@ export default function ContentForm({ project }) {
     const { fields: galleryFields, append: appendGallery, remove: removeGallery } = useFieldArray({ control, name: "gallery" });
     const { fields: pricingFields, append: appendPricing, remove: removePricing } = useFieldArray({ control, name: "pricing" });
     const { fields: hoursFields } = useFieldArray({ control, name: "workingHours" });
+
+    // Prefill from /try trial data (only if project is DRAFT with no contentData)
+    useEffect(() => {
+        if (project.contentData) return; // Already has content, don't overwrite
+        try {
+            const raw = localStorage.getItem('rentaweb_trial');
+            if (!raw) return;
+            const trial = JSON.parse(raw);
+            if (!trial) return;
+
+            // businessName and description
+            if (trial.businessName) setValue('businessName', trial.businessName);
+            if (trial.businessDescription) setValue('description', trial.businessDescription);
+
+            // styleKey (from Faza 2)
+            if (trial.styleKey) setStyleKey(trial.styleKey);
+
+            // Try to extract contact info from generated HTML (regex)
+            if (trial.generatedHtml) {
+                const html = trial.generatedHtml;
+                // Email — look for mailto: links
+                const mailMatch = html.match(/mailto:([\w.%+-]+@[\w.-]+\.[a-z]{2,})/i);
+                if (mailMatch?.[1]) setValue('email', mailMatch[1]);
+                // Phone — look for tel: links
+                const telMatch = html.match(/tel:([+\d\s()\-]{7,20})/);
+                if (telMatch?.[1]) setValue('phone', telMatch[1].trim());
+            }
+
+            console.log('[ContentForm] Prefilled from trial data:', trial.businessName);
+        } catch (e) {
+            console.warn('[ContentForm] Could not load trial data:', e);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
 
     const generationSteps = [
         { label: "Validiranje podataka", icon: "✓" },
@@ -262,7 +295,7 @@ export default function ContentForm({ project }) {
             setGenerationStep(1); await new Promise(r => setTimeout(r, 500));
             setGenerationStep(2); await new Promise(r => setTimeout(r, 500));
             setGenerationStep(3);
-            const result = await generateWebsiteAction(project.id, data);
+            const result = await generateWebsiteAction(project.id, { ...data, styleKey });
             if (result.error) { setErrorMessage(typeof result.error === 'string' ? result.error : "Greška pri generiranju."); setGenerating(false); setGenerationStep(0); return; }
             setGenerationStep(4); await new Promise(r => setTimeout(r, 500));
             router.refresh(); setGenerating(false); setGenerationStep(0);
@@ -277,7 +310,9 @@ export default function ContentForm({ project }) {
         if (isUpdate) setUpdating(true); else setSaving(true);
         setErrorMessage("");
         try {
-            const result = isUpdate ? await updateContentAction(project.id, data) : await saveContentAction(project.id, data);
+            const result = isUpdate
+                ? await updateContentAction(project.id, { ...data, styleKey })
+                : await saveContentAction(project.id, { ...data, styleKey });
             if (result.error) { setErrorMessage(result.error); setSaving(false); setUpdating(false); return; }
             router.refresh(); setSaving(false); setUpdating(false);
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -369,25 +404,38 @@ export default function ContentForm({ project }) {
             )}
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                {/* ── Template Selection ── */}
+                {/* ── Style Picker ── */}
                 <div className="bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800 rounded-2xl p-6 sm:p-8 shadow-xl">
-                    <div className="flex items-center gap-3 mb-6">
+                    <div className="flex items-center gap-3 mb-4">
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-xl flex-shrink-0">🎨</div>
-                        <div><h2 className="text-lg sm:text-xl font-bold text-white">Odaberi Predložak</h2><p className="text-zinc-400 text-xs sm:text-sm">Stil dizajna web stranice</p></div>
+                        <div>
+                            <h2 className="text-lg sm:text-xl font-bold text-white">Vizualni Stil</h2>
+                            <p className="text-zinc-400 text-xs sm:text-sm">
+                                {project.hasGenerated
+                                    ? 'Stil je zaključan nakon prvog generiranja'
+                                    : 'Odaberi stil dizajna — zaključava se pri generiranju'}
+                            </p>
+                        </div>
+                        {project.hasGenerated && <Lock size={16} className="text-zinc-500 ml-auto" />}
                     </div>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                        {templates.map(t => (
-                            <label key={t.id} className="cursor-pointer group">
-                                <input type="radio" value={t.id} {...register("template")} className="sr-only" />
-                                <div className={`relative p-4 sm:p-5 rounded-xl border-2 transition-all ${selectedTemplate === t.id ? 'border-green-500 bg-green-500/10 shadow-lg shadow-green-500/20' : 'border-zinc-700 bg-zinc-900/50 hover:border-zinc-600'}`}>
-                                    <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br ${t.color} flex items-center justify-center text-xl sm:text-2xl mb-2 sm:mb-3 group-hover:scale-110 transition-transform`}>{t.icon}</div>
-                                    <h3 className="font-bold text-white mb-1 text-sm sm:text-base">{t.name}</h3>
-                                    <p className="text-xs text-zinc-500">{t.desc}</p>
-                                    {selectedTemplate === t.id && <div className="absolute top-2 right-2 bg-green-500 rounded-full p-1"><svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg></div>}
-                                </div>
-                            </label>
-                        ))}
-                    </div>
+                    {project.hasGenerated ? (
+                        // Locked — show read-only badge
+                        <div className="flex items-center gap-3 p-4 bg-zinc-800/50 border border-zinc-700 rounded-xl">
+                            <span className="text-2xl">
+                                {styleKey ? (STYLES[styleKey]?.emoji ?? '🎨') : '🤖'}
+                            </span>
+                            <div>
+                                <p className="text-white font-semibold text-sm">
+                                    {styleKey ? (STYLES[styleKey]?.label ?? styleKey) : 'AI odabir'}
+                                </p>
+                                <p className="text-zinc-500 text-xs">
+                                    {styleKey ? (STYLES[styleKey]?.desc ?? '') : 'AI sam odabrao stil'}
+                                </p>
+                            </div>
+                        </div>
+                    ) : (
+                        <StylePicker selected={styleKey} onSelect={setStyleKey} />
+                    )}
                 </div>
 
                 {/* ── 1. Basic Info ── */}
