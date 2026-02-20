@@ -24,38 +24,153 @@ function checkRateLimit(ip: string) {
     return true;
 }
 
-// Fetch best stock image for a query (Pexels → Unsplash → static fallback)
+// Search Pexels — returns best landscape photo URL or null
+async function searchPexels(query: string): Promise<string | null> {
+    const key = process.env.PEXELS_API_KEY;
+    if (!key) return null;
+    try {
+        const r = await fetch(
+            `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=3&orientation=landscape`,
+            { headers: { Authorization: key }, next: { revalidate: 3600 } }
+        );
+        if (!r.ok) return null;
+        const d = await r.json();
+        // Prefer large2x, fallback large
+        const photo = d.photos?.[0];
+        return photo?.src?.large2x ?? photo?.src?.large ?? null;
+    } catch { return null; }
+}
+
+// Search Unsplash — returns best landscape photo URL or null
+async function searchUnsplash(query: string): Promise<string | null> {
+    const key = process.env.UNSPLASH_ACCESS_KEY;
+    if (!key) return null;
+    try {
+        const r = await fetch(
+            `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=3&orientation=landscape&content_filter=high`,
+            { headers: { Authorization: `Client-ID ${key}` }, next: { revalidate: 3600 } }
+        );
+        if (!r.ok) return null;
+        const d = await r.json();
+        // Prefer full size, fallback regular
+        const photo = d.results?.[0];
+        return photo?.urls?.full ?? photo?.urls?.regular ?? null;
+    } catch { return null; }
+}
+
+// Fetch best stock image: race Pexels and Unsplash, take whichever resolves first
 async function fetchStockImage(query: string, fallback: string): Promise<string> {
-    const PEXELS_KEY = process.env.PEXELS_API_KEY;
-    const UNSPLASH_KEY = process.env.UNSPLASH_ACCESS_KEY;
+    const [pexels, unsplash] = await Promise.all([
+        searchPexels(query),
+        searchUnsplash(query),
+    ]);
+    return pexels ?? unsplash ?? fallback;
+}
 
-    if (PEXELS_KEY) {
-        try {
-            const r = await fetch(
-                `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=1&orientation=landscape`,
-                { headers: { Authorization: PEXELS_KEY } }
-            );
-            if (r.ok) {
-                const d = await r.json();
-                if (d.photos?.[0]?.src?.large2x) return d.photos[0].src.large2x;
-            }
-        } catch { /* fall through */ }
+// Croatian industry → specific English photo queries
+const INDUSTRY_MAP = [
+    {
+        kw: ['frizer', 'salon', 'šiš', 'boja', 'kos', 'hair'],
+        hero: 'modern hair salon interior', about: 'hairdresser cutting client hair', features: 'hair styling tools products'
+    },
+    {
+        kw: ['restoran', 'pizzeria', 'pizza', 'caffe', 'café', 'kafić', 'bistro', 'konoba', 'grill'],
+        hero: 'elegant restaurant dining ambience', about: 'chef cooking professional kitchen', features: 'fresh gourmet food plating'
+    },
+    {
+        kw: ['auto', 'servis', 'mehaničar', 'automobil', 'vozil', 'gume', 'motor'],
+        hero: 'professional car garage mechanic', about: 'mechanic working car engine', features: 'car repair tools workshop'
+    },
+    {
+        kw: ['odvjetn', 'pravn', 'sud', 'ugovor', 'pravo'],
+        hero: 'law office professional interior', about: 'lawyer consultation meeting', features: 'legal books scales justice'
+    },
+    {
+        kw: ['liječn', 'doktor', 'klinik', 'stomatolog', 'zubar', 'medicin', 'zdravl', 'terapeut'],
+        hero: 'modern medical clinic interior', about: 'doctor patient consultation', features: 'medical equipment healthcare'
+    },
+    {
+        kw: ['fitness', 'teretana', 'gym', 'trening', 'sport', 'trener', 'pilates', 'yoga'],
+        hero: 'modern gym fitness center', about: 'personal trainer workout session', features: 'gym equipment weights'
+    },
+    {
+        kw: ['kozmet', 'ljepot', 'beauty', 'manikur', 'pedikur', 'spa', 'masaž'],
+        hero: 'luxury beauty spa salon', about: 'beauty treatment professional', features: 'skincare cosmetics products'
+    },
+    {
+        kw: ['građevin', 'gradi', 'renovacij', 'soboslikar', 'ličilac', 'fasad', 'krovopokrivač'],
+        hero: 'construction renovation professional workers', about: 'construction team renovation', features: 'construction tools materials'
+    },
+    {
+        kw: ['vodoinstalater', 'vod', 'pluмber', 'kupaon'],
+        hero: 'professional plumber bathroom', about: 'plumber pipe repair work', features: 'plumbing tools equipment'
+    },
+    {
+        kw: ['računovod', 'porez', 'financij'],
+        hero: 'professional accountant office business', about: 'financial advisor meeting', features: 'accounting finance documents charts'
+    },
+    {
+        kw: ['fotografij', 'fotograf', 'video', 'sniman', 'vjenčanj', 'wedding'],
+        hero: 'professional photographer studio camera', about: 'photographer shooting portrait', features: 'camera lens photography gear'
+    },
+    {
+        kw: ['nekretnin', 'stan', 'kuć', 'real estate'],
+        hero: 'luxury real estate modern house exterior', about: 'real estate agent showing property', features: 'modern interior living room design'
+    },
+    {
+        kw: ['pekar', 'pekara', 'kruh', 'kolač', 'torta', 'slastičar'],
+        hero: 'artisan bakery fresh bread pastry', about: 'baker baking oven professional', features: 'fresh pastry bread close-up'
+    },
+    {
+        kw: ['cvjeć', 'flower', 'buket'],
+        hero: 'flower shop bouquet colorful', about: 'florist arranging flowers', features: 'fresh flowers close-up colorful'
+    },
+    {
+        kw: ['it', 'softver', 'razvoj', 'programer', 'web', 'app', 'digital', 'startup', 'tech'],
+        hero: 'modern tech startup office coworking', about: 'developer team laptop programming', features: 'code screen technology dark'
+    },
+    {
+        kw: ['čišćen', 'posprem', 'clean', 'higijena'],
+        hero: 'professional cleaning service home', about: 'cleaning team at work uniform', features: 'cleaning products equipment'
+    },
+    {
+        kw: ['prijevoz', 'dostava', 'taxi', 'logistik', 'kamion'],
+        hero: 'logistics delivery truck fleet', about: 'delivery driver vehicle professional', features: 'transport vehicles warehouse'
+    },
+    {
+        kw: ['hotel', 'hostel', 'smještaj', 'apartman'],
+        hero: 'luxury hotel lobby elegant', about: 'hotel staff reception warm', features: 'hotel room amenities bed'
+    },
+    {
+        kw: ['turizam', 'putovanj', 'travel', 'odmor', 'izlet', 'agencij'],
+        hero: 'travel destination scenic landscape', about: 'travel guide tourist adventure', features: 'map travel passport destination'
+    },
+];
+
+// Build contextually relevant English image search queries from business info
+function buildImageQueries(businessName: string, businessDescription: string) {
+    const text = `${businessName} ${businessDescription}`.toLowerCase();
+
+    // Try to match a Croatian industry keyword
+    const matched = INDUSTRY_MAP.find(entry => entry.kw.some(kw => text.includes(kw)));
+    if (matched) {
+        return { hero: matched.hero, about: matched.about, features: matched.features };
     }
 
-    if (UNSPLASH_KEY) {
-        try {
-            const r = await fetch(
-                `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=1&orientation=landscape`,
-                { headers: { Authorization: `Client-ID ${UNSPLASH_KEY}` } }
-            );
-            if (r.ok) {
-                const d = await r.json();
-                if (d.results?.[0]?.urls?.regular) return d.results[0].urls.regular;
-            }
-        } catch { /* fall through */ }
-    }
+    // Fallback: extract English-only words (won't work for Croatian, but covers bilingual inputs)
+    const engWords = `${businessName} ${businessDescription}`
+        .replace(/[^a-zA-Z\s]/g, ' ')
+        .split(/\s+/)
+        .filter(w => w.length > 4)
+        .slice(0, 3)
+        .join(' ');
 
-    return fallback;
+    const core = engWords || businessName.split(' ').slice(0, 2).join(' ');
+    return {
+        hero: `${core} professional business`,
+        about: `${core} team office`,
+        features: `${core} service work`,
+    };
 }
 
 // Style prompt keywords map
@@ -113,15 +228,17 @@ export async function POST(req: Request) {
 
         console.log(`� Trial generate | style: ${styleKey ?? 'AI decides'} | "${businessName}"`);
 
-        // Fetch stock images in parallel based on business description keywords
-        const descWords = businessDescription.toLowerCase().split(/\s+/).slice(0, 4).join(' ');
+        // Build smart, context-aware image queries
+        const queries = buildImageQueries(businessName, businessDescription);
+        console.log(`🔍 Image queries:`, queries);
+
         const [heroImg, aboutImg, featuresImg] = await Promise.all([
-            fetchStockImage(`${descWords} professional hero`, `https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1400&auto=format&fit=crop`),
-            fetchStockImage(`${descWords} team office`, `https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=900&auto=format&fit=crop`),
-            fetchStockImage(`${descWords} modern work`, `https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1000&auto=format&fit=crop`),
+            fetchStockImage(queries.hero, 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1400&auto=format&fit=crop'),
+            fetchStockImage(queries.about, 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=900&auto=format&fit=crop'),
+            fetchStockImage(queries.features, 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1000&auto=format&fit=crop'),
         ]);
 
-        console.log(`📸 Stock images: hero=${heroImg.slice(0, 60)}...`);
+        console.log(`📸 Images resolved: hero=${heroImg.slice(0, 60)}...`);
 
         const prompt = `
 You are a Senior Frontend Engineer and UI/UX Designer creating a PREMIUM landing page.
