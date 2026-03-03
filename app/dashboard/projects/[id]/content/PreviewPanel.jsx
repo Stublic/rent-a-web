@@ -23,9 +23,25 @@ function getPageLabels(project) {
 }
 
 /**
+ * Extract "Početna" nav link class for consistent styling.
+ */
+function extractNavLinkClass(html) {
+    const firstNav = html.match(/<nav[\s\S]*?<\/nav>/i);
+    if (!firstNav) return '';
+    const pocetnaLink = firstNav[0].match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i);
+    if (!pocetnaLink) return '';
+    const cls = pocetnaLink[0].match(/class="([^"]*)"/);
+    if (!cls) return '';
+    return cls[1]
+        .replace(/\bborder-b[-\w]*/g, '')
+        .replace(/\bborder-primary\b/g, '')
+        .replace(/\bpb-\d+/g, '')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+}
+
+/**
  * Client-side nav link injection for preview iframe.
- * Mirrors the server-side logic in route.js but runs in the browser.
- * Only injects links for subpages that aren't already linked in the HTML.
  */
 function injectNavLinksClient(html, project) {
     if (!html) return html;
@@ -34,62 +50,82 @@ function injectNavLinksClient(html, project) {
     const allSlugs = Object.keys(reactFiles).filter(k => labels[k]);
     if (allSlugs.length === 0) return html;
 
-    // Filter out slugs that already have links in the HTML
+    // Strip old blog links
+    html = html.replace(/<a\s[^>]*href=["']\/api\/site\/[^"']*\/blog["'][^>]*>[\s\S]*?<\/a>\s*/gi, '');
+
     const missingSlugs = allSlugs.filter(slug =>
         !html.includes(`href="/${slug}"`) && !html.includes(`href='/${slug}'`)
     );
     if (missingSlugs.length === 0) return html;
 
-    // Find nav link styling from the "Početna" text link (NOT the logo link)
-    const firstNav = html.match(/<nav[\s\S]*?<\/nav>/i);
-    let linkClass = '';
-    if (firstNav) {
-        // Match the <a> that contains "Početna" text — this is the actual nav link, not the logo
-        const pocetnaLink = firstNav[0].match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i);
-        if (pocetnaLink) {
-            const cls = pocetnaLink[0].match(/class="([^"]*)"/);
-            if (cls) {
-                // Remove active-state classes (border-b, border-primary) but keep font/size/color
-                linkClass = cls[1]
-                    .replace(/\bborder-b[-\w]*/g, '')
-                    .replace(/\bborder-primary\b/g, '')
-                    .replace(/\bpb-\d+/g, '')
-                    .replace(/\s{2,}/g, ' ')
-                    .trim();
-            }
-        }
-    }
-
+    const linkClass = extractNavLinkClass(html);
     const buildLink = (slug) => {
         const cls = linkClass ? ` class="${linkClass}"` : '';
         return `<a href="/${slug}"${cls}>${labels[slug]}</a>`;
     };
 
     const navLinksHtml = missingSlugs.map(buildLink).join('\n                    ');
-    const footerLinksHtml = missingSlugs.map(s => `<a href="/${s}">${labels[s]}</a>`).join('\n');
 
-    // Inject using markers or fallback
+    // Desktop nav
     if (html.includes('<!-- NAV_LINKS -->')) {
         html = html.replace(/<!-- NAV_LINKS -->/g, navLinksHtml);
     } else {
-        // Inject into ALL <nav> elements (desktop + mobile)
-        const allNavs = html.match(/<nav[\s\S]*?<\/nav>/gi) || [];
-        for (const navBlock of allNavs) {
-            const homeLinkFull = navBlock.match(/<a\s[^>]*href=["']\/["'][^>]*>[\s\S]*?<\/a>/i);
-            if (homeLinkFull) {
-                const updated = navBlock.replace(
-                    homeLinkFull[0],
-                    homeLinkFull[0] + '\n                    ' + navLinksHtml
-                );
-                html = html.replace(navBlock, updated);
+        const navMatch = html.match(/<nav[\s\S]*?<\/nav>/i);
+        if (navMatch) {
+            const pocetnaLink = navMatch[0].match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i);
+            if (pocetnaLink) {
+                const updated = navMatch[0].replace(pocetnaLink[0], pocetnaLink[0] + '\n                    ' + navLinksHtml);
+                html = html.replace(navMatch[0], updated);
+            }
+        }
+    }
+
+    // Mobile menu
+    if (html.includes('<!-- NAV_LINKS_MOBILE -->')) {
+        const mmMatch = html.match(/<div[^>]*id=["']mobile-menu["'][^>]*>[\s\S]*?<\/div>/i);
+        let mobileCls = '';
+        if (mmMatch) {
+            const mp = mmMatch[0].match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i);
+            if (mp) { const c = mp[0].match(/class="([^"]*)"/); if (c) mobileCls = c[1].replace(/\bborder-b[-\w]*/g,'').replace(/\bborder-primary\b/g,'').replace(/\s{2,}/g,' ').trim(); }
+        }
+        const mobileLinks = missingSlugs.map(s => `<a href="/${s}"${mobileCls ? ` class="${mobileCls}"` : ''}>${labels[s]}</a>`).join('\n            ');
+        html = html.replace(/<!-- NAV_LINKS_MOBILE -->/g, mobileLinks);
+    } else {
+        const mmMatch = html.match(/<div[^>]*id=["']mobile-menu["'][^>]*>[\s\S]*?<\/div>/i);
+        if (mmMatch) {
+            const mobileHtml = mmMatch[0];
+            const mobilePocetna = mobileHtml.match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i);
+            if (mobilePocetna && !mobileHtml.includes(`href="/${missingSlugs[0]}"`)) {
+                let mobileCls = '';
+                const c = mobilePocetna[0].match(/class="([^"]*)"/);
+                if (c) mobileCls = c[1].replace(/\bborder-b[-\w]*/g,'').replace(/\bborder-primary\b/g,'').replace(/\s{2,}/g,' ').trim();
+                const mobileLinks = missingSlugs.map(s => `<a href="/${s}"${mobileCls ? ` class="${mobileCls}"` : ''}>${labels[s]}</a>`).join('\n            ');
+                const updatedMobile = mobileHtml.replace(mobilePocetna[0], mobilePocetna[0] + '\n            ' + mobileLinks);
+                html = html.replace(mmMatch[0], updatedMobile);
             }
         }
     }
 
     // Footer
     if (html.includes('<!-- FOOTER_NAV_LINKS -->')) {
-        html = html.replace(/<!-- FOOTER_NAV_LINKS -->/g, footerLinksHtml);
+        const footerLinks = missingSlugs.map(s => `<a href="/${s}">${labels[s]}</a>`).join('\n');
+        html = html.replace(/<!-- FOOTER_NAV_LINKS -->/g, footerLinks);
+    } else {
+        const footerMatch = html.match(/<footer[\s\S]*?<\/footer>/i);
+        if (footerMatch) {
+            const footerHomeLi = footerMatch[0].match(/<li>\s*<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>\s*<\/li>/i);
+            if (footerHomeLi && !footerMatch[0].includes(`href="/${missingSlugs[0]}"`)) {
+                const footerLiLinks = missingSlugs.map(s => `<li><a href="/${s}" class="hover:text-white transition-colors">${labels[s]}</a></li>`).join('\n                        ');
+                const updatedFooter = footerMatch[0].replace(footerHomeLi[0], footerHomeLi[0] + '\n                        ' + footerLiLinks);
+                html = html.replace(footerMatch[0], updatedFooter);
+            }
+        }
     }
+
+    // Clean markers
+    html = html.replace(/<!-- NAV_LINKS -->/g, '');
+    html = html.replace(/<!-- NAV_LINKS_MOBILE -->/g, '');
+    html = html.replace(/<!-- FOOTER_NAV_LINKS -->/g, '');
 
     return html;
 }
@@ -101,35 +137,42 @@ function injectBlogNavLinkClient(html) {
     if (!html) return html;
     if (html.includes('href="/blog"') || html.includes("href='/blog'")) return html;
 
-    const navSection = html.match(/<nav[\s\S]*?<\/nav>/i);
-    if (!navSection) return html;
-    const navHtml = navSection[0];
+    const linkClass = extractNavLinkClass(html);
+    const blogLink = `<a href="/blog"${linkClass ? ` class="${linkClass}"` : ''}>Blog</a>`;
 
-    // Copy styling from "Početna" link
-    const pocetnaLink = navHtml.match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i);
-    let linkClass = '';
-    if (pocetnaLink) {
-        const cls = pocetnaLink[0].match(/class="([^"]*)"/);
-        if (cls) {
-            linkClass = cls[1]
-                .replace(/\bborder-b[-\w]*/g, '')
-                .replace(/\bborder-primary\b/g, '')
-                .replace(/\bpb-\d+/g, '')
-                .replace(/\s{2,}/g, ' ')
-                .trim();
+    // Desktop nav
+    const navSection = html.match(/<nav[\s\S]*?<\/nav>/i);
+    if (navSection) {
+        const desktopLinks = navSection[0].match(/<div[^>]*class="[^"]*hidden\s+md:flex[^"]*"[^>]*>[\s\S]*?<\/div>/i);
+        if (desktopLinks) {
+            const linkPattern = /<a\s[^>]*href=["']\/[a-z-]*["'][^>]*>[^<]*<\/a>/gi;
+            const links = desktopLinks[0].match(linkPattern);
+            if (links && links.length > 0) {
+                const lastLink = links[links.length - 1];
+                html = html.replace(desktopLinks[0], desktopLinks[0].replace(lastLink, lastLink + '\n                    ' + blogLink));
+            }
+        } else {
+            const linkPattern = /<a\s[^>]*href=["']\/[a-z-]*["'][^>]*>[^<]*<\/a>/gi;
+            const links = navSection[0].match(linkPattern);
+            if (links && links.length > 0) {
+                const lastLink = links[links.length - 1];
+                html = html.replace(navSection[0], navSection[0].replace(lastLink, lastLink + '\n                    ' + blogLink));
+            }
         }
     }
 
-    const blogLink = `<a href="/blog"${linkClass ? ` class="${linkClass}"` : ''}>Blog</a>`;
-
-    // Find last regular nav link and inject after it
-    const navLinkPattern = /<a\s[^>]*href=["']\/[a-z-]*["'][^>]*>[^<]*<\/a>/gi;
-    const navLinks = navHtml.match(navLinkPattern);
-    if (!navLinks || navLinks.length === 0) return html;
-
-    const lastNavLink = navLinks[navLinks.length - 1];
-    const updatedNav = navHtml.replace(lastNavLink, lastNavLink + '\n                    ' + blogLink);
-    html = html.replace(navSection[0], updatedNav);
+    // Mobile menu
+    const mmMatch = html.match(/<div[^>]*id=["']mobile-menu["'][^>]*>[\s\S]*?<\/div>/i);
+    if (mmMatch && !mmMatch[0].includes('href="/blog"')) {
+        const ctaButton = mmMatch[0].match(/<a\s[^>]*class="[^"]*bg-primary[^"]*"[^>]*>[\s\S]*?<\/a>/i);
+        if (ctaButton) {
+            const mobilePocetna = mmMatch[0].match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i);
+            let mobileCls = '';
+            if (mobilePocetna) { const c = mobilePocetna[0].match(/class="([^"]*)"/); if (c) mobileCls = c[1].replace(/\bborder-b[-\w]*/g,'').replace(/\bborder-primary\b/g,'').replace(/\s{2,}/g,' ').trim(); }
+            const mobileBlogLink = `<a href="/blog"${mobileCls ? ` class="${mobileCls}"` : ''}>Blog</a>`;
+            html = html.replace(mmMatch[0], mmMatch[0].replace(ctaButton[0], mobileBlogLink + '\n            ' + ctaButton[0]));
+        }
+    }
 
     return html;
 }
