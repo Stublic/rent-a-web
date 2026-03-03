@@ -2,11 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { logGeminiUsage } from '@/lib/gemini-usage';
+import { generateWithFallback } from '@/lib/gemini-with-fallback';
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
-const genAI = GOOGLE_API_KEY ? new GoogleGenerativeAI(GOOGLE_API_KEY) : null;
-const model = genAI ? genAI.getGenerativeModel({ model: "gemini-3-flash-preview" }) : null;
 
 const MONTHLY_LIMIT = 20;
 
@@ -16,7 +15,7 @@ export async function POST(req: NextRequest) {
         const session = await auth.api.getSession({ headers: await headers() });
         if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        if (!model) return NextResponse.json({ error: 'AI servis nije konfiguriran.' }, { status: 500 });
+        if (!GOOGLE_API_KEY) return NextResponse.json({ error: 'AI servis nije konfiguriran.' }, { status: 500 });
 
         const body = await req.json();
         const { projectId, topic, keywords, tone, length } = body;
@@ -31,8 +30,9 @@ export async function POST(req: NextRequest) {
         });
         if (!project) return NextResponse.json({ error: 'Projekt nije pronađen.' }, { status: 404 });
 
-        if (!project.planName?.toLowerCase().includes('growth')) {
-            return NextResponse.json({ error: 'AI blog pisanje je dostupno samo u Growth paketu.' }, { status: 403 });
+        const plan = project.planName?.toLowerCase() || '';
+        if (!plan.includes('growth') && !plan.includes('advanced')) {
+            return NextResponse.json({ error: 'AI blog pisanje je dostupno u Advanced i Growth paketu.' }, { status: 403 });
         }
 
         // Check monthly limit — reset if new month
@@ -120,15 +120,20 @@ Return ONLY the JSON object, no markdown blocks, no explanations.
 
         console.log(`📝 Generating blog article for project ${projectId}: "${topic}"`);
 
-        const result = await Promise.race([
-            model.generateContent(prompt),
-            new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('timeout')), 60000)
-            )
-        ]) as any;
+        const { response, modelUsed } = await generateWithFallback(prompt, {
+            timeoutMs: 60000,
+        });
 
-        const response = await result.response;
         let text = response.text().trim();
+
+        if (response.usageMetadata) {
+            logGeminiUsage({
+                type: 'blog_post',
+                model: modelUsed,
+                tokensInput: response.usageMetadata.promptTokenCount || 0,
+                tokensOutput: response.usageMetadata.candidatesTokenCount || 0,
+            });
+        }
 
         console.log(`📄 AI response length: ${text.length} chars`);
 
@@ -183,10 +188,17 @@ Return ONLY the JSON object, no markdown blocks, no explanations.
 
     } catch (error: any) {
         console.error('Blog generation error:', error?.message || error);
-        if (error.message === 'timeout') {
+        const msg = error?.message || '';
+        if (msg === 'timeout') {
             return NextResponse.json({ error: 'AI generiranje je predugo trajalo. Pokušajte ponovo.' }, { status: 504 });
         }
-        return NextResponse.json({ error: error?.message || 'Greška pri generiranju članka.' }, { status: 500 });
+        if (msg.includes('503') || msg.includes('Service Unavailable') || msg.includes('high demand') || msg.includes('overloaded')) {
+            return NextResponse.json({ error: 'AI model je trenutno pod velikim opterećenjem. Pokušajte ponovno za par minuta.' }, { status: 503 });
+        }
+        if (msg.includes('429') || msg.includes('rate limit') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('quota')) {
+            return NextResponse.json({ error: 'Previše zahtjeva. Pričekajte minutu i pokušajte ponovno.' }, { status: 429 });
+        }
+        return NextResponse.json({ error: 'Greška pri generiranju članka. Pokušajte ponovno.' }, { status: 500 });
     }
 }
 

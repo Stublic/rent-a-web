@@ -16,11 +16,11 @@ export default function PrivacyPolicyPage() {
                         <div className="w-8 h-8 rounded flex items-center justify-center overflow-hidden">
                             <img
                                 src="https://framerusercontent.com/images/fbLxHSQG15wQ5GLsHXeLv64Nvlo.png"
-                                alt="Rent a Web Logo"
+                                alt="Rent a webica Logo"
                                 className="w-full h-full object-cover"
                             />
                         </div>
-                        <span className="font-bold text-white text-lg">Rent a Web</span>
+                        <span className="font-bold text-white text-lg">Rent a webica</span>
                     </div>
                 </div>
             </div>

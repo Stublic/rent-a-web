@@ -46,10 +46,10 @@ export async function GET(req) {
         const [users, total] = await Promise.all([
             prisma.user.findMany({
                 where,
-                include: {
-                    projects: {
-                        select: { id: true, name: true, status: true, planName: true }
-                    },
+                select: {
+                    id: true, email: true, name: true, role: true, planName: true,
+                    subscriptionStatus: true, createdAt: true, editorTokens: true,
+                    projects: { select: { id: true, name: true, status: true, planName: true } },
                     _count: { select: { invoices: true } }
                 },
                 orderBy: { createdAt: 'desc' },
@@ -83,6 +83,18 @@ export async function PATCH(req) {
             if (updates[key] !== undefined) {
                 safeUpdates[key] = updates[key];
             }
+        }
+
+        // Handle addTokens separately (increment, not set)
+        if (updates.addTokens && typeof updates.addTokens === 'number' && updates.addTokens > 0) {
+            const user = await prisma.user.update({
+                where: { id: userId },
+                data: {
+                    ...safeUpdates,
+                    editorTokens: { increment: updates.addTokens },
+                },
+            });
+            return NextResponse.json({ user });
         }
 
         const user = await prisma.user.update({

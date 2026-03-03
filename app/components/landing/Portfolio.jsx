@@ -9,7 +9,7 @@ const FALLBACK = [
     { id: 'f1', name: 'Kistić i Sin',   url: 'https://kistic-i-sin.webica.hr',   industry: 'Građevinarstvo' },
     { id: 'f2', name: 'Mama Blogerica', url: 'https://mama-blogerica.webica.hr',  industry: 'Lifestyle blog' },
     { id: 'f3', name: 'Blogger Tata',   url: 'https://blogger-tata.webica.hr',    industry: 'Lifestyle blog' },
-    { id: 'f4', name: 'Rent a Web',     url: 'https://rent-a-web.webica.hr',      industry: 'SaaS' },
+    { id: 'f4', name: 'Rent a webica',     url: 'https://rent-a-web.webica.hr',      industry: 'SaaS' },
     { id: 'f5', name: 'Mama Meet Up',   url: 'https://mama-meetup.webica.hr',     industry: 'Događaji' },
 ];
 
@@ -146,7 +146,7 @@ function PreviewPanel({ project }) {
                         {project.name}
                     </span>
                     <span className="ml-auto text-[11px]" style={{ color: 'var(--lp-text-muted)' }}>
-                        Napravljeno s Rent a Web
+                        Napravljeno s Rent a webica
                     </span>
                 </div>
             </motion.div>

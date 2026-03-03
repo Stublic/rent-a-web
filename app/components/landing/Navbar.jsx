@@ -38,12 +38,12 @@ export default function Navbar() {
           <div className="w-9 h-9 rounded-lg flex items-center justify-center overflow-hidden transition-transform group-hover:scale-105">
             <img
               src="https://framerusercontent.com/images/fbLxHSQG15wQ5GLsHXeLv64Nvlo.png"
-              alt="Rent a Web Logo"
+              alt="Rent a webica Logo"
               className="w-full h-full object-cover"
             />
           </div>
           <span className="font-bold text-xl tracking-tight" style={{ color: 'var(--lp-heading)' }}>
-            Rent a Web
+            Rent a webica
           </span>
         </a>
 
@@ -74,7 +74,7 @@ export default function Navbar() {
           <ThemeToggle />
 
           <a
-            href="#contact"
+            href="/try"
             className="ml-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all hover:scale-105 active:scale-95"
             style={{
               background: 'var(--lp-heading)',

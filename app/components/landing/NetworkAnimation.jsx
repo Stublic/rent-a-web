@@ -91,7 +91,7 @@ export default function NetworkAnimation() {
           transform: active ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -50%) scale(0.5)'
         }}
       >
-        <div className="font-bold text-lg md:text-xl" style={{ color: 'var(--lp-heading)' }}>Rent a Web</div>
+        <div className="font-bold text-lg md:text-xl" style={{ color: 'var(--lp-heading)' }}>Rent a webica</div>
         <div 
           className="text-[10px] md:text-xs mt-1 px-2 py-0.5 rounded-full font-medium"
           style={{ background: 'var(--lp-bg-alt)', color: 'var(--lp-text-muted)' }}

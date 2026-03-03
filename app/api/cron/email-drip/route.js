@@ -26,7 +26,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://rent.webica.hr';
 // Email templates
 const emails = {
     3: {
-        subject: '💡 Kako izvući maksimum iz AI editora? — Rent a Web',
+        subject: '💡 Kako izvući maksimum iz AI editora? — Rent a webica',
         html: (name) => `
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; color: #333; background: #ffffff;">
                 <div style="background: linear-gradient(135deg, #0a0a0a, #1a1a1a); padding: 40px 30px; border-radius: 12px 12px 0 0;">
@@ -54,7 +54,7 @@ const emails = {
                     </div>
                     
                     <p style="color: #666; font-size: 13px; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
-                        Srdačan pozdrav,<br><strong>Rent a Web tim</strong>
+                        Srdačan pozdrav,<br><strong>Rent a webica tim</strong>
                     </p>
                 </div>
             </div>
@@ -70,7 +70,7 @@ const emails = {
                 </div>
                 <div style="padding: 30px; background: #fafafa; border: 1px solid #e5e5e5; border-top: none; border-radius: 0 0 12px 12px;">
                     <p>Pozdrav${name ? ` ${name}` : ''},</p>
-                    <p>Prošao je tjedan dana otkad ste se pridružili Rent a Web platformi. Nadamo se da uživate u vašoj web stranici!</p>
+                    <p>Prošao je tjedan dana otkad ste se pridružili Rent a webica platformi. Nadamo se da uživate u vašoj web stranici!</p>
                     
                     <div style="background: #fff; border: 1px solid #e5e5e5; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
                         <p style="font-size: 16px; font-weight: 600; margin: 0 0 12px;">Trebate pomoć?</p>
@@ -94,7 +94,7 @@ const emails = {
                     </div>
                     
                     <p style="color: #666; font-size: 13px; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
-                        Srdačan pozdrav,<br><strong>Rent a Web tim</strong>
+                        Srdačan pozdrav,<br><strong>Rent a webica tim</strong>
                     </p>
                 </div>
             </div>
@@ -110,7 +110,7 @@ const emails = {
                 </div>
                 <div style="padding: 30px; background: #fafafa; border: 1px solid #e5e5e5; border-top: none; border-radius: 0 0 12px 12px;">
                     <p>Pozdrav${name ? ` ${name}` : ''},</p>
-                    <p>Već dva tjedna koristite Rent a Web. Hvala vam na povjerenju! 🎉</p>
+                    <p>Već dva tjedna koristite Rent a webica. Hvala vam na povjerenju! 🎉</p>
                     
                     ${planName?.includes('Starter') ? `
                     <div style="background: linear-gradient(135deg, #faf5ff, #f0fdf4); border: 1px solid #d8b4fe; padding: 24px; border-radius: 12px; margin: 20px 0; text-align: center;">
@@ -136,7 +136,7 @@ const emails = {
                     </div>
                     
                     <p style="color: #666; font-size: 13px; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
-                        Srdačan pozdrav,<br><strong>Rent a Web tim</strong>
+                        Srdačan pozdrav,<br><strong>Rent a webica tim</strong>
                     </p>
                 </div>
             </div>

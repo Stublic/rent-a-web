@@ -17,15 +17,6 @@ export async function createTokenCheckoutSession(projectId: string, packageId: s
         return { error: 'Niste prijavljeni.' };
     }
 
-    // Verify project ownership
-    const project = await prisma.project.findUnique({
-        where: { id: projectId, userId: session.user.id }
-    });
-
-    if (!project) {
-        return { error: 'Projekt nije pronađen.' };
-    }
-
     // Find package and add priceId from env
     const tokenPackage = TOKEN_PACKAGES.find(pkg => pkg.id === packageId);
     if (!tokenPackage) {
@@ -54,10 +45,11 @@ export async function createTokenCheckoutSession(projectId: string, packageId: s
                 },
             ],
             mode: 'payment',
-            success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/projects/${projectId}/editor?token_purchase=success`,
+            // Redirect back to the tokens page for this project
+            success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/projects/${projectId}/tokens?token_purchase=success`,
             cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/projects/${projectId}/tokens?canceled=true`,
             metadata: {
-                projectId: projectId,
+                projectId: projectId,   // kept for reference/email link
                 userId: session.user.id,
                 tokens: tokenPackage.tokens.toString(),
                 packageId: packageId,

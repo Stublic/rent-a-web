@@ -1,7 +1,8 @@
-
-
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextResponse } from 'next/server';
+import { sanitizeHtml } from '@/lib/sanitize-html';
+import { parseAiResponse } from '@/lib/parse-ai-response';
+import { logGeminiUsage } from '@/lib/gemini-usage';
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 const genAI = GOOGLE_API_KEY ? new GoogleGenerativeAI(GOOGLE_API_KEY) : null;
@@ -29,6 +30,53 @@ function checkRateLimit(ip) {
     entry.count++;
     return true;
 }
+
+const EDIT_PROMPT_TEMPLATE = `
+Ti si Webica AI Editor — prijateljski, stručan asistent za uređivanje web stranica.
+Korisnik ti daje zahtjev za izmjenu (na hrvatskom jeziku), a ti ga primijeni na HTML stranici.
+
+**Trenutni HTML:**
+\`\`\`html
+{{HTML}}
+\`\`\`
+
+**Zahtjev korisnika:**
+"{{REQUEST}}"
+
+**Tvoj zadatak:**
+1. Pažljivo razumij što korisnik želi
+2. Primijeni SAMO tražene izmjene, zadrži sve ostalo netaknuto
+3. Vrati odgovor kao JSON objekt (bez markdown wrappinga)
+
+**KRITIČNA PRAVILA (self-healing):**
+- NIKADA ne dodavaj klasu "hidden" na vidljive elemente
+- NIKADA ne dupliciraj sadržaj stranice — svaka sekcija smije postojati samo jednom
+- UVIJEK osiguraj da je overflow-x: hidden na html i body elementima
+- SVE container elementi moraju imati max-width: 100% — stranica se NE SMIJE horizontalno skrolati
+- Ako stranica ima fixed ili sticky navigaciju, OBAVEZNO dodaj padding-top na prvi element ispod navbara (jednako visini navbara, npr. padding-top: 80px) da se sadržaj ne sakrije ispod navigacije
+- URL-ovi u src i href atributima MORAJU biti čisti (npr. src="https://example.com/img.jpg"), NIKADA ne stavljaj escape znakove ili duple navodnike
+- Ako primjetiš bilo koji od gore navedenih problema u trenutnom HTML-u, ISPRAVI ih
+- Zadrži sve postojeće skripte, forme i funkcionalnosti
+
+**Smjernice za izmjene:**
+- BOJA: promijeni CSS / inline style / Tailwind klase
+- TEKST: promijeni tekstualni sadržaj
+- SLIKE: ažuriraj src atribute
+- LAYOUT: podesi CSS spacing, sizing, positioning, flexbox, grid
+- DODAVANJE: umetni nove sekcije/elemente koristeći stil koji je već prisutan na stranici
+- BRISANJE: ukloni tražene elemente
+
+**Odgovor (SAMO čisti JSON, bez \`\`\`json wrappinga):**
+{
+  "html": "...kompletni modificirani HTML dokument koji počinje s <!DOCTYPE html>...",
+  "summary": "Kratki opis što si napravio (na hrvatskom, 1-2 rečenice, počni s ✅)",
+  "suggestion": "Relevantan prijedlog za sljedeću izmjenu u obliku pitanja (na hrvatskom, npr. 'Želiš li da sada uredimo boje u footer sekciji?')"
+}
+
+VAŽNO: Vrati ISKLJUČIVO JSON objekt. Bez markdown blokova, bez objašnjenja izvan JSON-a.
+`;
+
+
 
 export async function POST(req) {
     try {
@@ -65,43 +113,9 @@ export async function POST(req) {
 
         console.log(`🆓 Trial edit: "${editRequest.substring(0, 80)}..."`);
 
-        const prompt = `
-You are an expert HTML/CSS editor. The user has a website and wants to make a change.
-
-**Current HTML:**
-\`\`\`html
-${html}
-\`\`\`
-
-**User's Edit Request (in Croatian):**
-"${editRequest}"
-
-**Your Task:**
-1. Understand what the user wants to change
-2. Modify the HTML accordingly
-3. Return ONLY the complete, modified HTML
-4. Do NOT add markdown code blocks, just raw HTML
-5. Keep all existing functionality intact
-6. Make minimal changes - only what's requested
-
-**Guidelines:**
-- If about COLOR: modify CSS/Tailwind classes
-- If about TEXT: change text content
-- If about IMAGES: update src attributes
-- If about LAYOUT: adjust CSS spacing, sizing, positioning
-- If about ADDING CONTENT: insert new elements maintaining style
-- If about REMOVING: delete the requested elements
-
-**Critical:**
-- Start output with <!DOCTYPE html>
-- Return valid, complete HTML
-- No explanations, no markdown, no comments outside HTML
-
-**Also return a brief summary of what you changed as an HTML comment at the very end of the file in this exact format:**
-<!-- EDIT_SUMMARY: [Brief description in Croatian of what was changed] -->
-
-**Output:** Complete HTML document with edit summary comment at the end.
-`;
+        const prompt = EDIT_PROMPT_TEMPLATE
+            .replace('{{HTML}}', html)
+            .replace('{{REQUEST}}', editRequest);
 
         const result = await Promise.race([
             model.generateContent(prompt),
@@ -111,10 +125,30 @@ ${html}
         ]) as any;
 
         const response = await result.response;
-        let modifiedHtml = response.text();
+        const rawText = response.text();
 
-        modifiedHtml = modifiedHtml.replace(/```html/g, '').replace(/```/g, '').trim();
+        if (response.usageMetadata) {
+            logGeminiUsage({
+                type: 'try_edit_page',
+                model: 'gemini-2.0-flash',
+                tokensInput: response.usageMetadata.promptTokenCount || 0,
+                tokensOutput: response.usageMetadata.candidatesTokenCount || 0,
+            });
+        }
 
+        // Parse AI response (JSON or fallback)
+        const parsed = parseAiResponse(rawText);
+        if (!parsed) {
+            return NextResponse.json(
+                { error: 'AI nije vratio ispravan odgovor. Pokušajte ponovno.' },
+                { status: 500 }
+            );
+        }
+
+        // Sanitize HTML (self-healing)
+        let modifiedHtml = sanitizeHtml(parsed.html);
+
+        // Basic validation
         if (!modifiedHtml.includes('<!DOCTYPE') && !modifiedHtml.includes('<html')) {
             return NextResponse.json(
                 { error: 'AI nije vratio ispravan HTML. Pokušajte ponovno.' },
@@ -122,22 +156,17 @@ ${html}
             );
         }
 
-        // Extract edit summary from HTML comment
-        let message = 'Izmjena primijenjena.';
-        const summaryMatch = modifiedHtml.match(/<!-- EDIT_SUMMARY: (.+?) -->/);
-        if (summaryMatch) {
-            message = summaryMatch[1];
-            // Remove the comment from HTML
-            modifiedHtml = modifiedHtml.replace(/<!-- EDIT_SUMMARY: .+? -->/, '').trim();
-        }
-
         if (modifiedHtml.length > 200000) {
             modifiedHtml = modifiedHtml.substring(0, 200000);
         }
 
-        console.log(`✅ Trial edit applied: "${message}"`);
+        console.log(`✅ Trial edit applied: "${parsed.summary}"`);
 
-        return NextResponse.json({ html: modifiedHtml, message });
+        return NextResponse.json({
+            html: modifiedHtml,
+            message: parsed.summary,
+            suggestion: parsed.suggestion,
+        });
 
     } catch (error) {
         console.error('❌ Trial edit error:', error);

@@ -16,9 +16,10 @@ export default async function TokenPurchasePageWrapper({ params }) {
     // Check if user is admin for bypassing ownership check
     const currentUser = await prisma.user.findUnique({
         where: { id: session.user.id },
-        select: { role: true }
+        select: { role: true, editorTokens: true }
     });
     const isAdmin = currentUser?.role === 'ADMIN';
+    const userTokens = currentUser?.editorTokens ?? 0;
 
     const project = await prisma.project.findUnique({
         where: isAdmin ? { id } : { id, userId: session.user.id }
@@ -28,5 +29,5 @@ export default async function TokenPurchasePageWrapper({ params }) {
         notFound();
     }
 
-    return <TokenPurchasePage project={project} />;
+    return <TokenPurchasePage project={project} userTokens={userTokens} />;
 }

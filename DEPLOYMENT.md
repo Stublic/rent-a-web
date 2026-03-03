@@ -1,4 +1,4 @@
-# Rent a Web - Next.js
+# Rent a webica - Next.js
 
 Moderan Next.js web s Stripe pretplatama, SOLO integracija i email slanjem.
 
@@ -32,7 +32,7 @@ SMTP_HOST=mail.webica.hr
 SMTP_PORT=465
 SMTP_USER=info@webica.hr
 SMTP_PASSWORD=(tvoja SMTP lozinka)
-SMTP_FROM=Rent a Web <info@webica.hr>
+SMTP_FROM=Rent a webica <info@webica.hr>
 ADMIN_EMAIL=info@webica.hr
 ```
 

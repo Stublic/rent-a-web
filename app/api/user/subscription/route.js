@@ -30,7 +30,6 @@ export async function GET() {
                 planName: true,
                 stripeSubscriptionId: true,
                 status: true,
-                editorTokens: true,
                 hasGenerated: true,
                 cancelledAt: true,
                 createdAt: true,
@@ -63,6 +62,7 @@ export async function GET() {
         return NextResponse.json({
             subscriptionStatus: user.subscriptionStatus,
             planName: user.planName,
+            editorTokens: user.editorTokens ?? 0,  // account-level tokens
             projects,
             invoices
         });

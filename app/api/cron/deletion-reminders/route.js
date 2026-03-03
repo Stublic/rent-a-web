@@ -85,7 +85,7 @@ function getReminderEmail(projectName, planName, daysLeft, label, urgency, userN
 
                 <p style="color: #666; font-size: 13px; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
                     Ako ne želite obnoviti pretplatu, ne trebate ništa poduzimati. Podaci će biti automatski obrisani nakon ${GRACE_PERIOD_DAYS} dana od otkazivanja.<br><br>
-                    Srdačan pozdrav,<br><strong>Rent a Web tim</strong>
+                    Srdačan pozdrav,<br><strong>Rent a webica tim</strong>
                 </p>
             </div>
         </div>
@@ -158,7 +158,7 @@ export async function GET(req) {
                                             <div style="text-align: center; margin: 30px 0;">
                                                 <a href="${APP_URL}/dashboard/new-project" style="background: #22c55e; color: white; padding: 14px 32px; text-decoration: none; border-radius: 10px; font-weight: 600; display: inline-block;">Kreiraj novu stranicu →</a>
                                             </div>
-                                            <p style="color: #666; font-size: 13px; border-top: 1px solid #eee; padding-top: 20px;">Srdačan pozdrav,<br><strong>Rent a Web tim</strong></p>
+                                            <p style="color: #666; font-size: 13px; border-top: 1px solid #eee; padding-top: 20px;">Srdačan pozdrav,<br><strong>Rent a webica tim</strong></p>
                                         </div>
                                     </div>
                                 `,

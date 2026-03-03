@@ -10,61 +10,72 @@ import Link from 'next/link';
 const plans = [
   {
     name: "Starter",
+    subtitle: "Prodajna landing stranica",
     price: "39",
-    originalPrice: "49",
     features: [
-      "Jednostavna landing stranica",
-      "Kontakt sekcija / forma",
-      "Moderan i responzivan dizajn",
-      "Hosting (Vercel)",
-      "Povezivanje vlastite domene",
-      "Osnovne animacije (scroll, hover)",
-      "Email notifikacije"
+      "AI generirana one-page (landing) stranica",
+      "Kontakt forma i napredni SEO",
+      "500 AI tokena za uređivanje",
+      "Hosting na poddomeni",
+      "Custom domena",
+      "SSL & sigurnosne nadogradnje",
+      "Prodajna struktura stranice (conversion flow)",
+      "Stranica gotova u 45 sekundi, neograničen broj revizija",
     ],
     priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_STARTER,
-    description: "Za testiranje poslovne ideje i jednostavan nastup.",
+    description: "Idealno za male obrte i lokalne usluge koji žele brzo biti online.",
     targetAudience: "Poduzetnici početnici, obrti",
     color: "bg-zinc-800",
     textColor: "text-white",
-    buttonColor: "bg-white text-black hover:bg-zinc-200"
+    buttonColor: "bg-white text-black hover:bg-zinc-200",
+    available: true,
   },
   {
     name: "Advanced",
-    price: "89",
-    originalPrice: "99",
+    subtitle: "Ozbiljan biznis",
+    price: "99",
     features: [
-      "Više podstranica (Naslovna, Usluge...)",
-      "Moderan dizajn + animacije",
-      "Hosting i domena uključeni",
-      "Google Ads kampanja (postavljanje)",
-      "Održavanje i tehnička podrška",
-      "Brza isporuka"
+      "Sve iz Starter paketa",
+      "Kompleksna struktura (Naslovnica, Usluge, O nama, Kontakt)",
+      "CMS za Blog (objave + kategorije + tagovi)",
+      "10 AI članaka mjesečno (SEO friendly)",
+      "Custom domena",
+      "Napredne animacije & UX efekti",
+      "Napredna AI SEO optimizacija",
+      "Generiranje slika za web (Nano Banana)",
+      "Pravni aspekti (GDPR, Uvjeti korištenja)",
     ],
     priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_ADVANCED,
-    description: "Za aktivne male biznise koji žele brzo doći do klijenata.",
+    description: "Za tvrtke koje žele više: ozbiljniji web i SEO potencijal.",
     targetAudience: "Mali biznisi, uslužne djelatnosti",
     recommended: true,
     color: "bg-zinc-900 border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.15)]",
     textColor: "text-green-500",
-    buttonColor: "bg-green-500 text-white hover:bg-green-400"
+    buttonColor: "bg-green-500 text-white hover:bg-green-400",
+    available: true,
   },
   {
-    name: "Growth",
-    price: "59",
+    name: "Web Shop Start",
+    subtitle: "Prodaja 0–24",
+    price: "199",
     features: [
-      "Sve iz Advanced paketa",
-      "Blog sustav (20 članaka/mj)",
-      "AI pisanje blog članaka",
-      "Premium SEO optimizacija",
-      "Prioritetna podrška",
-      "Custom domena uključena"
+      "Katalog + košarica + checkout",
+      "Upravljanje proizvodima i narudžbama",
+      "Sve metode plaćanja",
+      "AI SEO optimizacija i opis proizvoda",
+      "Hosting + CMS + SSL",
+      "Generiranje slika za web (Nano Banana)",
+      "Integracija sa SOLO servisom (fiskalizacija)",
+      "Pravni aspekti (GDPR, Uvjeti korištenja)",
     ],
-    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_BUSINESS,
-    description: "Za biznise koji žele rasti i privlačiti klijente putem sadržaja.",
-    targetAudience: "Rastući biznisi, uslužne djelatnosti",
-    color: "bg-zinc-800",
-    textColor: "text-white",
-    buttonColor: "bg-white text-black hover:bg-zinc-200"
+    priceId: null,
+    description: "Online prodaja bez kompliciranog sustava plaćanja.",
+    targetAudience: "Web shopovi, online prodaja",
+    color: "bg-zinc-800 opacity-60",
+    textColor: "text-purple-400",
+    buttonColor: "bg-zinc-700 text-zinc-400 cursor-not-allowed",
+    available: false,
+    comingSoon: true,
   }
 ];
 
@@ -103,13 +114,19 @@ export default function NewProjectPage() {
 
             <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
                 {plans.map((plan) => (
-                    <div key={plan.name} className={`relative p-8 rounded-3xl border ${plan.recommended ? 'border-green-500 scale-105 z-10' : 'border-zinc-800 bg-zinc-900/50'} flex flex-col`}>
+                    <div key={plan.name} className={`relative p-8 rounded-3xl border ${plan.recommended ? 'border-green-500 scale-105 z-10' : plan.comingSoon ? 'border-zinc-800 bg-zinc-900/30 opacity-70' : 'border-zinc-800 bg-zinc-900/50'} flex flex-col`}>
                         {plan.recommended && (
                             <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-green-500 text-black text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
                                 Najpopularnije
                             </div>
                         )}
-                        <h3 className={`text-xl font-bold mb-2 ${plan.textColor}`}>{plan.name}</h3>
+                        {plan.comingSoon && (
+                            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                                Uskoro
+                            </div>
+                        )}
+                        <h3 className={`text-xl font-bold mb-0.5 ${plan.textColor}`}>{plan.name}</h3>
+                        {plan.subtitle && <p className="text-xs font-semibold text-zinc-500 mb-3 uppercase tracking-wide">{plan.subtitle}</p>}
                         <p className="text-sm mb-4 text-zinc-400 min-h-[40px]">{plan.description}</p>
                         
                         <div className="flex items-baseline gap-2 mb-2">
@@ -117,9 +134,6 @@ export default function NewProjectPage() {
                                 <span className="text-4xl font-extrabold">{plan.price}€</span>
                                 <span className="text-sm text-zinc-500">/ mj</span>
                             </div>
-                            {plan.originalPrice && (
-                                <span className="text-zinc-500 line-through text-lg decoration-red-500/50">{plan.originalPrice}€</span>
-                            )}
                         </div>
 
                         {plan.targetAudience && (
@@ -137,8 +151,8 @@ export default function NewProjectPage() {
                             ))}
                         </ul>
                         <button
-                            onClick={() => handleSubscribe(plan.priceId)}
-                            disabled={loadingPriceId === plan.priceId}
+                            onClick={() => plan.available && handleSubscribe(plan.priceId)}
+                            disabled={!plan.available || loadingPriceId === plan.priceId}
                             className={`w-full py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${plan.buttonColor} disabled:opacity-50`}
                         >
                             {loadingPriceId === plan.priceId ? <Loader2 className="animate-spin" /> : "Odaberi paket"}

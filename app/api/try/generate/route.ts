@@ -1,15 +1,17 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextResponse } from 'next/server';
 import { generatePageImages } from '@/lib/ai-images';
+import { logGeminiUsage } from '@/lib/gemini-usage';
+import { generateWithFallback } from '@/lib/gemini-with-fallback';
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
-const genAI = GOOGLE_API_KEY ? new GoogleGenerativeAI(GOOGLE_API_KEY) : null;
-const model = genAI ? genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' }) : null;
+
+import { cookies } from 'next/headers';
 
 // ─── Rate limiting ─────────────────────────────────────────────────────────────
+// One generation per IP, stored for 30 days
 const rateLimitMap = new Map<string, { windowStart: number; count: number }>();
-const RATE_LIMIT = 5;
-const RATE_WINDOW = 60 * 60 * 1000;
+const RATE_LIMIT = 1;
+const RATE_WINDOW = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 function checkRateLimit(ip: string) {
     const now = Date.now();
@@ -67,14 +69,26 @@ const STYLE_PROMPTS: Record<string, string> = {
 export async function POST(req: Request) {
     try {
         const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
-        if (!checkRateLimit(ip)) {
+
+        // Check cookie-based block (set after first successful generation)
+        const cookieStore = await cookies();
+        const trialCookie = cookieStore.get('trial_generated');
+        if (trialCookie?.value === '1') {
             return NextResponse.json(
-                { error: 'Previše zahtjeva. Pokušajte ponovno za sat vremena.' },
+                { error: 'already_generated', message: 'Već si generirao/la svoju besplatnu stranicu. Odaberi paket za neograničeno generiranje.' },
                 { status: 429 }
             );
         }
 
-        if (!GOOGLE_API_KEY || !model) {
+        // IP-based rate limit (secondary check)
+        if (!checkRateLimit(ip)) {
+            return NextResponse.json(
+                { error: 'already_generated', message: 'Već si generirao/la svoju besplatnu stranicu. Odaberi paket za neograničeno generiranje.' },
+                { status: 429 }
+            );
+        }
+
+        if (!GOOGLE_API_KEY) {
             return NextResponse.json({ error: 'AI sustav nije konfiguriran.' }, { status: 500 });
         }
 
@@ -166,15 +180,20 @@ OPTIONAL (add if they fit): stats bar, FAQ accordion, gallery, pricing table, pr
 ## OUTPUT
 Return ONLY the HTML document. Nothing else.`;
 
-        const result = await Promise.race([
-            model.generateContent(prompt),
-            new Promise<never>((_, reject) =>
-                setTimeout(() => reject(new Error('AI timeout')), 120000)
-            ),
-        ]) as any;
+        const { response, modelUsed } = await generateWithFallback(prompt, {
+            timeoutMs: 120000,
+        });
 
-        const response = await result.response;
         let html: string = response.text();
+
+        if (response.usageMetadata) {
+            logGeminiUsage({
+                type: 'try_generate_page',
+                model: modelUsed,
+                tokensInput: response.usageMetadata.promptTokenCount || 0,
+                tokensOutput: response.usageMetadata.candidatesTokenCount || 0,
+            });
+        }
 
         html = html.replace(/```html/gi, '').replace(/```/g, '').trim();
 
@@ -188,7 +207,16 @@ Return ONLY the HTML document. Nothing else.`;
         if (html.length > 300000) html = html.substring(0, 300000);
 
         console.log(`✅ Trial HTML: ${html.length} chars | "${businessName}"`);
-        return NextResponse.json({ html });
+
+        // Set cookie to permanently block re-generation
+        const res = NextResponse.json({ html });
+        res.cookies.set('trial_generated', '1', {
+            httpOnly: true,
+            sameSite: 'lax',
+            maxAge: 60 * 60 * 24 * 30, // 30 days
+            path: '/',
+        });
+        return res;
 
     } catch (error: any) {
         console.error('❌ Trial generate error:', error);

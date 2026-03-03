@@ -93,12 +93,12 @@ const Navbar = () => {
           <div className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden transition-transform group-hover:scale-105">
              <img 
                src="https://framerusercontent.com/images/fbLxHSQG15wQ5GLsHXeLv64Nvlo.png" 
-               alt="Rent a Web Logo" 
+               alt="Rent a webica Logo" 
                className="w-full h-full object-cover"
              />
           </div>
           <span className="font-bold text-2xl text-white tracking-tight">
-            Rent a Web
+            Rent a webica
           </span>
         </a>
         
@@ -692,7 +692,7 @@ const App = () => {
                   <div className="grid grid-cols-12 text-xs font-bold uppercase tracking-wider text-zinc-500 border-b border-zinc-800 pb-3">
                     <div className="col-span-4">Stavka</div>
                     <div className="col-span-4 text-red-500">Klasična izrada</div>
-                    <div className="col-span-4 text-green-500 text-right">Rent a Web</div>
+                    <div className="col-span-4 text-green-500 text-right">Rent a webica</div>
                   </div>
 
                   {/* Comparison Rows */}
@@ -943,7 +943,7 @@ const App = () => {
               <ReviewCard 
                 name="Danko Đurić"
                 role="DANKO ogradni sustavi"
-                text="Trebala mi je jednostavna stranica da prikažem naše projekte. Rent a Web je to riješio brzo, a upiti za ponude sada stižu redovito."
+                text="Trebala mi je jednostavna stranica da prikažem naše projekte. Rent a webica je to riješio brzo, a upiti za ponude sada stižu redovito."
                 avatarColor="bg-orange-600"
               />
             </FadeIn>
@@ -1135,11 +1135,11 @@ const App = () => {
             <div className="w-8 h-8 rounded flex items-center justify-center overflow-hidden">
                 <img 
                    src="https://framerusercontent.com/images/fbLxHSQG15wQ5GLsHXeLv64Nvlo.png" 
-                   alt="Rent a Web Logo" 
+                   alt="Rent a webica Logo" 
                    className="w-full h-full object-cover"
                  />
             </div>
-            <span>Rent a Web</span>
+            <span>Rent a webica</span>
           </div>
           <div className="flex gap-8 text-sm font-medium">
             <a href="#" className="hover:text-white transition-colors">Politika privatnosti</a>
@@ -1147,7 +1147,7 @@ const App = () => {
             <a href="#contact" className="hover:text-white transition-colors">Kontakt</a>
           </div>
           <div className="text-sm">
-            © {new Date().getFullYear()} Rent a Web. Sva prava pridržana.
+            © {new Date().getFullYear()} Rent a webica. Sva prava pridržana.
           </div>
         </div>
       </footer>

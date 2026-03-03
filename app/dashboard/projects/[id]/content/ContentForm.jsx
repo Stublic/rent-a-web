@@ -1,400 +1,662 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { contentSchema } from "@/lib/schemas";
 import { uploadImageAction, generateWebsiteAction } from "@/app/actions/content-generator";
+import { generateAdvancedWebsiteAction } from "@/app/actions/advanced-generator";
 import { saveContentAction } from "@/app/actions/save-content";
 import { updateContentAction } from "@/app/actions/update-content";
-import { Loader2, Upload, Trash2, Plus, Sparkles, Palette, Globe, Image, ChevronDown, ChevronUp, X, FolderOpen, Phone, Mail, Link2, MessageCircle, Clock, MapPin, Star, HelpCircle, Images, DollarSign, ExternalLink, Lock } from "lucide-react";
+import {
+    Loader2, Upload, Trash2, Plus, Sparkles, Image,
+    FolderOpen, Phone, Mail, MapPin, X, Check, Clock,
+    Star, HelpCircle, Images, DollarSign, Globe, Share2
+} from "lucide-react";
 import { useRouter } from "next/navigation";
-import StylePicker, { STYLES } from "@/app/try/StylePicker";
+import { ExtendedWaitBanner } from "@/app/dashboard/components/ExtendedWaitMessages";
+import SuccessCelebration from "@/app/dashboard/components/SuccessCelebration";
+import IndustryPicker from "./IndustryPicker";
 
-const CTA_TYPES = [
-    { value: 'contact', label: 'Kontakt forma', icon: Mail, desc: 'Šalje na kontakt sekciju' },
-    { value: 'phone', label: 'Poziv telefon', icon: Phone, desc: 'Poziva vaš broj' },
-    { value: 'email', label: 'Pošalji email', icon: Mail, desc: 'Otvara email klijent' },
-    { value: 'whatsapp', label: 'WhatsApp', icon: MessageCircle, desc: 'Otvara WhatsApp chat' },
-    { value: 'link', label: 'Custom link', icon: ExternalLink, desc: 'PDF, vanjska stranica...' },
-];
+import {
+    Section, SectionHint, CtaSelector,
+    MediaPickerModal, DEFAULT_HOURS
+} from "./content-shared";
+import {
+    WorkingHoursSection, SocialLinksSection,
+    TestimonialsSection, FaqSection, GallerySection, PricingSection
+} from "./CollapsibleSections";
 
-const COLOR_PRESETS = [
-    '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#3b82f6', '#6366f1',
-    '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e', '#ef4444',
-    '#f97316', '#f59e0b', '#eab308', '#84cc16',
-];
+// ─── Services Section ─────────────────────────────────────────────────────────
+function ServicesSection({ control, register, watch, setValue, setMediaPickerField, onRemove }) {
+    const { fields, append, remove } = useFieldArray({ control, name: "services" });
 
-const DAYS = ['Ponedjeljak', 'Utorak', 'Srijeda', 'Četvrtak', 'Petak', 'Subota', 'Nedjelja'];
-
-const DEFAULT_HOURS = DAYS.map(day => ({
-    day,
-    from: day === 'Subota' || day === 'Nedjelja' ? '' : '08:00',
-    to: day === 'Subota' || day === 'Nedjelja' ? '' : '16:00',
-    closed: day === 'Subota' || day === 'Nedjelja'
-}));
-
-// --- Media Picker Modal ---
-function MediaPickerModal({ onSelect, onClose }) {
-    const [media, setMedia] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [search, setSearch] = useState("");
-
-    useEffect(() => {
-        const fetchMedia = async () => {
-            try {
-                const res = await fetch('/api/media');
-                const data = await res.json();
-                if (data.media) setMedia(data.media.filter(m => m.type.startsWith('image/')));
-            } catch (err) { console.error("Failed to fetch media", err); }
-            finally { setLoading(false); }
-        };
-        fetchMedia();
-    }, []);
-
-    const filtered = search ? media.filter(m => m.filename.toLowerCase().includes(search.toLowerCase())) : media;
-
-    return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
-            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-3xl w-full max-h-[80vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
-                <div className="flex items-center justify-between p-5 border-b border-zinc-800">
-                    <div>
-                        <h3 className="text-lg font-bold text-white">Media Knjižnica</h3>
-                        <p className="text-zinc-500 text-xs mt-0.5">Odaberite sliku iz vaše knjižnice</p>
+    const ImageUploadBox = ({ field, label, currentUrl }) => (
+        <div className="space-y-2">
+            <label className="text-sm font-medium flex items-center gap-2" style={{ color: 'var(--lp-text-secondary)' }}>
+                <Image size={14} style={{ color: 'var(--lp-text-muted)' }} />{label}
+            </label>
+            <div className="border-2 border-dashed rounded-xl p-4 hover:border-emerald-500/40 transition-all group relative"
+                style={{ borderColor: 'var(--lp-border)', background: 'var(--lp-surface)' }}>
+                {currentUrl ? (
+                    <div className="relative">
+                        <img src={currentUrl} alt={label} className="w-full h-28 object-cover rounded-lg" />
+                        <button type="button" onClick={() => setValue(field, "")} className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 transition-colors shadow-lg"><Trash2 size={12} /></button>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-zinc-800 rounded-lg transition-colors"><X size={20} className="text-zinc-400" /></button>
-                </div>
-                <div className="px-5 py-3 border-b border-zinc-800/50">
-                    <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Pretraži po nazivu..."
-                        className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-green-500 transition-colors" />
-                </div>
-                <div className="flex-1 overflow-y-auto p-5">
-                    {loading ? (
-                        <div className="flex items-center justify-center py-16"><Loader2 size={28} className="animate-spin text-green-500" /></div>
-                    ) : filtered.length > 0 ? (
-                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                            {filtered.map(item => (
-                                <button key={item.id} type="button" onClick={() => onSelect(item.url)}
-                                    className="group relative aspect-square rounded-xl overflow-hidden border-2 border-zinc-800 hover:border-green-500 transition-all focus:outline-none">
-                                    <img src={item.url} alt={item.filename} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-end">
-                                        <div className="w-full p-2 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <p className="text-white text-xs truncate font-medium">{item.filename}</p>
-                                        </div>
-                                    </div>
-                                </button>
-                            ))}
+                ) : (
+                    <div className="flex flex-col items-center gap-2">
+                        <Upload size={20} className="transition-colors group-hover:text-emerald-500" style={{ color: 'var(--lp-text-muted)' }} />
+                        <div className="flex items-center gap-2">
+                            <label className="cursor-pointer px-3 py-1.5 text-xs font-medium rounded-lg transition-colors hover:bg-white/5"
+                                style={{ background: 'var(--lp-bg)', color: 'var(--lp-text-secondary)', border: '1px solid var(--lp-border)' }}>
+                                Prenesi
+                                <input type="file" onChange={async e => {
+                                    const file = e.target.files[0];
+                                    if (!file) return;
+                                    const fd = new FormData(); fd.append("file", file);
+                                    try { const url = await uploadImageAction(fd); setValue(field, url); } catch {}
+                                }} className="hidden" accept="image/*" />
+                            </label>
+                            <button type="button" onClick={() => setMediaPickerField(field)}
+                                className="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5"
+                                style={{ background: 'rgba(34,197,94,0.1)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.2)' }}>
+                                <FolderOpen size={11} />Knjižnica
+                            </button>
                         </div>
-                    ) : (
-                        <div className="text-center py-16">
-                            <Image size={32} className="mx-auto text-zinc-700 mb-3" />
-                            <p className="text-zinc-500 text-sm font-medium">{search ? "Nema rezultata" : "Nema uploadanih slika"}</p>
-                            <p className="text-zinc-600 text-xs mt-1">{search ? "Pokušajte s drugim pojmom" : "Idite na Media tab da uploadate slike"}</p>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-}
-
-// --- CTA Selector Component ---
-function CtaSelector({ prefix, register, watch, setValue }) {
-    const ctaType = watch(`${prefix}.type`) || 'contact';
-    return (
-        <div className="bg-zinc-950/50 border border-zinc-800 rounded-xl p-4 space-y-3">
-            <label className="text-zinc-400 text-xs font-semibold uppercase tracking-wide">CTA Gumb</label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-                {CTA_TYPES.map(cta => {
-                    const Icon = cta.icon;
-                    return (
-                        <button key={cta.value} type="button" onClick={() => setValue(`${prefix}.type`, cta.value)}
-                            className={`p-2.5 rounded-lg border text-left transition-all ${ctaType === cta.value
-                                ? 'border-green-500 bg-green-500/10 text-white' : 'border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:border-zinc-700'}`}>
-                            <Icon size={14} className={ctaType === cta.value ? 'text-green-400' : 'text-zinc-600'} />
-                            <p className="text-xs font-medium mt-1.5 leading-tight">{cta.label}</p>
-                        </button>
-                    );
-                })}
-            </div>
-            <div className="grid sm:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                    <label className="text-zinc-500 text-xs">Tekst gumba</label>
-                    <input {...register(`${prefix}.label`)} placeholder="npr. Kontaktirajte nas"
-                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-green-500" />
-                </div>
-                {ctaType === 'link' && (
-                    <div className="space-y-1">
-                        <label className="text-zinc-500 text-xs">URL / Poveznica</label>
-                        <input {...register(`${prefix}.url`)} placeholder="https://..."
-                            className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-green-500" />
+                        <p className="text-[11px]" style={{ color: 'var(--lp-text-muted)' }}>Ili pozostavi prazno za auto-odabir</p>
                     </div>
                 )}
             </div>
         </div>
     );
-}
 
-// --- Color Picker Component ---
-function ColorPickerField({ label, value, onChange, presets = COLOR_PRESETS }) {
     return (
-        <div className="space-y-2">
-            <label className="text-zinc-300 text-sm font-medium">{label}</label>
-            <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg border-2 border-zinc-700 flex-shrink-0" style={{ backgroundColor: value || '#000000' }} />
-                <input type="text" value={value || ''} onChange={e => onChange(e.target.value)}
-                    className="bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-white w-28 text-sm font-mono uppercase focus:outline-none focus:border-green-500" placeholder="#000000" />
+        <Section number="3" title="Usluge / Proizvodi" accentColor="#22c55e"
+            onRemove={onRemove}
+            hint="Svaka usluga prikazuje se kao kartica s naslovom, opisom, slikom i CTA gumbom. Dodajte barem 3 za bolji izgled.">
+            <div className="flex justify-end">
+                <button type="button" onClick={() => append({ name: "", description: "", imageUrl: "", cta: null })}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition-all hover:scale-105"
+                    style={{ background: 'rgba(34,197,94,0.1)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.25)' }}>
+                    <Plus size={15} />Dodaj uslugu
+                </button>
             </div>
-            <div className="flex flex-wrap gap-1.5">
-                {presets.map(color => (
-                    <button key={color} type="button" onClick={() => onChange(color)}
-                        className={`w-7 h-7 rounded-lg border-2 transition-all hover:scale-110 ${value === color ? 'border-white scale-110 shadow-lg' : 'border-zinc-700 hover:border-zinc-500'}`}
-                        style={{ backgroundColor: color }} />
-                ))}
-            </div>
-        </div>
+            {fields.length === 0 ? (
+                <button type="button" onClick={() => append({ name: "", description: "", imageUrl: "", cta: null })}
+                    className="w-full py-8 border-2 border-dashed rounded-xl flex flex-col items-center gap-2"
+                    style={{ borderColor: 'rgba(34,197,94,0.2)', color: 'var(--lp-text-muted)' }}>
+                    <Plus size={20} style={{ color: '#4ade80' }} />
+                    <span className="text-sm font-medium">Dodajte usluge ili proizvode</span>
+                    <span className="text-xs">Opcionalno — AI može sam generirati sadržaj</span>
+                </button>
+            ) : (
+                <div className="space-y-4">
+                    {fields.map((field, i) => (
+                        <div key={field.id} className="rounded-xl p-4 sm:p-5 space-y-4" style={{ background: 'var(--lp-surface)', border: '1px solid var(--lp-border)' }}>
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold" style={{ color: 'var(--lp-text-muted)' }}>Usluga #{i + 1}</span>
+                                <button type="button" onClick={() => remove(i)} className="text-red-400 hover:text-red-300 p-1"><Trash2 size={15} /></button>
+                            </div>
+                            <input {...register(`services.${i}.name`)} placeholder="Naziv usluge"
+                                className="w-full rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-white/20"
+                                style={{ background: 'var(--lp-bg)', border: '1px solid var(--lp-border)', color: 'var(--lp-heading)' }} />
+                            <textarea {...register(`services.${i}.description`)} rows={2} placeholder="Kratak opis (opcionalno)"
+                                className="w-full rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-white/20 resize-none"
+                                style={{ background: 'var(--lp-bg)', border: '1px solid var(--lp-border)', color: 'var(--lp-heading)' }} />
+                            <ImageUploadBox field={`services.${i}.imageUrl`} label="Slika usluge (opcionalno)" currentUrl={watch(`services.${i}.imageUrl`)} />
+                            <CtaSelector prefix={`services.${i}.cta`} register={register} watch={watch} setValue={setValue} />
+                        </div>
+                    ))}
+                </div>
+            )}
+        </Section>
     );
 }
 
-// --- Section Wrapper ---
-function Section({ number, icon, title, subtitle, children, collapsible = false, defaultOpen = true }) {
-    const [open, setOpen] = useState(defaultOpen);
+// ─── Updating Overlay ────────────────────────────────────────────────────────
+const UPDATE_PHASES = [
+    { from: 0,  label: "Analiziranje promjena u sadržaju...",          icon: "🔍" },
+    { from: 10, label: "Webica AI piše novi HTML...",                  icon: "✍️" },
+    { from: 30, label: "Optimizacija i provjera koda...",              icon: "🔧" },
+    { from: 50, label: "Spremanje na server...",                       icon: "💾" },
+];
+
+function UpdatingOverlay({ seconds }) {
+    const phase = [...UPDATE_PHASES].reverse().find(p => seconds >= p.from) || UPDATE_PHASES[0];
+    // Slow logarithmic progress: reaches ~80% at 60s, ~90% at 120s, caps at 97%
+    const progress = Math.min(97, 80 * (1 - Math.exp(-seconds / 50)));
+
     return (
-        <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl overflow-hidden">
-            <button type="button" onClick={collapsible ? () => setOpen(!open) : undefined}
-                className={`w-full p-5 sm:p-6 flex items-center justify-between ${collapsible ? 'hover:bg-zinc-900/70 cursor-pointer' : 'cursor-default'} transition-colors`}>
-                <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${number ? 'bg-green-500 text-white' : 'bg-zinc-800 text-green-500'}`}>
-                        {number || icon}
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.93)', backdropFilter: 'blur(12px)' }}>
+            <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="rounded-3xl max-w-md w-full shadow-2xl overflow-hidden"
+                style={{ background: 'var(--lp-bg-alt)', border: '1px solid rgba(59,130,246,0.2)' }}
+            >
+                {/* Header */}
+                <div className="px-6 pt-6 pb-4 text-center">
+                    <div className="relative inline-flex items-center justify-center w-16 h-16 mb-4">
+                        <div className="absolute inset-0 rounded-full animate-pulse" style={{ background: 'rgba(59,130,246,0.15)' }} />
+                        <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#60a5fa' }} />
                     </div>
-                    <div className="text-left">
-                        <h2 className="text-base sm:text-lg font-bold text-white">{title}</h2>
-                        {subtitle && <p className="text-zinc-500 text-xs sm:text-sm">{subtitle}</p>}
+                    <h3 className="text-lg font-bold" style={{ color: 'var(--lp-heading)' }}>AI ažurira web stranicu</h3>
+                    <p className="text-xs mt-1" style={{ color: 'var(--lp-text-muted)' }}>Pametno mijenja samo ono što si promijenio/la</p>
+                </div>
+
+                {/* Timer */}
+                <div className="mx-6 mb-4 rounded-2xl px-5 py-3 flex items-center justify-between" style={{ background: 'var(--lp-surface)', border: '1px solid var(--lp-border)' }}>
+                    <div className="flex items-center gap-2.5">
+                        <motion.span
+                            key={phase.icon}
+                            initial={{ scale: 0.7, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            className="text-xl"
+                        >{phase.icon}</motion.span>
+                        <motion.p
+                            key={phase.label}
+                            initial={{ opacity: 0, x: 8 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            className="text-xs font-medium"
+                            style={{ color: 'var(--lp-text-secondary)' }}
+                        >{phase.label}</motion.p>
+                    </div>
+                    <div className="text-right flex-shrink-0 ml-3">
+                        <p className="text-2xl font-bold tabular-nums" style={{ color: '#60a5fa' }}>{seconds}s</p>
                     </div>
                 </div>
-                {collapsible && (open ? <ChevronUp className="text-zinc-500 flex-shrink-0" size={20} /> : <ChevronDown className="text-zinc-500 flex-shrink-0" size={20} />)}
-            </button>
-            {(!collapsible || open) && <div className="px-5 sm:px-6 pb-5 sm:pb-6 space-y-5">{children}</div>}
+
+                {/* Progress bar */}
+                <div className="mx-6 mb-4">
+                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--lp-surface)' }}>
+                        <motion.div
+                            className="h-full rounded-full"
+                            style={{ background: 'linear-gradient(90deg, #3b82f6, #60a5fa)' }}
+                            initial={{ width: '0%' }}
+                            animate={{ width: `${progress}%` }}
+                            transition={{ duration: 1, ease: 'linear' }}
+                        />
+                    </div>
+                    <div className="flex justify-between mt-1">
+                        <span className="text-[10px]" style={{ color: 'var(--lp-text-muted)' }}>Obrada u tijeku</span>
+                        <span className="text-[10px]" style={{ color: 'var(--lp-text-muted)' }}>{seconds > 70 ? 'Koristi se jači model...' : '~60s prosječno'}</span>
+                    </div>
+                </div>
+
+                {/* Steps */}
+                <div className="mx-6 mb-4 space-y-1.5">
+                    {UPDATE_PHASES.map((p, i) => {
+                        const isDone = seconds > p.from + 8;
+                        const isActive = phase.from === p.from;
+                        return (
+                            <div key={i} className="flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all"
+                                style={{
+                                    background: isActive ? 'rgba(59,130,246,0.08)' : isDone ? 'rgba(34,197,94,0.05)' : 'transparent',
+                                    border: isActive ? '1px solid rgba(59,130,246,0.2)' : '1px solid transparent'
+                                }}>
+                                <span className="text-sm w-5 text-center flex-shrink-0">
+                                    {isDone ? '✅' : isActive ? '⏳' : '○'}
+                                </span>
+                                <span className="text-xs" style={{ color: isActive ? 'var(--lp-heading)' : isDone ? 'var(--lp-text-secondary)' : 'var(--lp-text-muted)' }}>
+                                    {p.label}
+                                </span>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                <ExtendedWaitBanner seconds={seconds} showAfterSeconds={65} accentColor="#60a5fa" />
+
+                {/* Don't refresh warning */}
+                <div className="mx-6 mb-6 flex items-start gap-2.5 rounded-xl px-4 py-3"
+                    style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)' }}>
+                    <span className="text-base flex-shrink-0 mt-0.5">⚠️</span>
+                    <p className="text-xs font-medium" style={{ color: '#fbbf24' }}>
+                        <strong>Ne osvježavaj stranicu!</strong> Ažuriranje je u tijeku — prekidanje može oštetiti sadržaj.
+                    </p>
+                </div>
+            </motion.div>
         </div>
     );
 }
 
-// ============================================================
-// MAIN COMPONENT
-// ============================================================
+// ─── Generating Overlay ──────────────────────────────────────────────────────
+const GENERATION_PHASES = [
+    { from: 0,  label: "Priprema podataka...",                         icon: "📋" },
+    { from: 8,  label: "Webica AI piše HTML kod stranice...",          icon: "✍️" },
+    { from: 30, label: "Generiranje slika i optimizacija...",          icon: "🖼️" },
+    { from: 55, label: "Završne provjere i spremanje...",              icon: "💾" },
+    { from: 80, label: "Koristi se jači AI model...",                  icon: "🚀" },
+];
+
+function GeneratingOverlay({ seconds, isAdvanced }) {
+    const phases = GENERATION_PHASES;
+    const phase = [...phases].reverse().find(p => seconds >= p.from) || phases[0];
+    const avgTime = isAdvanced ? 90 : 45;
+    // Slow logarithmic progress: adapts to longer waits
+    const progress = Math.min(97, 80 * (1 - Math.exp(-seconds / (avgTime * 0.6))));
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.93)', backdropFilter: 'blur(12px)' }}>
+            <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="rounded-3xl max-w-md w-full shadow-2xl overflow-hidden"
+                style={{ background: 'var(--lp-bg-alt)', border: '1px solid rgba(34,197,94,0.2)' }}
+            >
+                {/* Header */}
+                <div className="px-6 pt-6 pb-4 text-center">
+                    <div className="relative inline-flex items-center justify-center w-16 h-16 mb-4">
+                        <div className="absolute inset-0 rounded-full animate-pulse" style={{ background: 'rgba(34,197,94,0.15)' }} />
+                        <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#4ade80' }} />
+                    </div>
+                    <h3 className="text-lg font-bold" style={{ color: 'var(--lp-heading)' }}>✨ Webica AI stvara web stranicu</h3>
+                    <p className="text-xs mt-1" style={{ color: 'var(--lp-text-muted)' }}>{isAdvanced ? 'Generiranje naslovne stranice' : 'Generiranje kompletne stranice'}</p>
+                </div>
+
+                {/* Timer */}
+                <div className="mx-6 mb-4 rounded-2xl px-5 py-3 flex items-center justify-between" style={{ background: 'var(--lp-surface)', border: '1px solid var(--lp-border)' }}>
+                    <div className="flex items-center gap-2.5">
+                        <motion.span key={phase.icon} initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-xl">{phase.icon}</motion.span>
+                        <motion.p key={phase.label} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} className="text-xs font-medium" style={{ color: 'var(--lp-text-secondary)' }}>{phase.label}</motion.p>
+                    </div>
+                    <div className="text-right flex-shrink-0 ml-3">
+                        <p className="text-2xl font-bold tabular-nums" style={{ color: '#4ade80' }}>{seconds}s</p>
+                    </div>
+                </div>
+
+                {/* Progress bar */}
+                <div className="mx-6 mb-4">
+                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--lp-surface)' }}>
+                        <motion.div className="h-full rounded-full" style={{ background: 'linear-gradient(90deg, #22c55e, #4ade80)' }} initial={{ width: '0%' }} animate={{ width: `${progress}%` }} transition={{ duration: 1, ease: 'linear' }} />
+                    </div>
+                    <div className="flex justify-between mt-1">
+                        <span className="text-[10px]" style={{ color: 'var(--lp-text-muted)' }}>Generiranje u tijeku</span>
+                        <span className="text-[10px]" style={{ color: 'var(--lp-text-muted)' }}>{seconds > avgTime ? 'Koristi se jači model...' : `~${avgTime}s prosječno`}</span>
+                    </div>
+                </div>
+
+                {/* Steps */}
+                <div className="mx-6 mb-4 space-y-1.5">
+                    {phases.map((p, i) => {
+                        const isDone = seconds > p.from + 8;
+                        const isActive = phase.from === p.from;
+                        return (
+                            <div key={i} className="flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all"
+                                style={{ background: isActive ? 'rgba(34,197,94,0.08)' : isDone ? 'rgba(34,197,94,0.05)' : 'transparent', border: isActive ? '1px solid rgba(34,197,94,0.2)' : '1px solid transparent' }}>
+                                <span className="text-sm w-5 text-center flex-shrink-0">{isDone ? '✅' : isActive ? '⏳' : '○'}</span>
+                                <span className="text-xs" style={{ color: isActive ? 'var(--lp-heading)' : isDone ? 'var(--lp-text-secondary)' : 'var(--lp-text-muted)' }}>{p.label}</span>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                <ExtendedWaitBanner seconds={seconds} showAfterSeconds={avgTime} accentColor="#4ade80" />
+
+                {/* Warning */}
+                <div className="mx-6 mb-6 flex items-start gap-2.5 rounded-xl px-4 py-3"
+                    style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)' }}>
+                    <span className="text-base flex-shrink-0 mt-0.5">⚠️</span>
+                    <p className="text-xs font-medium" style={{ color: '#fbbf24' }}>
+                        <strong>Ne zatvaraj i ne osvježavaj stranicu!</strong> Generiranje je u tijeku — prekidanje može uzrokovati grešku.
+                    </p>
+                </div>
+            </motion.div>
+        </div>
+    );
+}
+
+// ─── Main ContentForm ─────────────────────────────────────────────────────────
 export default function ContentForm({ project }) {
     const [uploading, setUploading] = useState(false);
     const [generating, setGenerating] = useState(false);
     const [saving, setSaving] = useState(false);
     const [updating, setUpdating] = useState(false);
-    const [generationStep, setGenerationStep] = useState(0);
+    const [generatingSeconds, setGeneratingSeconds] = useState(0);
+    const generatingTimerRef = useRef(null);
     const [errorMessage, setErrorMessage] = useState("");
     const [uploadError, setUploadError] = useState("");
     const [mediaPickerField, setMediaPickerField] = useState(null);
-    const [showAdvancedColors, setShowAdvancedColors] = useState(false);
-    // styleKey: from project.contentData (locked if hasGenerated), or user picks
-    const [styleKey, setStyleKey] = useState(() => {
-        return project.contentData?.styleKey ?? null;
-    });
+    const [updatingSeconds, setUpdatingSeconds] = useState(0);
+    const updatingTimerRef = useRef(null);
+    const [showCelebration, setShowCelebration] = useState(false);
+    const [celebrationSeconds, setCelebrationSeconds] = useState(0);
+    const [showConfirmGenerate, setShowConfirmGenerate] = useState(false);
     const router = useRouter();
 
     const defaults = project.contentData || {
         businessName: "", industry: "", description: "",
-        template: "modern", primaryColor: "#22c55e",
-        secondaryColor: "", backgroundColor: "", textColor: "",
-        heroCta: { type: 'contact', label: '', url: '' },
+        autoColors: true,
+        primaryColor: "", secondaryColor: "", backgroundColor: "", textColor: "",
+        heroCta: null,
         logoUrl: "", heroImageUrl: "", aboutImageUrl: "", featuresImageUrl: "", servicesBackgroundUrl: "",
         metaTitle: "", metaDescription: "", metaKeywords: [],
         email: "", phone: "", address: "", mapEmbed: "",
         workingHours: DEFAULT_HOURS,
-        services: [{ name: "", description: "", imageUrl: "", cta: { type: 'contact', label: '', url: '' } }],
-        testimonials: [],
-        faq: [],
-        gallery: [],
-        pricing: [],
+        services: [],
+        testimonials: [], faq: [], gallery: [], pricing: [],
         socialLinks: { facebook: "", instagram: "", linkedin: "", twitter: "" }
     };
 
-    const { register, control, handleSubmit, setValue, watch, formState: { errors } } = useForm({
+    const { register, control, handleSubmit, setValue, watch, getValues, formState: { errors } } = useForm({
         resolver: zodResolver(contentSchema),
         defaultValues: defaults
     });
 
-    const { fields: serviceFields, append: appendService, remove: removeService } = useFieldArray({ control, name: "services" });
-    const { fields: testimonialFields, append: appendTestimonial, remove: removeTestimonial } = useFieldArray({ control, name: "testimonials" });
-    const { fields: faqFields, append: appendFaq, remove: removeFaq } = useFieldArray({ control, name: "faq" });
-    const { fields: galleryFields, append: appendGallery, remove: removeGallery } = useFieldArray({ control, name: "gallery" });
-    const { fields: pricingFields, append: appendPricing, remove: removePricing } = useFieldArray({ control, name: "pricing" });
-    const { fields: hoursFields } = useFieldArray({ control, name: "workingHours" });
+    // ─── Optional Sections Config ─────────────────────────────────────────────
+    const OPTIONAL_SECTIONS = [
+        { key: 'services', label: 'Usluge / Proizvodi', icon: <Plus size={18} />, color: '#22c55e', description: 'Kartice s vašim uslugama ili proizvodima', checkFn: (d) => d.services?.length > 0 },
+        { key: 'images', label: 'Slike', icon: <Image size={18} />, color: '#06b6d4', description: 'Logo, hero slika i slike sekcija', checkFn: (d) => d.logoUrl || d.heroImageUrl || d.aboutImageUrl },
+        { key: 'designRef', label: 'Inspiracija za dizajn', icon: <Globe size={18} />, color: '#8b5cf6', description: 'URL stranice čiji vam se dizajn sviđa', checkFn: (d) => !!d.designReferenceUrl },
+        { key: 'heroCta', label: 'Glavni CTA gumb', icon: <Sparkles size={18} />, color: '#f97316', description: 'Glavni gumb u hero sekciji', checkFn: (d) => !!d.heroCta?.label },
+        { key: 'workingHours', label: 'Radno vrijeme', icon: <Clock size={18} />, color: '#f59e0b', description: 'Radno vrijeme za kontakt sekciju', checkFn: (d) => d.workingHours?.some(h => !h.closed && h.from) },
+        { key: 'socialLinks', label: 'Društvene mreže', icon: <Share2 size={18} />, color: '#06b6d4', description: 'Facebook, Instagram, LinkedIn...', checkFn: (d) => d.socialLinks?.facebook || d.socialLinks?.instagram },
+        { key: 'testimonials', label: 'Recenzije', icon: <Star size={18} />, color: '#eab308', description: 'Recenzije i iskustva vaših klijenata', checkFn: (d) => d.testimonials?.length > 0 },
+        { key: 'faq', label: 'Česta pitanja (FAQ)', icon: <HelpCircle size={18} />, color: '#8b5cf6', description: 'Odgovori na najčešća pitanja', checkFn: (d) => d.faq?.length > 0 },
+        { key: 'gallery', label: 'Galerija', icon: <Images size={18} />, color: '#ec4899', description: 'Portfolio, proizvodi, reference', checkFn: (d) => d.gallery?.length > 0 },
+        { key: 'pricing', label: 'Cjenik / Paketi', icon: <DollarSign size={18} />, color: '#f97316', description: 'Paketi usluga s cijenama', checkFn: (d) => d.pricing?.length > 0 },
+    ];
 
-    // Prefill from /try trial data (only if project is DRAFT with no contentData)
+    // Track which optional sections are visible
+    const getInitialSections = () => {
+        const d = defaults;
+        const active = new Set(['designRef']);
+        OPTIONAL_SECTIONS.forEach(s => { if (s.checkFn(d)) active.add(s.key); });
+        return active;
+    };
+    const [activeSections, setActiveSections] = useState(() => getInitialSections());
+    const toggleSection = (key) => {
+        setActiveSections(prev => {
+            const next = new Set(prev);
+            if (next.has(key)) next.delete(key); else next.add(key);
+            return next;
+        });
+    };
+
+    // Prefill from /try trial data (only for fresh DRAFT projects)
     useEffect(() => {
-        if (project.contentData) return; // Already has content, don't overwrite
+        if (project.contentData) return;
         try {
-            const raw = localStorage.getItem('rentaweb_trial');
-            if (!raw) return;
-            const trial = JSON.parse(raw);
+            const trial = JSON.parse(localStorage.getItem('rentaweb_trial') || 'null');
             if (!trial) return;
-
-            // businessName and description
             if (trial.businessName) setValue('businessName', trial.businessName);
             if (trial.businessDescription) setValue('description', trial.businessDescription);
-
-            // styleKey (from Faza 2)
-            if (trial.styleKey) setStyleKey(trial.styleKey);
-
-            // Try to extract contact info from generated HTML (regex)
+            // trial.styleKey no longer used (design is AI-controlled now)
             if (trial.generatedHtml) {
-                const html = trial.generatedHtml;
-                // Email — look for mailto: links
-                const mailMatch = html.match(/mailto:([\w.%+-]+@[\w.-]+\.[a-z]{2,})/i);
-                if (mailMatch?.[1]) setValue('email', mailMatch[1]);
-                // Phone — look for tel: links
-                const telMatch = html.match(/tel:([+\d\s()\-]{7,20})/);
-                if (telMatch?.[1]) setValue('phone', telMatch[1].trim());
+                const mailM = trial.generatedHtml.match(/mailto:([\w.%+-]+@[\w.-]+\.[a-z]{2,})/i);
+                if (mailM?.[1]) setValue('email', mailM[1]);
+                const telM = trial.generatedHtml.match(/tel:([+\d\s()\-]{7,20})/);
+                if (telM?.[1]) setValue('phone', telM[1].trim());
             }
-
-            console.log('[ContentForm] Prefilled from trial data:', trial.businessName);
-        } catch (e) {
-            console.warn('[ContentForm] Could not load trial data:', e);
-        }
+        } catch (e) { console.warn('[ContentForm] Could not load trial data:', e); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    // Detect if this is an Advanced plan
+    const isAdvanced = (() => {
+        const p = (project.planName || '').toLowerCase();
+        return p.includes('advanced') || p.includes('growth');
+    })();
 
-    const generationSteps = [
-        { label: "Validiranje podataka", icon: "✓" },
-        { label: "Priprema sadržaja", icon: "✓" },
-        { label: "AI piše kod (15s)", icon: "⏳" },
-        { label: "Spremanje", icon: "✓" }
-    ];
-
-    const selectedTemplate = watch("template");
-    const metaTitle = watch("metaTitle");
-    const metaDescription = watch("metaDescription");
 
     const handleImageUpload = async (e, field) => {
         const file = e.target.files[0];
         if (!file) return;
-        setUploading(true);
-        setUploadError("");
-        const formData = new FormData();
-        formData.append("file", file);
-        try {
-            const url = await uploadImageAction(formData);
-            setValue(field, url);
-        } catch (error) {
-            console.error("Upload failed", error);
-            setUploadError("Upload slike nije uspio. Molimo pokušajte ponovno.");
-        } finally { setUploading(false); }
-    };
-
-    const onSubmit = async (data) => {
-        setGenerating(true); setErrorMessage(""); setGenerationStep(0);
-        try {
-            setGenerationStep(1); await new Promise(r => setTimeout(r, 500));
-            setGenerationStep(2); await new Promise(r => setTimeout(r, 500));
-            setGenerationStep(3);
-            const result = await generateWebsiteAction(project.id, { ...data, styleKey });
-            if (result.error) { setErrorMessage(typeof result.error === 'string' ? result.error : "Greška pri generiranju."); setGenerating(false); setGenerationStep(0); return; }
-            setGenerationStep(4); await new Promise(r => setTimeout(r, 500));
-            router.refresh(); setGenerating(false); setGenerationStep(0);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        } catch (error) {
-            console.error(error); setErrorMessage("Neočekivana greška. Pokušajte ponovno."); setGenerating(false); setGenerationStep(0);
-        }
-    };
-
-    const onSave = async (data) => {
-        const isUpdate = project.hasGenerated;
-        if (isUpdate) setUpdating(true); else setSaving(true);
-        setErrorMessage("");
-        try {
-            const result = isUpdate
-                ? await updateContentAction(project.id, { ...data, styleKey })
-                : await saveContentAction(project.id, { ...data, styleKey });
-            if (result.error) { setErrorMessage(result.error); setSaving(false); setUpdating(false); return; }
-            router.refresh(); setSaving(false); setUpdating(false);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        } catch (error) {
-            console.error(error); setErrorMessage(isUpdate ? "Greška pri ažuriranju." : "Greška pri spremanju."); setSaving(false); setUpdating(false);
-        }
+        setUploading(true); setUploadError("");
+        const formData = new FormData(); formData.append("file", file);
+        try { const url = await uploadImageAction(formData); setValue(field, url); }
+        catch { setUploadError("Upload slike nije uspio. Molimo pokušajte ponovno."); }
+        finally { setUploading(false); }
     };
 
     const ImageUploadBox = ({ field, label, currentUrl }) => (
         <div className="space-y-2">
-            <label className="text-zinc-300 text-sm font-medium flex items-center gap-2"><Image size={16} className="text-zinc-500" />{label}</label>
-            <div className="border-2 border-dashed border-zinc-700 rounded-xl p-6 hover:border-green-500/50 transition-all group relative overflow-hidden bg-zinc-950/50">
+            <label className="text-sm font-medium flex items-center gap-2" style={{ color: 'var(--lp-text-secondary)' }}>
+                <Image size={14} style={{ color: 'var(--lp-text-muted)' }} />{label}
+            </label>
+            <div className="border-2 border-dashed rounded-xl p-4 hover:border-emerald-500/40 transition-all group"
+                style={{ borderColor: 'var(--lp-border)', background: 'var(--lp-surface)' }}>
                 {currentUrl ? (
                     <div className="relative">
-                        <img src={currentUrl} alt={label} className="w-full h-32 object-cover rounded-lg" />
-                        <button type="button" onClick={() => setValue(field, "")} className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 transition-colors shadow-lg"><Trash2 size={14} /></button>
+                        <img src={currentUrl} alt={label} className="w-full h-28 object-cover rounded-lg" />
+                        <button type="button" onClick={() => setValue(field, "")} className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-lg"><Trash2 size={12} /></button>
                     </div>
                 ) : (
-                    <div className="flex flex-col items-center gap-3">
-                        <Upload className="text-zinc-600 group-hover:text-green-500 transition-colors" size={28} />
-                        <div className="flex items-center gap-3">
-                            <label className="cursor-pointer px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-medium rounded-lg transition-colors">
+                    <div className="flex flex-col items-center gap-2">
+                        <Upload size={20} className="group-hover:text-emerald-500 transition-colors" style={{ color: 'var(--lp-text-muted)' }} />
+                        <div className="flex items-center gap-2">
+                            <label className="cursor-pointer px-3 py-1.5 text-xs font-medium rounded-lg hover:bg-white/5 transition-colors"
+                                style={{ background: 'var(--lp-bg)', color: 'var(--lp-text-secondary)', border: '1px solid var(--lp-border)' }}>
                                 Prenesi datoteku
                                 <input type="file" onChange={e => handleImageUpload(e, field)} className="hidden" accept="image/*" />
                             </label>
-                            <button type="button" onClick={() => setMediaPickerField(field)} className="px-4 py-2 bg-green-600/20 hover:bg-green-600/30 text-green-400 text-sm font-medium rounded-lg transition-colors flex items-center gap-2 border border-green-500/20">
-                                <FolderOpen size={14} />Iz knjižnice
+                            <button type="button" onClick={() => setMediaPickerField(field)}
+                                className="px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1.5 transition-colors"
+                                style={{ background: 'rgba(34,197,94,0.1)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.2)' }}>
+                                <FolderOpen size={11} />Knjižnica
                             </button>
                         </div>
-                        <p className="text-xs text-zinc-600 text-center">Ili ostavi prazno za automatski odabir</p>
+                        <p className="text-[11px]" style={{ color: 'var(--lp-text-muted)' }}>Ili ostavi prazno za automatski odabir</p>
                     </div>
                 )}
             </div>
         </div>
     );
 
+
+    const doGenerate = async (data) => {
+        setGenerating(true); setErrorMessage("");
+        setGeneratingSeconds(0);
+        generatingTimerRef.current = setInterval(() => setGeneratingSeconds(s => s + 1), 1000);
+        try {
+            const result = isAdvanced
+                ? await generateAdvancedWebsiteAction(project.id, { ...data, autoColors: true })
+                : await generateWebsiteAction(project.id, { ...data, autoColors: true });
+            clearInterval(generatingTimerRef.current);
+            if (result.error) {
+                setErrorMessage(typeof result.error === 'string' ? result.error : "Greška pri generiranju.");
+                setGenerating(false);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+            setCelebrationSeconds(generatingSeconds);
+            setGenerating(false);
+            setShowCelebration(true);
+        } catch {
+            clearInterval(generatingTimerRef.current);
+            setErrorMessage("Neočekivana greška. Pokušajte ponovno.");
+            setGenerating(false);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    };
+
+    // onSubmit now shows a confirmation modal with missing sections
+    const onSubmit = async (data) => {
+        const missingSections = OPTIONAL_SECTIONS.filter(s => !s.checkFn(data));
+        if (missingSections.length > 0 && !showConfirmGenerate) {
+            setShowConfirmGenerate(true);
+            return;
+        }
+        setShowConfirmGenerate(false);
+        doGenerate(data);
+    };
+
+    const onSave = async (data) => {
+        const isUpdate = project.hasGenerated;
+        if (isUpdate) {
+            setUpdating(true);
+            setUpdatingSeconds(0);
+            updatingTimerRef.current = setInterval(() => setUpdatingSeconds(s => s + 1), 1000);
+        } else {
+            setSaving(true);
+        }
+        setErrorMessage("");
+        try {
+            const result = isUpdate
+                ? await updateContentAction(project.id, { ...data, autoColors: true })
+                : await saveContentAction(project.id, { ...data, autoColors: true });
+            if (result.error) {
+                setErrorMessage(result.error);
+                setSaving(false); setUpdating(false); clearInterval(updatingTimerRef.current);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+            router.refresh(); setSaving(false); setUpdating(false); clearInterval(updatingTimerRef.current);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch {
+            setErrorMessage("Greška pri spremanju.");
+            setSaving(false); setUpdating(false); clearInterval(updatingTimerRef.current);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    };
+
+    // Shared props for sections
+    const formProps = { control, register, watch, setValue };
+
+    // react-hook-form validation error handler
+    const FIELD_LABELS_HR = {
+        businessName: 'Ime biznisa', industry: 'Industrija', description: 'Opis',
+        email: 'Email', phone: 'Telefon', primaryColor: 'Primarna boja',
+        services: 'Usluge', heroCta: 'CTA gumb'
+    };
+    const onFormError = (formErrors) => {
+        const lines = Object.entries(formErrors).map(([field, err]) => {
+            const label = FIELD_LABELS_HR[field] || field;
+            const msg = err?.message || err?.root?.message || 'Polje nije ispravno';
+            return `${label}: ${msg}`;
+        });
+        setErrorMessage(lines.join('\n') || 'Podaci forme nisu ispravni.');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
     return (
         <div className="w-full pb-8 relative">
-            {mediaPickerField && <MediaPickerModal onSelect={url => { setValue(mediaPickerField, url); setMediaPickerField(null); }} onClose={() => setMediaPickerField(null)} />}
+            {/* Media picker (non-gallery) */}
+            {mediaPickerField && !mediaPickerField.startsWith('__gallery_') && (
+                <MediaPickerModal
+                    onSelect={url => { setValue(mediaPickerField, url); setMediaPickerField(null); }}
+                    onClose={() => setMediaPickerField(null)} />
+            )}
 
             {/* Generating Overlay */}
             {generating && (
-                <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
-                    <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-green-500/20 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl shadow-green-500/10">
-                        <div className="text-center mb-6">
-                            <div className="relative inline-block">
-                                <Loader2 className="w-16 h-16 animate-spin text-green-500 mx-auto mb-4" />
-                                <div className="absolute inset-0 blur-xl bg-green-500/30 animate-pulse"></div>
-                            </div>
-                            <h3 className="text-xl sm:text-2xl font-bold text-white mb-2">✨ AI stvara web stranicu</h3>
-                            <p className="text-zinc-400 text-sm">Koristi Gemini 3 Flash - Ovo može potrajati 30-60 sekundi.</p>
-                        </div>
-                        <div className="space-y-3">
-                            {generationSteps.map((step, i) => (
-                                <div key={i} className={`flex items-center gap-3 p-3 rounded-xl transition-all ${i < generationStep ? 'bg-green-500/10 border border-green-500/30' : i === generationStep ? 'bg-zinc-800 border border-zinc-700 animate-pulse' : 'bg-zinc-900/50 border border-zinc-800/50'}`}>
-                                    <span className="text-2xl">{i < generationStep ? '✅' : i === generationStep ? '⏳' : '○'}</span>
-                                    <span className={`text-sm font-medium ${i <= generationStep ? 'text-white' : 'text-zinc-600'}`}>{step.label}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
+                <GeneratingOverlay seconds={generatingSeconds} isAdvanced={isAdvanced} />
             )}
 
             {/* Updating Overlay */}
             {updating && (
-                <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
-                    <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-blue-500/20 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl shadow-blue-500/10">
-                        <div className="text-center mb-6">
-                            <Loader2 className="w-16 h-16 animate-spin text-blue-500 mx-auto mb-4" />
-                            <h3 className="text-xl font-bold text-white mb-2">🔄 Ažuriranje sadržaja</h3>
-                            <p className="text-zinc-400 text-sm">AI pametno ažurira samo promijenjene podatke...</p>
+                <UpdatingOverlay seconds={updatingSeconds} />
+            )}
+
+            {/* Success Celebration */}
+            {showCelebration && (
+                <SuccessCelebration
+                    seconds={celebrationSeconds}
+                    projectId={project.id}
+                    onDismiss={() => {
+                        setShowCelebration(false);
+                        router.refresh();
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                />
+            )}
+
+            {/* Pre-Generation Confirmation Modal */}
+            {showConfirmGenerate && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }}>
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="rounded-3xl max-w-md w-full shadow-2xl overflow-hidden"
+                        style={{ background: 'var(--lp-bg-alt)', border: '1px solid rgba(34,197,94,0.2)' }}
+                    >
+                        <div className="px-6 pt-6 pb-4">
+                            <div className="flex items-center justify-between mb-1">
+                                <h3 className="text-lg font-bold" style={{ color: 'var(--lp-heading)' }}>
+                                    Želite li dodati još informacija?
+                                </h3>
+                                <button type="button" onClick={() => setShowConfirmGenerate(false)}
+                                    className="p-1.5 hover:bg-white/5 rounded-lg transition-colors">
+                                    <X size={18} style={{ color: 'var(--lp-text-muted)' }} />
+                                </button>
+                            </div>
+                            <p className="text-xs" style={{ color: 'var(--lp-text-muted)' }}>
+                                Više podataka = kvalitetnija web stranica. Ove sekcije još niste dodali:
+                            </p>
                         </div>
-                    </div>
+
+                        <div className="px-6 pb-4 max-h-[40vh] overflow-y-auto">
+                            <div className="space-y-2">
+                                {OPTIONAL_SECTIONS.filter(s => !s.checkFn(getValues())).map(section => (
+                                    <button
+                                        key={section.key}
+                                        type="button"
+                                        onClick={() => {
+                                            toggleSection(section.key);
+                                            setShowConfirmGenerate(false);
+                                            // Scroll to the section after a short delay
+                                            setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 100);
+                                        }}
+                                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:scale-[1.01]"
+                                        style={{ background: 'var(--lp-surface)', border: '1px solid var(--lp-border)' }}
+                                    >
+                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                                            style={{ background: `${section.color}15`, color: section.color }}>
+                                            {section.icon}
+                                        </div>
+                                        <div className="text-left flex-1">
+                                            <span className="text-xs font-semibold" style={{ color: 'var(--lp-heading)' }}>{section.label}</span>
+                                            <p className="text-[10px]" style={{ color: 'var(--lp-text-muted)' }}>{section.description}</p>
+                                        </div>
+                                        <Plus size={14} style={{ color: section.color }} />
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="px-6 pb-6 pt-2 space-y-2.5">
+                            <button
+                                type="button"
+                                onClick={() => { setShowConfirmGenerate(false); doGenerate(getValues()); }}
+                                className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all hover:scale-[1.02]"
+                                style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)', color: '#fff' }}
+                            >
+                                <Sparkles size={16} />
+                                Generiraj bez dodatnih informacija
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setShowConfirmGenerate(false)}
+                                className="w-full px-6 py-2.5 rounded-xl font-medium text-xs transition-all hover:bg-white/5"
+                                style={{ color: 'var(--lp-text-muted)' }}
+                            >
+                                Natrag na uređivanje
+                            </button>
+                        </div>
+                    </motion.div>
                 </div>
             )}
 
-            {/* Errors */}
+            {/* Error messages */}
             {errorMessage && (
                 <div className="mb-6 bg-red-500/10 border border-red-500/30 rounded-2xl p-4 flex items-start gap-3">
                     <span className="text-2xl">⚠️</span>
-                    <div><h4 className="font-bold text-red-400 mb-1">Greška</h4><p className="text-red-300 text-sm">{errorMessage}</p></div>
+                    <div>
+                        <h4 className="font-bold text-red-400 mb-1">Greška</h4>
+                        {errorMessage.includes('\n') ? (
+                            <ul className="text-red-300 text-sm space-y-1 list-none">
+                                {errorMessage.split('\n').map((line, i) => (
+                                    <li key={i} className="flex items-start gap-2">
+                                        <span className="text-red-400 mt-0.5">•</span>
+                                        <span>{line}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className="text-red-300 text-sm">{errorMessage}</p>
+                        )}
+                    </div>
                 </div>
             )}
             {uploadError && (
@@ -403,370 +665,214 @@ export default function ContentForm({ project }) {
                 </div>
             )}
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                {/* ── Style Picker ── */}
-                <div className="bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-800 rounded-2xl p-6 sm:p-8 shadow-xl">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-xl flex-shrink-0">🎨</div>
-                        <div>
-                            <h2 className="text-lg sm:text-xl font-bold text-white">Vizualni Stil</h2>
-                            <p className="text-zinc-400 text-xs sm:text-sm">
-                                {project.hasGenerated
-                                    ? 'Stil je zaključan nakon prvog generiranja'
-                                    : 'Odaberi stil dizajna — zaključava se pri generiranju'}
-                            </p>
-                        </div>
-                        {project.hasGenerated && <Lock size={16} className="text-zinc-500 ml-auto" />}
-                    </div>
-                    {project.hasGenerated ? (
-                        // Locked — show read-only badge
-                        <div className="flex items-center gap-3 p-4 bg-zinc-800/50 border border-zinc-700 rounded-xl">
-                            <span className="text-2xl">
-                                {styleKey ? (STYLES[styleKey]?.emoji ?? '🎨') : '🤖'}
-                            </span>
-                            <div>
-                                <p className="text-white font-semibold text-sm">
-                                    {styleKey ? (STYLES[styleKey]?.label ?? styleKey) : 'AI odabir'}
-                                </p>
-                                <p className="text-zinc-500 text-xs">
-                                    {styleKey ? (STYLES[styleKey]?.desc ?? '') : 'AI sam odabrao stil'}
-                                </p>
-                            </div>
-                        </div>
-                    ) : (
-                        <StylePicker selected={styleKey} onSelect={setStyleKey} />
-                    )}
-                </div>
+            <motion.form onSubmit={handleSubmit(onSubmit, onFormError)} className="space-y-4"
+                initial="hidden" animate="visible"
+                variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.05 } } }}>
 
                 {/* ── 1. Basic Info ── */}
-                <Section number="1" title="Osnovne Informacije">
-                    <div className="grid sm:grid-cols-2 gap-5">
-                        <div className="space-y-2">
-                            <label className="text-zinc-300 text-sm font-medium">Naziv Biznisa</label>
-                            <input {...register("businessName")} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-green-500 text-base" placeholder="npr. Rent a Web" />
-                            {errors.businessName && <span className="text-red-400 text-xs">{errors.businessName.message}</span>}
+                <motion.div variants={{ hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0 } }}>
+                    <Section number="1" title="Osnovne Informacije" accentColor="#e2e8f0"
+                        hint="Naziv i opis biznisa pojavljuju se u hero sekciji, naslovu preglednika i meta tagovima.">
+                        <div className="grid sm:grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-medium" style={{ color: 'var(--lp-text-secondary)' }}>Naziv Biznisa</label>
+                                <input {...register("businessName")} className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-white/20"
+                                    style={{ background: 'var(--lp-surface)', border: '1px solid var(--lp-border)', color: 'var(--lp-heading)' }} placeholder="npr. Rent a webica" />
+                                {errors.businessName && <span className="text-red-400 text-xs">{errors.businessName.message}</span>}
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-medium" style={{ color: 'var(--lp-text-secondary)' }}>Industrija</label>
+                                <IndustryPicker
+                                    value={watch("industry")}
+                                    onChange={(val) => setValue("industry", val, { shouldDirty: true })}
+                                />
+                            </div>
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-zinc-300 text-sm font-medium">Industrija</label>
-                            <input {...register("industry")} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-green-500 text-base" placeholder="npr. Web Dizajn" />
-                            {errors.industry && <span className="text-red-400 text-xs">{errors.industry.message}</span>}
+                        <div className="space-y-1.5">
+                            <label className="text-sm font-medium" style={{ color: 'var(--lp-text-secondary)' }}>Opis Biznisa</label>
+                            <textarea {...register("description")} rows={4} className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-white/20 resize-none"
+                                style={{ background: 'var(--lp-surface)', border: '1px solid var(--lp-border)', color: 'var(--lp-heading)' }}
+                                placeholder="Opišite što radite, vaše prednosti i ciljeve..." />
+                            {errors.description && <span className="text-red-400 text-xs">{errors.description.message}</span>}
                         </div>
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-zinc-300 text-sm font-medium">Opis Biznisa</label>
-                        <textarea {...register("description")} rows={4} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-green-500 resize-none text-base" placeholder="Opišite što radite, vaše prednosti i ciljeve..." />
-                        {errors.description && <span className="text-red-400 text-xs">{errors.description.message}</span>}
-                    </div>
-                </Section>
+                    </Section>
+                </motion.div>
 
-                {/* ── Color Palette ── */}
-                <Section icon={<Palette size={16} />} title="Boje" subtitle="Primarna boja je najvažnija — ostale su opcionalne">
-                    <ColorPickerField label="✨ Primarna Boja" value={watch("primaryColor")} onChange={v => setValue("primaryColor", v)} />
-                    <button type="button" onClick={() => setShowAdvancedColors(!showAdvancedColors)} className="flex items-center gap-2 text-zinc-500 hover:text-zinc-300 text-sm transition-colors mt-2">
-                        {showAdvancedColors ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                        Više boja (opcionalno)
-                    </button>
-                    {showAdvancedColors && (
-                        <div className="grid sm:grid-cols-3 gap-5 pt-2 border-t border-zinc-800 mt-3">
-                            <ColorPickerField label="Sekundarna" value={watch("secondaryColor")} onChange={v => setValue("secondaryColor", v)} />
-                            <ColorPickerField label="Pozadina" value={watch("backgroundColor")} onChange={v => setValue("backgroundColor", v)}
-                                presets={['#ffffff', '#f8fafc', '#f1f5f9', '#fafaf9', '#0a0a0a', '#18181b', '#1c1917', '#0c0a09', '#0f172a', '#1e1b4b', '#1a2e05', '#2e1065']} />
-                            <ColorPickerField label="Tekst" value={watch("textColor")} onChange={v => setValue("textColor", v)}
-                                presets={['#000000', '#18181b', '#27272a', '#3f3f46', '#52525b', '#71717a', '#a1a1aa', '#d4d4d8', '#e4e4e7', '#f4f4f5', '#fafafa', '#ffffff']} />
+                {/* ── Design Reference URL ── */}
+                <AnimatePresence>
+                {activeSections.has('designRef') && (
+                <motion.div key="designRef" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }}>
+                    <Section icon="🎨" title="Inspiracija za Dizajn" accentColor="#8b5cf6"
+                        onRemove={() => toggleSection('designRef')}
+                        hint="AI će koristiti ovu stranicu kao vizualnu inspiraciju pri generiranju vaše stranice.">
+                        <div className="space-y-1.5">
+                            <label className="text-sm font-medium" style={{ color: 'var(--lp-text-secondary)' }}>URL Stranice</label>
+                            <input {...register("designReferenceUrl")} type="url" className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-white/20"
+                                style={{ background: 'var(--lp-surface)', border: '1px solid var(--lp-border)', color: 'var(--lp-heading)' }}
+                                placeholder="https://example.com" />
+                            <p className="text-[11px]" style={{ color: 'var(--lp-text-muted)' }}>
+                                Zalijepite link stranice čiji dizajn želite kao referencu.
+                            </p>
                         </div>
-                    )}
-                </Section>
+                    </Section>
+                </motion.div>
+                )}
+                </AnimatePresence>
 
                 {/* ── Hero CTA ── */}
-                <Section icon="🚀" title="Glavni CTA Gumb" subtitle="Akcija za glavni gumb na vrhu stranice">
-                    <CtaSelector prefix="heroCta" register={register} watch={watch} setValue={setValue} />
-                </Section>
+                <AnimatePresence>
+                {activeSections.has('heroCta') && (
+                <motion.div key="heroCta" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }}>
+                    <Section icon="🚀" title="Glavni CTA Gumb" accentColor="#f97316"
+                        onRemove={() => toggleSection('heroCta')}
+                        hint='Ovaj gumb prikazuje se prominentno u hero sekciji — prva stvar koju posjetitelji vide.'>
+                        <CtaSelector prefix="heroCta" register={register} watch={watch} setValue={setValue} />
+                    </Section>
+                </motion.div>
+                )}
+                </AnimatePresence>
 
-                {/* ── 2. Images ── */}
-                <Section number="2" title="Slike" subtitle="Opcionalno - AI automatski odabire slike">
-                    <div className="space-y-4">
-                        <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">Brand</h3>
-                        <div className="grid sm:grid-cols-2 gap-5">
-                            <ImageUploadBox field="logoUrl" label="Logo" currentUrl={watch("logoUrl")} />
-                            <ImageUploadBox field="heroImageUrl" label="Hero Slika" currentUrl={watch("heroImageUrl")} />
-                        </div>
-                    </div>
-                    <div className="space-y-4 pt-4 border-t border-zinc-800">
-                        <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">Sekcije</h3>
-                        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                            <ImageUploadBox field="aboutImageUrl" label="O Nama" currentUrl={watch("aboutImageUrl")} />
-                            <ImageUploadBox field="featuresImageUrl" label="Features" currentUrl={watch("featuresImageUrl")} />
-                            <ImageUploadBox field="servicesBackgroundUrl" label="Usluge Pozadina" currentUrl={watch("servicesBackgroundUrl")} />
-                        </div>
-                    </div>
-                </Section>
-
-                {/* ── 3. Services ── */}
-                <Section number="3" title="Usluge / Proizvodi">
-                    <div className="flex justify-end -mt-2">
-                        <button type="button" onClick={() => appendService({ name: "", description: "", imageUrl: "", cta: { type: 'contact', label: '', url: '' } })}
-                            className="text-green-500 font-bold flex items-center gap-2 hover:text-green-400 transition-colors px-3 py-2 rounded-lg hover:bg-green-500/10">
-                            <Plus size={18} /><span className="hidden sm:inline">Dodaj</span>
-                        </button>
-                    </div>
-                    <div className="space-y-4">
-                        {serviceFields.map((field, i) => (
-                            <div key={field.id} className="bg-zinc-950/50 border border-zinc-700 rounded-xl p-4 sm:p-5 space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-zinc-400 text-sm font-bold">Usluga #{i + 1}</span>
-                                    {serviceFields.length > 1 && <button type="button" onClick={() => removeService(i)} className="text-red-400 hover:text-red-300 p-2"><Trash2 size={16} /></button>}
-                                </div>
-                                <input {...register(`services.${i}.name`)} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3.5 text-white focus:outline-none focus:border-green-500 text-base" placeholder="Naziv usluge" />
-                                <textarea {...register(`services.${i}.description`)} rows={2} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3.5 text-white focus:outline-none focus:border-green-500 resize-none text-base" placeholder="Kratak opis (opcionalno)" />
-                                <ImageUploadBox field={`services.${i}.imageUrl`} label="Slika usluge (opcionalno)" currentUrl={watch(`services.${i}.imageUrl`)} />
-                                <CtaSelector prefix={`services.${i}.cta`} register={register} watch={watch} setValue={setValue} />
+                {/* ── Images ── */}
+                <AnimatePresence>
+                {activeSections.has('images') && (
+                <motion.div key="images" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }}>
+                    <Section number="2" title="Slike" accentColor="#06b6d4"
+                        onRemove={() => toggleSection('images')}
+                        subtitle="AI automatski odabire ako ostavite prazno"
+                        hint="Logo se prikazuje u navigaciji, hero slika kao pozadina početnog ekrana.">
+                        <div className="space-y-3">
+                            <h3 className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--lp-text-muted)' }}>Brand</h3>
+                            <div className="grid sm:grid-cols-2 gap-4">
+                                <ImageUploadBox field="logoUrl" label="Logo" currentUrl={watch("logoUrl")} />
+                                <ImageUploadBox field="heroImageUrl" label="Hero Slika" currentUrl={watch("heroImageUrl")} />
                             </div>
-                        ))}
-                    </div>
-                    {errors.services && <span className="text-red-400 text-xs">{errors.services.message}</span>}
-                </Section>
-
-                {/* ── Contact ── */}
-                <Section icon="📧" title="Kontakt">
-                    <div className="grid sm:grid-cols-2 gap-5">
-                        <div className="space-y-2">
-                            <label className="text-zinc-300 text-sm font-medium">Email</label>
-                            <input {...register("email")} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-green-500 text-base" placeholder="info@mojbiznis.hr" />
-                            {errors.email && <span className="text-red-400 text-xs">{errors.email.message}</span>}
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-zinc-300 text-sm font-medium">Telefon (Opcionalno)</label>
-                            <input {...register("phone")} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-green-500 text-base" placeholder="+385 91 123 4567" />
+                        <div className="space-y-3 pt-4" style={{ borderTop: '1px solid var(--lp-border)' }}>
+                            <h3 className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--lp-text-muted)' }}>Sekcije</h3>
+                            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <ImageUploadBox field="aboutImageUrl" label="O Nama" currentUrl={watch("aboutImageUrl")} />
+                                <ImageUploadBox field="featuresImageUrl" label="Features" currentUrl={watch("featuresImageUrl")} />
+                                <ImageUploadBox field="servicesBackgroundUrl" label="Usluge Pozadina" currentUrl={watch("servicesBackgroundUrl")} />
+                            </div>
                         </div>
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-zinc-300 text-sm font-medium flex items-center gap-2"><MapPin size={16} className="text-zinc-500" />Adresa (Opcionalno)</label>
-                        <input {...register("address")} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-green-500 text-base" placeholder="Ilica 1, 10000 Zagreb" />
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-zinc-300 text-sm font-medium flex items-center gap-2"><MapPin size={16} className="text-zinc-500" />Google Maps Embed URL (Opcionalno)</label>
-                        <input {...register("mapEmbed")} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-green-500 text-sm" placeholder="https://www.google.com/maps/embed?pb=..." />
-                        <p className="text-zinc-600 text-xs">Kopirajte "src" iz Google Maps embed koda</p>
-                    </div>
-                </Section>
+                    </Section>
+                </motion.div>
+                )}
+                </AnimatePresence>
 
-                {/* ── Working Hours ── */}
-                <Section icon={<Clock size={16} />} title="Radno Vrijeme" subtitle="Opcionalno" collapsible defaultOpen={false}>
-                    {hoursFields.length === 0 ? (
-                        <button type="button" onClick={() => DEFAULT_HOURS.forEach((h, i) => { setValue(`workingHours.${i}`, h); })}
-                            className="w-full py-4 border-2 border-dashed border-zinc-700 rounded-xl text-zinc-500 hover:text-green-400 hover:border-green-500/50 transition-all flex items-center justify-center gap-2">
-                            <Plus size={18} />Dodaj radno vrijeme
-                        </button>
-                    ) : (
-                        <div className="space-y-2">
-                            {hoursFields.map((field, i) => {
-                                const isClosed = watch(`workingHours.${i}.closed`);
-                                return (
-                                    <div key={field.id} className="flex items-center gap-3 bg-zinc-950/50 border border-zinc-800 rounded-lg p-3">
-                                        <span className="w-24 text-sm text-zinc-300 font-medium flex-shrink-0">{watch(`workingHours.${i}.day`)}</span>
-                                        <label className="flex items-center gap-2 cursor-pointer flex-shrink-0">
-                                            <input type="checkbox" {...register(`workingHours.${i}.closed`)} className="accent-red-500 w-4 h-4" />
-                                            <span className="text-xs text-zinc-500">Zatvoreno</span>
-                                        </label>
-                                        {!isClosed && (
-                                            <div className="flex items-center gap-2 flex-1">
-                                                <input type="time" {...register(`workingHours.${i}.from`)} className="bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-white text-sm focus:outline-none focus:border-green-500" />
-                                                <span className="text-zinc-600">—</span>
-                                                <input type="time" {...register(`workingHours.${i}.to`)} className="bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1.5 text-white text-sm focus:outline-none focus:border-green-500" />
+                {/* ── Services ── */}
+                <AnimatePresence>
+                {activeSections.has('services') && (
+                <motion.div key="services" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }}>
+                    <ServicesSection {...formProps} setMediaPickerField={setMediaPickerField} onRemove={() => toggleSection('services')} />
+                </motion.div>
+                )}
+                </AnimatePresence>
+
+                {/* ── Contact (always visible) ── */}
+                <motion.div variants={{ hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0 } }}>
+                    <Section icon="📧" title="Kontakt" accentColor="#3b82f6"
+                        hint="Email se koristi za kontakt formu — poruke klijenata dolaze na tu adresu. Adresa i mapa prikazuju se u footer sekciji.">
+                        <div className="grid sm:grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-medium" style={{ color: 'var(--lp-text-secondary)' }}>Email</label>
+                                <input {...register("email")} className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-white/20"
+                                    style={{ background: 'var(--lp-surface)', border: '1px solid var(--lp-border)', color: 'var(--lp-heading)' }} placeholder="info@mojbiznis.hr" />
+                                {errors.email && <span className="text-red-400 text-xs">{errors.email.message}</span>}
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-medium" style={{ color: 'var(--lp-text-secondary)' }}>Telefon (Opcionalno)</label>
+                                <input {...register("phone")} className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-white/20"
+                                    style={{ background: 'var(--lp-surface)', border: '1px solid var(--lp-border)', color: 'var(--lp-heading)' }} placeholder="+385 91 123 4567" />
+                            </div>
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-sm font-medium flex items-center gap-2" style={{ color: 'var(--lp-text-secondary)' }}><MapPin size={14} style={{ color: 'var(--lp-text-muted)' }} />Adresa (Opcionalno)</label>
+                            <input {...register("address")} className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-white/20"
+                                style={{ background: 'var(--lp-surface)', border: '1px solid var(--lp-border)', color: 'var(--lp-heading)' }} placeholder="Ilica 1, 10000 Zagreb" />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-sm font-medium flex items-center gap-2" style={{ color: 'var(--lp-text-secondary)' }}><MapPin size={14} style={{ color: 'var(--lp-text-muted)' }} />Google Maps Embed URL (Opcionalno)</label>
+                            <input {...register("mapEmbed")} className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-white/20"
+                                style={{ background: 'var(--lp-surface)', border: '1px solid var(--lp-border)', color: 'var(--lp-heading)' }} placeholder="https://www.google.com/maps/embed?pb=..." />
+                            <p className="text-xs" style={{ color: 'var(--lp-text-muted)' }}>Kopirajte "src" iz Google Maps embed koda</p>
+                        </div>
+                    </Section>
+                </motion.div>
+
+                {/* ── Dynamic optional sections ── */}
+                <div className="space-y-4">
+                    <AnimatePresence>
+                    {activeSections.has('workingHours') && <motion.div key="workingHours" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }}><WorkingHoursSection {...formProps} onRemove={() => toggleSection('workingHours')} /></motion.div>}
+                    {activeSections.has('socialLinks') && <motion.div key="socialLinks" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }}><SocialLinksSection register={register} onRemove={() => toggleSection('socialLinks')} /></motion.div>}
+                    {activeSections.has('testimonials') && <motion.div key="testimonials" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }}><TestimonialsSection {...formProps} onRemove={() => toggleSection('testimonials')} /></motion.div>}
+                    {activeSections.has('faq') && <motion.div key="faq" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }}><FaqSection control={control} register={register} onRemove={() => toggleSection('faq')} /></motion.div>}
+                    {activeSections.has('gallery') && <motion.div key="gallery" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }}><GallerySection {...formProps} setMediaPickerField={setMediaPickerField} mediaPickerField={mediaPickerField} MediaPickerModal={MediaPickerModal} onRemove={() => toggleSection('gallery')} /></motion.div>}
+                    {activeSections.has('pricing') && <motion.div key="pricing" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }}><PricingSection {...formProps} onRemove={() => toggleSection('pricing')} /></motion.div>}
+                    </AnimatePresence>
+                </div>
+
+                {/* ── Section Picker ("Add" cards for inactive sections) ── */}
+                {(() => {
+                    const inactive = OPTIONAL_SECTIONS.filter(s => !activeSections.has(s.key));
+                    if (inactive.length === 0) return null;
+                    return (
+                        <div>
+                            <div className="rounded-2xl p-4 sm:p-5" style={{ background: 'var(--lp-bg-alt)', border: '1px solid var(--lp-border)' }}>
+                                <div className="flex items-center gap-2 mb-4">
+                                    <Plus size={16} style={{ color: '#4ade80' }} />
+                                    <h3 className="text-sm font-bold" style={{ color: 'var(--lp-heading)' }}>Dodaj dodatne informacije</h3>
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(34,197,94,0.1)', color: '#4ade80' }}>Opcionalno</span>
+                                </div>
+                                <p className="text-xs mb-4" style={{ color: 'var(--lp-text-muted)' }}>
+                                    Više informacija = bolja web stranica. Odaberite što želite dodati.
+                                </p>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
+                                    {inactive.map(section => (
+                                        <button
+                                            key={section.key}
+                                            type="button"
+                                            onClick={() => toggleSection(section.key)}
+                                            className="flex flex-col items-center gap-2 p-3 sm:p-4 rounded-xl text-center transition-all hover:scale-[1.03] group"
+                                            style={{ background: 'var(--lp-surface)', border: '1px solid var(--lp-border)' }}
+                                        >
+                                            <div className="w-9 h-9 rounded-lg flex items-center justify-center transition-colors"
+                                                style={{ background: `${section.color}15`, color: section.color }}>
+                                                {section.icon}
                                             </div>
-                                        )}
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
-                </Section>
-
-                {/* ── Social Links ── */}
-                <Section icon="🌐" title="Društvene Mreže" subtitle="Opcionalno" collapsible defaultOpen={false}>
-                    <div className="grid sm:grid-cols-2 gap-5">
-                        <div className="space-y-2">
-                            <label className="text-zinc-300 text-sm font-medium">Facebook</label>
-                            <input {...register("socialLinks.facebook")} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-blue-500 text-base" placeholder="https://facebook.com/..." />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-zinc-300 text-sm font-medium">Instagram</label>
-                            <input {...register("socialLinks.instagram")} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-pink-500 text-base" placeholder="https://instagram.com/..." />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-zinc-300 text-sm font-medium">LinkedIn</label>
-                            <input {...register("socialLinks.linkedin")} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-blue-600 text-base" placeholder="https://linkedin.com/..." />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-zinc-300 text-sm font-medium">Twitter / X</label>
-                            <input {...register("socialLinks.twitter")} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-zinc-400 text-base" placeholder="https://twitter.com/..." />
-                        </div>
-                    </div>
-                </Section>
-
-                {/* ── SEO ── */}
-                <Section icon={<Globe size={16} />} title="SEO Podešavanja" subtitle="Opcionalno - za bolju vidljivost" collapsible defaultOpen={false}>
-                    <div className="space-y-2">
-                        <label className="text-zinc-300 text-sm font-medium flex items-center justify-between">
-                            <span>Meta Naslov</span>
-                            <span className={`text-xs ${metaTitle?.length > 60 ? 'text-red-400' : 'text-zinc-600'}`}>{metaTitle?.length || 0}/60</span>
-                        </label>
-                        <input {...register("metaTitle")} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-green-500 text-base" placeholder="npr. Profesionalne Vodoinstalaterske Usluge" />
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-zinc-300 text-sm font-medium flex items-center justify-between">
-                            <span>Meta Opis</span>
-                            <span className={`text-xs ${metaDescription?.length > 160 ? 'text-red-400' : 'text-zinc-600'}`}>{metaDescription?.length || 0}/160</span>
-                        </label>
-                        <textarea {...register("metaDescription")} rows={3} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-green-500 resize-none text-base" placeholder="Kratak opis..." />
-                    </div>
-                </Section>
-
-                {/* ── Testimonials ── */}
-                <Section icon={<Star size={16} />} title="Testimonijali / Recenzije" subtitle="Opcionalno" collapsible defaultOpen={false}>
-                    <div className="flex justify-end -mt-2">
-                        <button type="button" onClick={() => appendTestimonial({ name: "", text: "", role: "", rating: 5, imageUrl: "" })}
-                            className="text-green-500 font-bold flex items-center gap-2 hover:text-green-400 px-3 py-2 rounded-lg hover:bg-green-500/10"><Plus size={18} />Dodaj</button>
-                    </div>
-                    {testimonialFields.length === 0 ? (
-                        <p className="text-zinc-600 text-sm text-center py-4">Dodajte recenzije vaših klijenata</p>
-                    ) : (
-                        <div className="space-y-4">
-                            {testimonialFields.map((field, i) => (
-                                <div key={field.id} className="bg-zinc-950/50 border border-zinc-700 rounded-xl p-4 space-y-3">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-zinc-400 text-sm font-bold">Recenzija #{i + 1}</span>
-                                        <button type="button" onClick={() => removeTestimonial(i)} className="text-red-400 hover:text-red-300 p-1"><Trash2 size={16} /></button>
-                                    </div>
-                                    <div className="grid sm:grid-cols-2 gap-3">
-                                        <input {...register(`testimonials.${i}.name`)} placeholder="Ime klijenta" className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-green-500" />
-                                        <input {...register(`testimonials.${i}.role`)} placeholder="Pozicija / Tvrtka (opcionalno)" className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-green-500" />
-                                    </div>
-                                    <textarea {...register(`testimonials.${i}.text`)} rows={2} placeholder="Što klijent kaže..." className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-green-500 resize-none" />
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-zinc-500 text-xs">Ocjena:</span>
-                                        <div className="flex gap-1">
-                                            {[1, 2, 3, 4, 5].map(star => (
-                                                <button key={star} type="button" onClick={() => setValue(`testimonials.${i}.rating`, star)}
-                                                    className={`text-lg ${watch(`testimonials.${i}.rating`) >= star ? 'text-yellow-400' : 'text-zinc-700'} hover:text-yellow-400 transition-colors`}>★</button>
-                                            ))}
-                                        </div>
-                                    </div>
+                                            <span className="text-xs font-semibold leading-tight" style={{ color: 'var(--lp-heading)' }}>{section.label}</span>
+                                            <span className="text-[10px] leading-tight hidden sm:block" style={{ color: 'var(--lp-text-muted)' }}>{section.description}</span>
+                                        </button>
+                                    ))}
                                 </div>
-                            ))}
+                            </div>
                         </div>
-                    )}
-                </Section>
-
-                {/* ── FAQ ── */}
-                <Section icon={<HelpCircle size={16} />} title="FAQ — Često Postavljana Pitanja" subtitle="Opcionalno" collapsible defaultOpen={false}>
-                    <div className="flex justify-end -mt-2">
-                        <button type="button" onClick={() => appendFaq({ question: "", answer: "" })}
-                            className="text-green-500 font-bold flex items-center gap-2 hover:text-green-400 px-3 py-2 rounded-lg hover:bg-green-500/10"><Plus size={18} />Dodaj</button>
-                    </div>
-                    {faqFields.length === 0 ? (
-                        <p className="text-zinc-600 text-sm text-center py-4">Dodajte pitanja i odgovore za vašu stranicu</p>
-                    ) : (
-                        <div className="space-y-4">
-                            {faqFields.map((field, i) => (
-                                <div key={field.id} className="bg-zinc-950/50 border border-zinc-700 rounded-xl p-4 space-y-3">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-zinc-400 text-sm font-bold">Pitanje #{i + 1}</span>
-                                        <button type="button" onClick={() => removeFaq(i)} className="text-red-400 hover:text-red-300 p-1"><Trash2 size={16} /></button>
-                                    </div>
-                                    <input {...register(`faq.${i}.question`)} placeholder="Pitanje..." className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-green-500" />
-                                    <textarea {...register(`faq.${i}.answer`)} rows={2} placeholder="Odgovor..." className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-green-500 resize-none" />
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </Section>
-
-                {/* ── Gallery ── */}
-                <Section icon={<Images size={16} />} title="Galerija Slika" subtitle="Opcionalno — portfolio, proizvodi, reference" collapsible defaultOpen={false}>
-                    <div className="flex justify-end -mt-2">
-                        <button type="button" onClick={() => setMediaPickerField(`__gallery_${galleryFields.length}`)}
-                            className="text-green-500 font-bold flex items-center gap-2 hover:text-green-400 px-3 py-2 rounded-lg hover:bg-green-500/10"><Plus size={18} />Iz knjižnice</button>
-                    </div>
-                    {mediaPickerField?.startsWith('__gallery_') && (
-                        <MediaPickerModal onSelect={url => { appendGallery({ imageUrl: url, caption: "" }); setMediaPickerField(null); }} onClose={() => setMediaPickerField(null)} />
-                    )}
-                    {galleryFields.length === 0 ? (
-                        <p className="text-zinc-600 text-sm text-center py-4">Dodajte slike iz Media knjižnice za galeriju</p>
-                    ) : (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                            {galleryFields.map((field, i) => (
-                                <div key={field.id} className="relative group rounded-xl overflow-hidden border border-zinc-800">
-                                    <img src={watch(`gallery.${i}.imageUrl`)} alt="" className="w-full aspect-square object-cover" />
-                                    <button type="button" onClick={() => removeGallery(i)} className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={12} /></button>
-                                    <input {...register(`gallery.${i}.caption`)} placeholder="Opis..." className="absolute bottom-0 inset-x-0 bg-black/70 text-white text-xs px-2 py-1.5 focus:outline-none" />
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </Section>
-
-                {/* ── Pricing ── */}
-                <Section icon={<DollarSign size={16} />} title="Cjenik / Paketi" subtitle="Opcionalno" collapsible defaultOpen={false}>
-                    <div className="flex justify-end -mt-2">
-                        <button type="button" onClick={() => appendPricing({ name: "", price: "", description: "", features: [], highlighted: false })}
-                            className="text-green-500 font-bold flex items-center gap-2 hover:text-green-400 px-3 py-2 rounded-lg hover:bg-green-500/10"><Plus size={18} />Dodaj paket</button>
-                    </div>
-                    {pricingFields.length === 0 ? (
-                        <p className="text-zinc-600 text-sm text-center py-4">Dodajte cjenik ili pakete usluga</p>
-                    ) : (
-                        <div className="space-y-4">
-                            {pricingFields.map((field, i) => (
-                                <div key={field.id} className="bg-zinc-950/50 border border-zinc-700 rounded-xl p-4 space-y-3">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-zinc-400 text-sm font-bold">Paket #{i + 1}</span>
-                                        <div className="flex items-center gap-3">
-                                            <label className="flex items-center gap-2 cursor-pointer">
-                                                <input type="checkbox" {...register(`pricing.${i}.highlighted`)} className="accent-green-500 w-4 h-4" />
-                                                <span className="text-xs text-zinc-500">Istaknuto</span>
-                                            </label>
-                                            <button type="button" onClick={() => removePricing(i)} className="text-red-400 hover:text-red-300 p-1"><Trash2 size={16} /></button>
-                                        </div>
-                                    </div>
-                                    <div className="grid sm:grid-cols-2 gap-3">
-                                        <input {...register(`pricing.${i}.name`)} placeholder="Naziv paketa" className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-green-500" />
-                                        <input {...register(`pricing.${i}.price`)} placeholder="npr. 99€/mj" className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-green-500" />
-                                    </div>
-                                    <input {...register(`pricing.${i}.description`)} placeholder="Kratki opis paketa (opcionalno)" className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-green-500" />
-                                    <div className="space-y-1">
-                                        <label className="text-zinc-500 text-xs">Značajke (po jedna u redu)</label>
-                                        <textarea
-                                            value={(watch(`pricing.${i}.features`) || []).join('\n')}
-                                            onChange={e => setValue(`pricing.${i}.features`, e.target.value.split('\n').filter(Boolean))}
-                                            rows={3} placeholder={"✓ Neograničeni pozivi\n✓ 24/7 podrška\n✓ Besplatna instalacija"}
-                                            className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-green-500 resize-none font-mono" />
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </Section>
+                    );
+                })()}
 
                 {/* ── Submit Buttons ── */}
-                <div className="sticky bottom-0 left-0 right-0 bg-black/90 backdrop-blur-md border-t border-zinc-800 p-4 sm:relative sm:bg-transparent sm:backdrop-blur-none sm:border-t-0 sm:pt-8 sm:p-0 -mx-4 sm:mx-0">
-                    <div className="flex items-center justify-end gap-3 sm:gap-4">
-                        <button type="button" onClick={handleSubmit(onSave)} disabled={uploading || generating || saving || updating}
-                            className="flex-1 sm:flex-none bg-zinc-800 hover:bg-zinc-700 text-white px-6 sm:px-8 py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50">
-                            {(saving || updating) ? <><Loader2 className="animate-spin" size={18} /><span className="hidden sm:inline">{updating ? 'Ažuriranje...' : 'Spremanje...'}</span></> : (
-                                <><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                <div className="sticky bottom-0 left-0 right-0 backdrop-blur-md p-4 sm:relative sm:bg-transparent sm:backdrop-blur-none sm:border-t-0 sm:pt-6 sm:p-0 -mx-4 sm:mx-0"
+                    style={{ background: 'rgba(0,0,0,0.85)', borderTop: '1px solid var(--lp-border)' }}>
+                    <div className="flex items-center justify-end gap-2.5 sm:gap-3">
+                        <button type="button" onClick={() => onSave(getValues())} disabled={uploading || generating || saving || updating}
+                            className="flex-1 sm:flex-none px-5 sm:px-7 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-40 text-sm hover:scale-105"
+                            style={{ background: 'var(--lp-surface)', color: 'var(--lp-text-secondary)', border: '1px solid var(--lp-border)' }}>
+                            {(saving || updating) ? <><Loader2 className="animate-spin" size={16} /><span className="hidden sm:inline">{updating ? 'Ažuriranje...' : 'Spremanje...'}</span></> : (
+                                <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
                                 <span className="hidden sm:inline">{project.hasGenerated ? 'Ažuriraj Web Stranicu' : 'Spremi Podatke'}</span>
                                 <span className="sm:hidden">{project.hasGenerated ? 'Ažuriraj' : 'Spremi'}</span></>
                             )}
                         </button>
                         {!project.hasGenerated && (
                             <button type="submit" disabled={uploading || generating || saving || updating}
-                                className="flex-1 sm:flex-none bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white px-8 sm:px-10 py-4 rounded-xl font-bold flex items-center justify-center gap-3 transition-all disabled:opacity-50 shadow-lg shadow-green-500/30 hover:shadow-green-500/50 hover:scale-105">
-                                {generating ? <><Loader2 className="animate-spin" size={20} /><span className="hidden sm:inline">Generiranje...</span></> : <><Sparkles size={20} /><span className="hidden sm:inline">Generiraj Web Stranicu</span><span className="sm:hidden">Generiraj</span></>}
+                                className="flex-1 sm:flex-none px-7 sm:px-9 py-3 rounded-xl font-bold flex items-center justify-center gap-2.5 transition-all disabled:opacity-40 text-sm hover:scale-105"
+                                style={{ background: 'var(--lp-heading)', color: 'var(--lp-bg)' }}>
+                                {generating ? <><Loader2 className="animate-spin" size={18} /><span className="hidden sm:inline">Generiranje...</span></> : <><Sparkles size={18} /><span className="hidden sm:inline">Generiraj Web Stranicu</span><span className="sm:hidden">Generiraj</span></>}
                             </button>
                         )}
                     </div>
                 </div>
-            </form>
+            </motion.form>
         </div>
     );
 }

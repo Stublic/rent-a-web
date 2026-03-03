@@ -16,11 +16,11 @@ export default function TermsOfServicePage() {
                         <div className="w-8 h-8 rounded flex items-center justify-center overflow-hidden">
                             <img
                                 src="https://framerusercontent.com/images/fbLxHSQG15wQ5GLsHXeLv64Nvlo.png"
-                                alt="Rent a Web Logo"
+                                alt="Rent a webica Logo"
                                 className="w-full h-full object-cover"
                             />
                         </div>
-                        <span className="font-bold text-white text-lg">Rent a Web</span>
+                        <span className="font-bold text-white text-lg">Rent a webica</span>
                     </div>
                 </div>
             </div>
@@ -35,7 +35,7 @@ export default function TermsOfServicePage() {
                     <section>
                         <h2 className="text-xl font-semibold text-white mb-4">1. Opće Odredbe</h2>
                         <p>
-                            Ovi Uvjeti korištenja ("Uvjeti") reguliraju korištenje usluge Rent a Web ("Usluga"),
+                            Ovi Uvjeti korištenja ("Uvjeti") reguliraju korištenje usluge Rent a webica ("Usluga"),
                             koja je u vlasništvu i pod upravljanjem Webica ("Pružatelj usluge", "mi", "nas").
                             Korištenjem Usluge prihvaćate ove Uvjete u cijelosti.
                         </p>
@@ -47,7 +47,7 @@ export default function TermsOfServicePage() {
 
                     <section>
                         <h2 className="text-xl font-semibold text-white mb-4">2. Opis Usluge</h2>
-                        <p>Rent a Web nudi sljedeće usluge:</p>
+                        <p>Rent a webica nudi sljedeće usluge:</p>
                         <ul className="list-disc list-inside mt-3 space-y-2 text-zinc-400">
                             <li>AI generiranje web stranica na temelju podataka koje korisnik unosi</li>
                             <li>AIEditor za naknadno uređivanje generiranih stranica (sustav žetona)</li>
@@ -64,9 +64,9 @@ export default function TermsOfServicePage() {
                             Cijene su izražene u EUR i uključuju sve pristojbe.
                         </p>
                         <ul className="list-disc list-inside mt-3 space-y-2 text-zinc-400">
-                            <li><strong className="text-zinc-200">Starter:</strong> 39 €/mj — jednostavna landing stranica</li>
-                            <li><strong className="text-zinc-200">Advanced:</strong> 89 €/mj — višestraničje + Google Ads</li>
-                            <li><strong className="text-zinc-200">Paket za poduzetnike:</strong> 399 €/mj — 5 profesionalnih web stranica</li>
+                            <li><strong className="text-zinc-200">Starter:</strong> 39 €/mj — AI generirana prodajna landing stranica</li>
+                            <li><strong className="text-zinc-200">Advanced:</strong> 99 €/mj — kompleksna višestrančna web stranica + blog CMS</li>
+                            <li><strong className="text-zinc-200">Web Shop Start:</strong> 199 €/mj — web shop s katalogom, narudžbama i plaćanjem (uskoro)</li>
                         </ul>
                         <p className="mt-3">
                             Pretplata se automatski obnavlja svakog mjeseca. Korisnik može otkazati pretplatu
@@ -93,11 +93,11 @@ export default function TermsOfServicePage() {
                         <p className="mt-3">
                             <strong className="text-zinc-200">Generirani kod:</strong> HTML, CSS i JavaScript kod koji AI generira
                             na temelju korisnikovih podataka daje se korisniku kao licencirani sadržaj za
-                            korištenje isključivo unutar Rent a Web platforme. Korisnik nema pravo na
+                            korištenje isključivo unutar Rent a webica platforme. Korisnik nema pravo na
                             izvoz izvornog koda bez posebnog dogovora.
                         </p>
                         <p className="mt-3">
-                            <strong className="text-zinc-200">Platforma:</strong> Sav softver, dizajn i logika platforme Rent a Web
+                            <strong className="text-zinc-200">Platforma:</strong> Sav softver, dizajn i logika platforme Rent a webica
                             ostaju u isključivom vlasništvu Pružatelja usluge.
                         </p>
                     </section>

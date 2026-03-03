@@ -1,17 +1,18 @@
 'use server';
 
 import { put } from '@vercel/blob';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { generatePageImages } from '@/lib/ai-images';
-import { STYLES } from '@/app/try/StylePicker';
+import { STYLES } from '@/lib/styles';
 import { injectContactFormScript } from '@/lib/contact-form-script';
+import { logGeminiUsage } from '@/lib/gemini-usage';
+import { generateWithFallback } from '@/lib/gemini-with-fallback';
 
-import { contentSchema } from '@/lib/schemas';
+import { contentSchema, formatValidationErrors } from '@/lib/schemas';
 
 // Validate environment variables at startup
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
@@ -25,8 +26,6 @@ if (!BLOB_TOKEN) {
 }
 
 // Initialize Gemini
-const genAI = GOOGLE_API_KEY ? new GoogleGenerativeAI(GOOGLE_API_KEY) : null;
-const model = genAI ? genAI.getGenerativeModel({ model: "gemini-3-flash-preview" }) : null;
 
 export async function uploadImageAction(formData: FormData) {
     if (!BLOB_TOKEN) {
@@ -42,6 +41,7 @@ export async function uploadImageAction(formData: FormData) {
         const blob = await put(file.name, file, {
             access: 'public',
             token: BLOB_TOKEN,
+            addRandomSuffix: true,
         });
 
         return blob.url;
@@ -53,7 +53,7 @@ export async function uploadImageAction(formData: FormData) {
 
 export async function generateWebsiteAction(projectId: string, formData: any) {
     // 1. Environment Check
-    if (!GOOGLE_API_KEY || !model) {
+    if (!GOOGLE_API_KEY) {
         console.error('❌ Google API Key missing - cannot generate website');
         return { error: 'AI sustav nije konfiguriran. Molimo kontaktirajte podršku.' };
     }
@@ -72,7 +72,7 @@ export async function generateWebsiteAction(projectId: string, formData: any) {
 
     if (!validatedFields.success) {
         console.error('Validation failed:', validatedFields.error.flatten().fieldErrors);
-        return { error: 'Podaci forme nisu ispravni. Molimo provjerite sva polja.' };
+        return { error: formatValidationErrors(validatedFields.error) };
     }
 
     const data = validatedFields.data;
@@ -160,19 +160,29 @@ export async function generateWebsiteAction(projectId: string, formData: any) {
         }
 
         // Build CTA instruction
-        const heroCta = data.heroCta || { type: 'contact', label: '', url: '' };
         let ctaInstruction = '';
-        if (heroCta.type === 'contact') ctaInstruction = `Main CTA button scrolls to the contact form section. Label: "${heroCta.label || 'Kontaktirajte nas'}"\n`;
-        else if (heroCta.type === 'phone') ctaInstruction = `Main CTA button links to tel:${data.phone}. Label: "${heroCta.label || 'Nazovite nas'}"\n`;
-        else if (heroCta.type === 'email') ctaInstruction = `Main CTA button links to mailto:${data.email}. Label: "${heroCta.label || 'Pošaljite email'}"\n`;
-        else if (heroCta.type === 'whatsapp') ctaInstruction = `Main CTA button links to https://wa.me/${(data.phone || '').replace(/[^0-9]/g, '')}. Label: "${heroCta.label || 'WhatsApp'}"\n`;
-        else if (heroCta.type === 'link') ctaInstruction = `Main CTA button links to ${heroCta.url}. Label: "${heroCta.label || 'Saznaj više'}"\n`;
+        if (data.heroCta && data.heroCta.type) {
+            const heroCta = data.heroCta;
+            if (heroCta.type === 'contact') ctaInstruction = `Main CTA button scrolls to the contact form section. Label: "${heroCta.label || 'Kontaktirajte nas'}"\n`;
+            else if (heroCta.type === 'phone') ctaInstruction = `Main CTA button links to tel:${data.phone}. Label: "${heroCta.label || 'Nazovite nas'}"\n`;
+            else if (heroCta.type === 'email') ctaInstruction = `Main CTA button links to mailto:${data.email}. Label: "${heroCta.label || 'Pošaljite email'}"\n`;
+            else if (heroCta.type === 'whatsapp') ctaInstruction = `Main CTA button links to https://wa.me/${(data.phone || '').replace(/[^0-9]/g, '')}. Label: "${heroCta.label || 'WhatsApp'}"\n`;
+            else if (heroCta.type === 'link') ctaInstruction = `Main CTA button links to ${heroCta.url}. Label: "${heroCta.label || 'Saznaj više'}"\n`;
+        } else {
+            ctaInstruction = `Choose an appropriate main CTA button for the ${data.industry} industry (e.g. scroll to contact form with label "Kontaktirajte nas").\n`;
+        }
 
         // Colors instruction
-        let colorInstruction = `Primary brand color: ${data.primaryColor}.`;
-        if (data.secondaryColor) colorInstruction += ` Secondary/accent color: ${data.secondaryColor}.`;
-        if (data.backgroundColor) colorInstruction += ` Page background: ${data.backgroundColor}.`;
-        if (data.textColor) colorInstruction += ` Main text color: ${data.textColor}.`;
+        const autoColors = (data as any).autoColors !== false;
+        let colorInstruction = '';
+        if (autoColors) {
+            colorInstruction = `Choose a color palette that fits the "${data.industry}" industry perfectly. Use premium, harmonious colors.`;
+        } else {
+            colorInstruction = `Primary brand color: ${data.primaryColor || '#22c55e'}.`;
+            if (data.secondaryColor) colorInstruction += ` Secondary/accent color: ${data.secondaryColor}.`;
+            if (data.backgroundColor) colorInstruction += ` Page background: ${data.backgroundColor}.`;
+            if (data.textColor) colorInstruction += ` Main text color: ${data.textColor}.`;
+        }
 
         const prompt = `
 You are a Senior Frontend Engineer and UI/UX Designer.
@@ -234,7 +244,9 @@ CTA types: contact = scroll to contact, phone = tel: link, email = mailto: link,
    });
    </script>
 ${conditionalSections.join('\n')}
-${sectionNum}. **Footer**: Business name, contact info, copyright, social links
+${sectionNum}. **Footer**: Business name, contact info, social links.
+   - Copyright with DYNAMIC year: use a \<span\> with id="currentYear" and a small inline \<script\>document.getElementById('currentYear').textContent = new Date().getFullYear();\</script\> so the year always auto-updates. Example: © \<span id="currentYear"\>\</span\> BusinessName
+   - At the very bottom: \<a href="https://rent.webica.hr" target="_blank" rel="noopener noreferrer" class="text-sm opacity-60 hover:opacity-100 transition-opacity"\>Powered by Rent a webica\</a\>
 
 **TONE & COPY:**
 Professional, persuasive marketing copy in Croatian language. Strong CTAs, industry-appropriate terminology.
@@ -248,15 +260,20 @@ Only the HTML code. No explanations, no markdown.
 
         console.log('🤖 Calling Gemini API...');
 
-        const result = await Promise.race([
-            model.generateContent(prompt),
-            new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('AI timeout')), 120000) // 120 second timeout
-            )
-        ]) as any;
+        const { response, modelUsed } = await generateWithFallback(prompt, {
+            timeoutMs: 120000,
+        });
 
-        const response = await result.response;
         let text = response.text();
+
+        if (response.usageMetadata) {
+            logGeminiUsage({
+                type: 'generate_website',
+                model: modelUsed,
+                tokensInput: response.usageMetadata.promptTokenCount || 0,
+                tokensOutput: response.usageMetadata.candidatesTokenCount || 0,
+            });
+        }
 
         console.log(`✅ Gemini returned ${text.length} characters`);
 

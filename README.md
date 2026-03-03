@@ -1,10 +1,10 @@
-# Rent a Web
+# Rent a webica
 
 Platforma za najam profesionalnih web stranica po modelu mjesečne pretplate.
 
 ## O Projektu
 
-Rent a Web omogućuje malim poduzetnicima i obrtnicima da dobiju vrhunsku web stranicu bez velikih početnih ulaganja. Umjesto jednokratnog troška od 1000€+, plaćaju mjesečnu pretplatu (od 39€/mj) koja uključuje dizajn, razvoj, hosting i održavanje.
+Rent a webica omogućuje malim poduzetnicima i obrtnicima da dobiju vrhunsku web stranicu bez velikih početnih ulaganja. Umjesto jednokratnog troška od 1000€+, plaćaju mjesečnu pretplatu (od 39€/mj) koja uključuje dizajn, razvoj, hosting i održavanje.
 
 Projekt je full-stack aplikacija izgrađena na **Next.js** frameworku.
 

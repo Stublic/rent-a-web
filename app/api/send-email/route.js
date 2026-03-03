@@ -53,7 +53,7 @@ export async function POST(req) {
     await transporter.sendMail({
       from: process.env.SMTP_FROM,
       to: email,
-      subject: 'Primili smo vaš upit - Rent a Web',
+      subject: 'Primili smo vaš upit - Rent a webica',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333 text-align: left;">
           <h2 style="color: #22c55e;">Hvala na upitu, ${name}!</h2>
@@ -62,7 +62,7 @@ export async function POST(req) {
             <strong>Vaša poruka:</strong><br>
             ${message.replace(/\n/g, '<br>')}
           </div>
-          <p style="margin-top: 30px; color: #666;">Srdačan pozdrav,<br><strong>Rent a Web tim</strong></p>
+          <p style="margin-top: 30px; color: #666;">Srdačan pozdrav,<br><strong>Rent a webica tim</strong></p>
         </div>
       `,
     });

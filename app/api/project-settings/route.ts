@@ -15,12 +15,34 @@ export async function GET(req: Request) {
 
         const isAdmin = (session.user as any).role === 'ADMIN';
         const project = isAdmin
-            ? await prisma.project.findUnique({ where: { id: projectId }, select: { id: true, contactEmail: true } })
-            : await prisma.project.findFirst({ where: { id: projectId, userId: session.user.id }, select: { id: true, contactEmail: true } });
+            ? await prisma.project.findUnique({ where: { id: projectId }, select: { id: true, name: true, contactEmail: true, contentData: true, planName: true, reactFiles: true, generatedHtml: true } })
+            : await prisma.project.findFirst({ where: { id: projectId, userId: session.user.id }, select: { id: true, name: true, contactEmail: true, contentData: true, planName: true, reactFiles: true, generatedHtml: true } });
 
         if (!project) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-        return NextResponse.json({ contactEmail: project.contactEmail ?? '' });
+        const seoSettings = (project.contentData as any)?.seoSettings || null;
+        const subpageKeys = project.reactFiles ? Object.keys(project.reactFiles as Record<string, string>) : [];
+
+        // Auto-extract SEO from generated HTML if seoSettings.pages is empty
+        let autoSeo: Record<string, { title?: string; description?: string }> = {};
+        const extractMeta = (html: string | null) => {
+            if (!html) return {};
+            const titleMatch = html.match(/<title>([^<]*)<\/title>/i);
+            const descMatch = html.match(/<meta\s+name="description"\s+content="([^"]*)"/i);
+            return {
+                title: titleMatch ? titleMatch[1] : undefined,
+                description: descMatch ? descMatch[1] : undefined,
+            };
+        };
+        // Extract from homepage
+        autoSeo['home'] = extractMeta(project.generatedHtml as string | null);
+        // Extract from subpages
+        const rf = (project.reactFiles as Record<string, string>) || {};
+        for (const key of subpageKeys) {
+            autoSeo[key] = extractMeta(rf[key]);
+        }
+
+        return NextResponse.json({ contactEmail: project.contactEmail ?? '', seoSettings, planName: project.planName || '', projectName: project.name || '', subpageKeys, autoSeo });
     } catch (err) {
         console.error('GET project-settings error:', err);
         return NextResponse.json({ error: 'Server error' }, { status: 500 });

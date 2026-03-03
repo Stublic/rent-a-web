@@ -18,7 +18,7 @@ model User {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   
-  // Custom fields for Rent a Web
+  // Custom fields for Rent a webica
   subscriptionStatus String?  // active, canceled, etc.
   stripeCustomerId   String?  @unique
   planName           String?  // Starter, Advanced, Web Shop Start
@@ -26,11 +26,16 @@ model User {
   role               String   @default("USER")  // USER, ADMIN
   lastDripEmailSent  Int      @default(0)       // Track drip campaign step (0, 3, 7, 14)
 
+  // Account-level token system (shared across all projects)
+  editorTokens       Int      @default(0)       // Remaining AI edit tokens
+  editorTokensUsed   Int      @default(0)       // Total tokens consumed (analytics)
+
   sessions         Session[]
   accounts         Account[]
   projects         Project[]
   invoices         Invoice[]
   media            Media[]
+  feedbacks        Feedback[]
 
   @@map("user")
 }
@@ -51,7 +56,9 @@ model Project {
   
   // Content Generation Fields
   contentData          Json?    // Stores raw form data
-  generatedHtml        String?  @db.Text // Large text field for AI output
+  generatedHtml        String?  @db.Text // Large text field for AI output (Starter) or built HTML (Advanced)
+  reactFiles           Json?    // Advanced: { "pages/Home.jsx": "...", ... } AI-generated React files
+  reactConfig          Json?    // Advanced: { primaryColor, font, pages[], ... } template config
   aiVersion            Int      @default(1)
   hasGenerated         Boolean  @default(false) // Track if website has been generated
   
@@ -215,4 +222,48 @@ model ContactSubmission {
   createdAt DateTime @default(now())
 
   @@map("contact_submission")
+}
+
+model Feedback {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers   String   @db.Text  // JSON stringified answers
+  createdAt DateTime @default(now())
+
+  @@map("feedback")
+}
+
+model GeminiUsage {
+  id           String   @id @default(cuid())
+  type         String   // e.g. "generate_page", "generate_image", "edit_page", "blog_post"
+  model        String   // "gemini-3-flash-preview", "gemini-3-pro-image-preview", etc.
+  tokensInput  Int      @default(0)
+  tokensOutput Int      @default(0)
+  cost         Float    @default(0) // Estimated cost in USD or EUR
+  createdAt    DateTime @default(now())
+
+  @@map("gemini_usage")
+}
+
+model DesignReference {
+  id          String   @id @default(cuid())
+  imageUrl    String   // Vercel Blob URL
+  sourceUrl   String?  // Original website URL
+  tags        String[] // e.g. ["restoran", "moderna", "tamna"]
+  industry    String?  // e.g. "Ugostiteljstvo"
+  style       String?  // e.g. "minimalist", "bold", "elegant"
+  title       String?  // Admin label
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@map("design_reference")
+}
+
+model SystemConfig {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("system_config")
 }

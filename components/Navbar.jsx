@@ -87,12 +87,12 @@ const Navbar = () => {
           <div className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden transition-transform group-hover:scale-105">
              <img 
                src="https://framerusercontent.com/images/fbLxHSQG15wQ5GLsHXeLv64Nvlo.png" 
-               alt="Rent a Web Logo" 
+               alt="Rent a webica Logo" 
                className="w-full h-full object-cover"
              />
           </div>
           <span className="font-bold text-2xl text-white tracking-tight">
-            Rent a Web
+            Rent a webica
           </span>
         </a>
         

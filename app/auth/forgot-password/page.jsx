@@ -42,7 +42,7 @@ export default function ForgotPasswordPage() {
                             alt="Logo"
                             className="w-10 h-10 object-cover rounded-lg group-hover:scale-105 transition-transform"
                         />
-                        <span className="text-2xl font-extrabold text-white tracking-tight">Rent a Web</span>
+                        <span className="text-2xl font-extrabold text-white tracking-tight">Rent a webica</span>
                     </Link>
                     <h1 className="text-3xl font-bold text-white mb-2">Zaboravljena lozinka?</h1>
                     <p className="text-zinc-400">Unesite email adresu i poslat ćemo vam link za resetiranje.</p>

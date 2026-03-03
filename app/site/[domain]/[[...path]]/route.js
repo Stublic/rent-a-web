@@ -47,7 +47,7 @@ async function getProjectByDomain(domain) {
     let project = await prisma.project.findFirst({
         where: { subdomain: domain, publishedAt: { not: null } },
         select: {
-            id: true, name: true, contentData: true, generatedHtml: true, planName: true,
+            id: true, name: true, contentData: true, generatedHtml: true, reactFiles: true, planName: true, cancelledAt: true,
             blogPosts: {
                 where: { status: 'PUBLISHED' },
                 orderBy: { publishedAt: 'desc' },
@@ -63,7 +63,7 @@ async function getProjectByDomain(domain) {
         project = await prisma.project.findFirst({
             where: { customDomain: domain, publishedAt: { not: null } },
             select: {
-                id: true, name: true, contentData: true, generatedHtml: true, planName: true,
+                id: true, name: true, contentData: true, generatedHtml: true, reactFiles: true, planName: true, cancelledAt: true,
                 blogPosts: {
                     where: { status: 'PUBLISHED' },
                     orderBy: { publishedAt: 'desc' },
@@ -91,33 +91,269 @@ function htmlResponse(html, status = 200) {
     });
 }
 
-// ─── Homepage ───────────────────────────────────────────────────────
+/**
+ * Inject favicon and custom SEO meta into page HTML.
+ * @param {string} html - The page HTML
+ * @param {object} project - The project object with contentData
+ * @param {string} pageKey - The page key (e.g. 'home', 'o-nama', 'usluge', 'kontakt')
+ */
+function injectSiteExtras(html, project, pageKey = 'home') {
+    const seoSettings = (project.contentData || {}).seoSettings || {};
+    const favicon = seoSettings.favicon;
+    const pageSeo = seoSettings.pages?.[pageKey] || {};
 
-function serveHomepage(project) {
-    let html = project.generatedHtml || '';
-    const hasBlog = project.blogPosts && project.blogPosts.length > 0;
-
-    if (hasBlog && html) {
-        // Inject blog link into navigation
-        // Look for nav links pattern and add Blog
-        const navLinkPattern = /<a\s[^>]*href=["']#[^"']*["'][^>]*>[^<]*<\/a>/gi;
-        const navLinks = html.match(navLinkPattern);
-        if (navLinks && navLinks.length > 0) {
-            const lastNavLink = navLinks[navLinks.length - 1];
-            // Extract style from existing nav link
-            const styleMatch = lastNavLink.match(/style="([^"]*)"/);
-            const style = styleMatch ? styleMatch[1] : '';
-            const classMatch = lastNavLink.match(/class="([^"]*)"/);
-            const cls = classMatch ? ` class="${classMatch[1]}"` : '';
-            const blogLink = `<a href="/blog" style="${style}"${cls}>Blog</a>`;
-            html = html.replace(lastNavLink, lastNavLink + blogLink);
+    let injections = '';
+    if (favicon) {
+        injections += `<link rel="icon" href="${favicon}">\n`;
+    }
+    if (pageSeo.title) {
+        // Replace existing <title> or inject new one
+        html = html.replace(/<title>[^<]*<\/title>/i, `<title>${pageSeo.title}</title>`);
+    }
+    if (pageSeo.description) {
+        if (html.includes('<meta name="description"')) {
+            html = html.replace(/<meta\s+name="description"\s+content="[^"]*"/i, `<meta name="description" content="${pageSeo.description}"`);
+        } else {
+            injections += `<meta name="description" content="${pageSeo.description}">\n`;
         }
     }
+    if (pageSeo.ogImage) {
+        if (html.includes('property="og:image"')) {
+            html = html.replace(/<meta\s+property="og:image"\s+content="[^"]*"/i, `<meta property="og:image" content="${pageSeo.ogImage}"`);
+        } else {
+            injections += `<meta property="og:image" content="${pageSeo.ogImage}">\n`;
+        }
+    }
+
+    if (injections && html.includes('</head>')) {
+        html = html.replace('</head>', injections + '</head>');
+    }
+    return html;
+}
+
+// ─── Dynamic subpage nav link injection ─────────────────────────────
+
+const PREDEFINED_SUBPAGE_LABELS = {
+    'o-nama': 'O nama',
+    'usluge': 'Usluge',
+    'kontakt': 'Kontakt',
+};
+
+/**
+ * Build a slug→label map for ALL subpages (predefined + custom).
+ */
+function getSubpageLabels(project) {
+    const labels = { ...PREDEFINED_SUBPAGE_LABELS };
+    const customMeta = (project.contentData || {})._customSubpages || {};
+    for (const [slug, meta] of Object.entries(customMeta)) {
+        if (meta && meta.title) {
+            labels[slug] = meta.title;
+        }
+    }
+    return labels;
+}
+
+/**
+ * Strip "active" modifiers from a Tailwind class string so that injected links
+ * look like normal (inactive) navigation items rather than highlighted ones.
+ */
+function stripActiveClasses(cls) {
+    return cls
+        .replace(/\bborder-b[-\w]*/g, '')   // border-b-2, border-primary etc.
+        .replace(/\bpb-\d+/g, '')            // pb-1 etc.
+        .replace(/\btext-primary\b/g, '')
+        .replace(/\btext-white\b/g, 'text-gray-300')
+        .replace(/\bfont-medium\b/g, '')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+}
+
+/**
+ * Inject navigation links for existing subpages into the HTML.
+ * Works with <!-- NAV_LINKS --> and <!-- FOOTER_NAV_LINKS --> markers.
+ * For pages without markers, uses fallback injection into all <nav> elements and footer.
+ * Only injects links for slugs not already present in the HTML.
+ */
+function injectSubpageNavLinks(html, project) {
+    const reactFiles = project.reactFiles || {};
+    const subpageLabels = getSubpageLabels(project);
+    const existingSlugs = Object.keys(reactFiles).filter(k => subpageLabels[k]);
+    if (existingSlugs.length === 0) return html;
+
+    // Filter out slugs that already have links in the HTML (avoids duplicates)
+    const missingSlugs = existingSlugs.filter(slug =>
+        !html.includes(`href="/${slug}"`) && !html.includes(`href='/${slug}'`)
+    );
+
+    // Find the "Početna" TEXT link (not logo) to extract its nav link styling
+    const firstNav = html.match(/<nav[\s\S]*?<\/nav>/i);
+    let linkClass = '';
+    let linkStyle = '';
+    if (firstNav) {
+        // Match <a> that contains "Početna" text — distinguishes from logo link
+        const pocetnaLink = firstNav[0].match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i);
+        if (pocetnaLink) {
+            const clsMatch = pocetnaLink[0].match(/class="([^"]*)"/);
+            if (clsMatch) {
+                // Remove active-state classes but keep font/size/color
+                linkClass = clsMatch[1]
+                    .replace(/\bborder-b[-\w]*/g, '')
+                    .replace(/\bborder-primary\b/g, '')
+                    .replace(/\bpb-\d+/g, '')
+                    .replace(/\s{2,}/g, ' ')
+                    .trim();
+            }
+            const styMatch = pocetnaLink[0].match(/style="([^"]*)"/);
+            if (styMatch) linkStyle = styMatch[1];
+        }
+    }
+
+    const buildLink = (slug, label) => {
+        const cls = linkClass ? ` class="${linkClass}"` : '';
+        const sty = linkStyle ? ` style="${linkStyle}"` : '';
+        return `<a href="/${slug}"${cls}${sty}>${label}</a>`;
+    };
+
+    // Only inject missing slugs (if any)
+    if (missingSlugs.length > 0) {
+        const navLinksHtml = missingSlugs.map(slug => buildLink(slug, subpageLabels[slug])).join('\n                    ');
+        const footerLinksHtml = missingSlugs.map(slug => `<a href="/${slug}">${subpageLabels[slug]}</a>`).join('\n');
+
+        // ── Header Nav Injection ──
+        if (html.includes('<!-- NAV_LINKS -->')) {
+            html = html.replace(/<!-- NAV_LINKS -->/g, navLinksHtml);
+        } else {
+            // Fallback: inject into ALL <nav> elements (desktop nav + mobile menu)
+            const allNavs = html.match(/<nav[\s\S]*?<\/nav>/gi) || [];
+            for (const navBlock of allNavs) {
+                const homeLinkMatch = navBlock.match(/<a\s[^>]*href=["']\/["'][^>]*>[\s\S]*?<\/a>/i);
+                if (homeLinkMatch) {
+                    const updated = navBlock.replace(
+                        homeLinkMatch[0],
+                        homeLinkMatch[0] + '\n                    ' + navLinksHtml
+                    );
+                    html = html.replace(navBlock, updated);
+                }
+            }
+        }
+
+        // ── Footer Nav Injection ──
+        if (html.includes('<!-- FOOTER_NAV_LINKS -->')) {
+            html = html.replace(/<!-- FOOTER_NAV_LINKS -->/g, footerLinksHtml);
+        } else {
+            const footerMatch = html.match(/<footer[\s\S]*?<\/footer>/i);
+            if (footerMatch) {
+                const footerHtml = footerMatch[0];
+                const footerHomeLink = footerHtml.match(/<a\s[^>]*href=["']\/["'][^>]*>[\s\S]*?<\/a>/i);
+                if (footerHomeLink) {
+                    const updatedFooter = footerHtml.replace(
+                        footerHomeLink[0],
+                        footerHomeLink[0] + '\n' + footerLinksHtml
+                    );
+                    html = html.replace(footerMatch[0], updatedFooter);
+                }
+            }
+        }
+    }
+
+    // Also replace markers even if no missing slugs (remove empty markers)
+    html = html.replace(/<!-- NAV_LINKS -->/g, '');
+    html = html.replace(/<!-- FOOTER_NAV_LINKS -->/g, '');
 
     return html;
 }
 
-// ─── Blog listing ───────────────────────────────────────────────────
+// ─── Blog nav link injection ────────────────────────────────────────
+
+function injectBlogNavLink(html) {
+    if (html.includes('href="/blog"') || html.includes("href='/blog'")) return html;
+
+    const navSection = html.match(/<nav[\s\S]*?<\/nav>/i);
+    if (!navSection) return html;
+    const navHtml = navSection[0];
+
+    // Copy styling from "Početna" text link (not logo)
+    const pocetnaLink = navHtml.match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i);
+    let linkClass = '';
+    if (pocetnaLink) {
+        const clsMatch = pocetnaLink[0].match(/class="([^"]*)"/);
+        if (clsMatch) {
+            linkClass = clsMatch[1]
+                .replace(/\bborder-b[-\w]*/g, '')
+                .replace(/\bborder-primary\b/g, '')
+                .replace(/\bpb-\d+/g, '')
+                .replace(/\s{2,}/g, ' ')
+                .trim();
+        }
+    }
+
+    const blogLink = `<a href="/blog"${linkClass ? ` class="${linkClass}"` : ''}>Blog</a>`;
+
+    // Find last regular nav link and inject after it
+    const navLinkPattern = /<a\s[^>]*href=["']\/[a-z-]*["'][^>]*>[^<]*<\/a>/gi;
+    const navLinks = navHtml.match(navLinkPattern);
+    if (!navLinks || navLinks.length === 0) return html;
+
+    const lastNavLink = navLinks[navLinks.length - 1];
+    const updatedNav = navHtml.replace(lastNavLink, lastNavLink + '\n                    ' + blogLink);
+    html = html.replace(navSection[0], updatedNav);
+
+    return html;
+}
+
+function serveHomepage(project) {
+    let html = project.generatedHtml || '';
+    // Inject nav links for existing subpages
+    html = injectSubpageNavLinks(html, project);
+    const hasBlog = project.blogPosts && project.blogPosts.length > 0;
+    if (hasBlog && html) html = injectBlogNavLink(html);
+    return html;
+}
+
+/**
+ * Extract the site's color palette from designTokens for blog styling.
+ * Falls back to generic dark/light palette if tokens are not available.
+ */
+function extractSiteColors(project) {
+    const contentData = project.contentData || {};
+    const designTokens = contentData.designTokens;
+    const primary = contentData.primaryColor || '#22c55e';
+
+    if (designTokens && designTokens.colors) {
+        const c = designTokens.colors;
+        return {
+            primary: c.primary || primary,
+            bg: c.background || '#0a0a0a',
+            surface: c.surface || c.cardBg || '#18181b',
+            surfaceHover: c.surfaceHover || '#27272a',
+            border: c.border || '#27272a',
+            text: c.text || '#e4e4e7',
+            textSecondary: c.textSecondary || '#a1a1aa',
+            textMuted: c.textMuted || '#52525b',
+            heading: c.heading || '#fff',
+            cardBg: c.cardBg || c.surface || '#18181b',
+            cardBorder: c.cardBorder || c.border || '#27272a',
+        };
+    }
+
+    // Fallback: detect from HTML
+    const isDark = project.generatedHtml ? detectDarkTheme(project.generatedHtml) : true;
+    if (isDark) {
+        return {
+            primary,
+            bg: '#0a0a0a', surface: '#18181b', surfaceHover: '#27272a', border: '#27272a',
+            text: '#e4e4e7', textSecondary: '#a1a1aa', textMuted: '#52525b',
+            heading: '#fff', cardBg: '#18181b', cardBorder: '#27272a',
+        };
+    }
+    return {
+        primary,
+        bg: '#fff', surface: '#f4f4f5', surfaceHover: '#e4e4e7', border: '#e4e4e7',
+        text: '#18181b', textSecondary: '#52525b', textMuted: '#a1a1aa',
+        heading: '#09090b', cardBg: '#fff', cardBorder: '#e4e4e7',
+    };
+}
+
 
 function renderBlogListing(project, searchParams) {
     const searchQuery = searchParams.get('q') || '';
@@ -125,11 +361,19 @@ function renderBlogListing(project, searchParams) {
     const tagFilter = searchParams.get('tag') || '';
 
     const content = project.contentData || {};
-    const primary = content.primaryColor || '#22c55e';
     const bizName = content.businessName || project.name;
 
-    const chrome = project.generatedHtml ? extractSiteChrome(project.generatedHtml) : null;
+    // Extract site colors for consistent blog styling
+    const sc = extractSiteColors(project);
+    const primary = sc.primary;
+
+    const chrome = project.generatedHtml ? extractSiteChrome(injectBlogNavLink(injectSubpageNavLinks(project.generatedHtml, project))) : null;
     const isDark = project.generatedHtml ? detectDarkTheme(project.generatedHtml) : true;
+    // Inject favicon into blog head
+    const faviconUrl = (project.contentData || {}).seoSettings?.favicon;
+    if (chrome && faviconUrl) {
+        chrome.headContent = (chrome.headContent || '') + `\n<link rel="icon" href="${faviconUrl}">`;
+    }
 
     let filteredPosts = project.blogPosts || [];
     if (searchQuery) {
@@ -203,10 +447,9 @@ function renderBlogListing(project, searchParams) {
     <link rel="canonical" href="/blog">
     ${chrome?.headContent || '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">'}
     <style>
-        :root,[data-theme="light"]{--blog-bg:#fff;--blog-surface:#f4f4f5;--blog-surface-hover:#e4e4e7;--blog-border:#e4e4e7;--blog-text:#18181b;--blog-text-secondary:#52525b;--blog-text-muted:#a1a1aa;--blog-heading:#09090b;--blog-card-bg:#fff;--blog-card-border:#e4e4e7;--blog-footer-border:#e4e4e7}
-        [data-theme="dark"]{--blog-bg:#0a0a0a;--blog-surface:#18181b;--blog-surface-hover:#27272a;--blog-border:#27272a;--blog-text:#e4e4e7;--blog-text-secondary:#a1a1aa;--blog-text-muted:#52525b;--blog-heading:#fff;--blog-card-bg:#18181b;--blog-card-border:#27272a;--blog-footer-border:#18181b}
+        :root{--blog-bg:${sc.bg};--blog-surface:${sc.surface};--blog-surface-hover:${sc.surfaceHover};--blog-border:${sc.border};--blog-text:${sc.text};--blog-text-secondary:${sc.textSecondary};--blog-text-muted:${sc.textMuted};--blog-heading:${sc.heading};--blog-card-bg:${sc.cardBg};--blog-card-border:${sc.cardBorder};--blog-footer-border:${sc.border}}
         body{background:var(--blog-bg)!important;color:var(--blog-text)!important;font-family:Inter,-apple-system,sans-serif;margin:0}
-        .blog-hero{text-align:center;padding:4rem 2rem 1.5rem;max-width:800px;margin:0 auto}
+        .blog-hero{text-align:center;padding:7rem 2rem 1.5rem;max-width:800px;margin:0 auto}
         .blog-hero h1{font-size:2.5rem;font-weight:800;color:var(--blog-heading);margin-bottom:.75rem}
         .blog-hero p{color:var(--blog-text-muted);font-size:1.125rem}
         .search-bar{max-width:600px;margin:1.5rem auto 0;position:relative}
@@ -284,10 +527,17 @@ async function renderBlogPost(project, slug) {
     if (!post) return null;
 
     const content = project.contentData || {};
-    const primary = content.primaryColor || '#22c55e';
     const bizName = content.businessName || project.name;
-    const chrome = project.generatedHtml ? extractSiteChrome(project.generatedHtml) : null;
+    // Extract site colors for consistent blog styling
+    const sc = extractSiteColors(project);
+    const primary = sc.primary;
+    const chrome = project.generatedHtml ? extractSiteChrome(injectBlogNavLink(injectSubpageNavLinks(project.generatedHtml, project))) : null;
     const isDark = project.generatedHtml ? detectDarkTheme(project.generatedHtml) : true;
+    // Inject favicon into blog post head
+    const faviconUrl2 = (project.contentData || {}).seoSettings?.favicon;
+    if (chrome && faviconUrl2) {
+        chrome.headContent = (chrome.headContent || '') + `\n<link rel="icon" href="${faviconUrl2}">`;
+    }
     const postTags = post.tags ? post.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
 
     let headerHtml = chrome?.header || `<header style="border-bottom:1px solid var(--blog-border);padding:1.25rem 2rem;display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto"><a href="/" style="font-weight:800;font-size:1.25rem;color:${primary};text-decoration:none">${bizName}</a><a href="/blog" style="color:var(--blog-text-muted);text-decoration:none;font-size:0.875rem">← Blog</a></header>`;
@@ -312,10 +562,9 @@ async function renderBlogPost(project, slug) {
     <link rel="canonical" href="/blog/${post.slug}">
     ${chrome?.headContent || '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">'}
     <style>
-        :root,[data-theme="light"]{--blog-bg:#fff;--blog-surface:#f4f4f5;--blog-border:#e4e4e7;--blog-text:#18181b;--blog-text-secondary:#52525b;--blog-text-muted:#a1a1aa;--blog-heading:#09090b;--blog-card-bg:#fff;--blog-card-border:#e4e4e7}
-        [data-theme="dark"]{--blog-bg:#0a0a0a;--blog-surface:#18181b;--blog-border:#27272a;--blog-text:#e4e4e7;--blog-text-secondary:#a1a1aa;--blog-text-muted:#52525b;--blog-heading:#fff;--blog-card-bg:#18181b;--blog-card-border:#27272a}
+        :root{--blog-bg:${sc.bg};--blog-surface:${sc.surface};--blog-border:${sc.border};--blog-text:${sc.text};--blog-text-secondary:${sc.textSecondary};--blog-text-muted:${sc.textMuted};--blog-heading:${sc.heading};--blog-card-bg:${sc.cardBg};--blog-card-border:${sc.cardBorder}}
         body{background:var(--blog-bg)!important;color:var(--blog-text)!important;font-family:Inter,-apple-system,sans-serif;margin:0;line-height:1.8}
-        .post-hero{max-width:800px;margin:0 auto;padding:3rem 2rem 1rem}
+        .post-hero{max-width:800px;margin:0 auto;padding:7rem 2rem 1rem}
         .post-hero .category{font-size:.75rem;font-weight:600;color:${primary};text-transform:uppercase;letter-spacing:.05em;margin-bottom:.5rem;display:inline-block}
         .post-hero h1{font-size:2.5rem;font-weight:800;color:var(--blog-heading);margin-bottom:1rem;line-height:1.3}
         .post-hero .meta{color:var(--blog-text-muted);font-size:.85rem;margin-bottom:1.5rem}
@@ -379,11 +628,33 @@ export async function GET(req, { params }) {
         );
     }
 
+    // Block cancelled projects
+    if (project.cancelledAt) {
+        return new NextResponse(
+            `<!DOCTYPE html><html><body style="font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#0a0a0a;color:#fff"><div style="text-align:center"><h1 style="font-size:2rem;margin:0 0 0.5rem">Web stranica nije dostupna</h1><p style="color:#a1a1aa;max-width:400px">Pretplata za ovu web stranicu je istekla. Kontaktirajte vlasnika stranice za više informacija.</p></div></body></html>`,
+            { status: 410, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+        );
+    }
+
     const segments = pathSegments || [];
 
     if (segments.length === 0) {
         // Homepage
-        return htmlResponse(serveHomepage(project));
+        return htmlResponse(injectSiteExtras(serveHomepage(project), project, 'home'));
+    }
+
+    // Subpages (Advanced multi-page HTML)
+    if (segments.length === 1 && segments[0] !== 'blog') {
+        const htmlPages = project.reactFiles || {};
+        const pageSlug = segments[0];
+        if (htmlPages[pageSlug]) {
+            let pageHtml = htmlPages[pageSlug];
+            // Inject nav links for existing subpages
+            pageHtml = injectSubpageNavLinks(pageHtml, project);
+            const hasBlog = project.blogPosts && project.blogPosts.length > 0;
+            if (hasBlog) pageHtml = injectBlogNavLink(pageHtml);
+            return htmlResponse(injectSiteExtras(pageHtml, project, pageSlug));
+        }
     }
 
     if (segments[0] === 'blog') {
@@ -401,6 +672,9 @@ export async function GET(req, { params }) {
         }
     }
 
-    // Unknown path - serve homepage
-    return htmlResponse(serveHomepage(project));
+    // Unknown path - return 404 (don't serve homepage for missing subpages)
+    return new NextResponse(
+        `<!DOCTYPE html><html><body style="font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#0a0a0a;color:#fff"><div style="text-align:center"><h1 style="font-size:4rem;margin:0">404</h1><p style="color:#a1a1aa">Stranica nije pronađena</p><a href="/" style="color:#22c55e;text-decoration:none;margin-top:1rem;display:inline-block">← Povratak na početnu</a></div></body></html>`,
+        { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+    );
 }

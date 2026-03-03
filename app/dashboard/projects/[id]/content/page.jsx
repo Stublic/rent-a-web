@@ -4,57 +4,57 @@ import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import ContentForm from './ContentForm.jsx';
 import PreviewPanel from './PreviewPanel';
+
+import SubpageManager from './SubpageManager';
 import { Loader2 } from 'lucide-react';
 
-export default async function ContentPage({ params }) {
-    const session = await auth.api.getSession({
-        headers: await headers()
-    });
+function isAdvancedPlan(planName) {
+    if (!planName) return false;
+    const p = planName.toLowerCase();
+    return p.includes('advanced') || p.includes('growth');
+}
 
-    if (!session) {
-        redirect('/');
-    }
+export default async function ContentPage({ params }) {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) redirect('/');
 
     const { id } = await params;
-
-    // Check if user is admin for bypassing ownership check
     const currentUser = await prisma.user.findUnique({
         where: { id: session.user.id },
-        select: { role: true }
+        select: { role: true, editorTokens: true }
     });
     const isAdmin = currentUser?.role === 'ADMIN';
+    const userTokens = currentUser?.editorTokens ?? 0;
 
-    const project = await prisma.project.findUnique({
-        where: isAdmin ? { id } : { id, userId: session.user.id }
+    const project = await prisma.project.findUnique({ where: isAdmin ? { id } : { id, userId: session.user.id } });
+    if (!project) redirect(isAdmin ? '/admin/projects' : '/dashboard');
+
+    const blogPostCount = await prisma.blogPost.count({
+        where: { projectId: id, status: 'PUBLISHED' }
     });
+    const hasBlog = blogPostCount > 0;
 
-    if (!project) {
-        redirect(isAdmin ? '/admin/projects' : '/dashboard');
-    }
+    const isPublished = !!project.publishedAt;
 
     const getStatusBadge = (status) => {
         switch (status) {
-            case 'DRAFT':
-                return { color: 'bg-zinc-800 text-zinc-400 border-zinc-700', label: 'Nacrt', icon: '📝' };
-            case 'PROCESSING':
-                return { color: 'bg-blue-500/10 text-blue-400 border-blue-500/20', label: 'Generiranje...', icon: '⏳' };
-            case 'GENERATED':
-                return { color: 'bg-green-500/10 text-green-400 border-green-500/20', label: 'Gotovo', icon: '✅' };
-            default:
-                return { color: 'bg-zinc-800 text-zinc-400 border-zinc-700', label: status, icon: '•' };
+            case 'DRAFT': return { label: 'Nacrt', icon: '📝', style: 'bg-zinc-500/15 text-zinc-400' };
+            case 'PROCESSING': return { label: 'Generiranje...', icon: null, pulsing: true, pulseColor: '#60a5fa', style: 'bg-blue-500/15 text-blue-400' };
+            case 'PUBLISHED': return { label: 'Objavljeno', live: true };
+            case 'GENERATED': return { label: isPublished ? 'Objavljeno' : 'Generirano', live: isPublished, style: 'bg-emerald-500/15 text-emerald-400' };
+            default: return { label: status, icon: '•', style: 'bg-zinc-500/15 text-zinc-400' };
         }
     };
 
     const getStatusMessage = (status) => {
         switch (status) {
-            case 'DRAFT':
-                return 'Ispunite formu ispod i kliknite "Generiraj Web Stranicu" da AI kreira vašu stranicu.';
-            case 'PROCESSING':
-                return 'AI trenutno generira vašu web stranicu. Ovo može potrajati 15-20 sekundi. Molimo pričekajte...';
-            case 'GENERATED':
-                return 'Vaša web stranica je spremna! Kliknite gumb ispod za preview ili otvorite u novom tabu.';
-            default:
-                return '';
+            case 'DRAFT': return 'Ispunite formu ispod i kliknite "Generiraj Web Stranicu" da Webica AI kreira vašu stranicu.';
+            case 'PROCESSING': return 'AI trenutno generira vašu web stranicu. Ovo može potrajati 15-20 sekundi.';
+            case 'PUBLISHED': return 'Vaša web stranica je objavljena i dostupna na internetu.';
+            case 'GENERATED': return isPublished
+                ? 'Vaša web stranica je objavljena i dostupna na internetu.'
+                : 'Vaša web stranica je spremna! Kliknite gumb ispod za preview ili idite u Editor.';
+            default: return '';
         }
     };
 
@@ -62,43 +62,73 @@ export default async function ContentPage({ params }) {
     const message = getStatusMessage(project.status);
 
     return (
-        <div className="max-w-7xl mx-auto pb-20 px-4">
+        <div className="max-w-7xl mx-auto pb-20 px-4 py-6">
             {/* Header */}
-            <div className="mb-8">
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                        <h1 className="text-3xl font-bold">Uredite sadržaj</h1>
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase border ${badge.color} flex items-center gap-1.5`}>
-                            <span>{badge.icon}</span>
+            <div className="mb-6 db-fade-in">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                    <h1 className="text-xl font-bold" style={{ color: 'var(--lp-heading)' }}>Uredite sadržaj</h1>
+
+                    {/* Status badge */}
+                    {badge.live ? (
+                        // Published — green glowing pulsing pill
+                        <span
+                            className="flex items-center gap-1.5 w-fit px-3 py-1 rounded-full text-[11px] font-bold uppercase"
+                            style={{
+                                background: 'rgba(34,197,94,0.12)',
+                                border: '1px solid rgba(34,197,94,0.3)',
+                                color: '#4ade80',
+                                boxShadow: '0 0 12px rgba(34,197,94,0.15)',
+                            }}
+                        >
+                            {/* Pulsing dot */}
+                            <span className="relative flex h-2 w-2 flex-shrink-0">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+                            </span>
+                            Objavljeno
+                        </span>
+                    ) : (
+                        <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase ${badge.style} flex items-center gap-1.5 w-fit`}>
+                            {badge.pulsing && (
+                                <span className="relative flex h-2 w-2 flex-shrink-0">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-400"></span>
+                                </span>
+                            )}
+                            {badge.icon && <span>{badge.icon}</span>}
                             <span>{badge.label}</span>
                         </span>
-                    </div>
+                    )}
                 </div>
-                <p className="text-zinc-400">
+                <p className="text-sm" style={{ color: 'var(--lp-text-muted)' }}>
                     {message || 'Ovdje unesite sve informacije o vašem poslovanju.'}
                 </p>
             </div>
 
             {/* Preview Panel */}
             {project.generatedHtml && (
-                <div className="mb-8">
-                    <PreviewPanel project={project} />
+                <div className="mb-6">
+                    <PreviewPanel project={project} hasBlog={hasBlog} />
                 </div>
+            )}
+
+            {/* Subpage Manager — Advanced only, after homepage generated */}
+            {project.generatedHtml && isAdvancedPlan(project.planName) && (
+                <SubpageManager project={project} />
             )}
 
             {/* Processing Alert */}
             {project.status === 'PROCESSING' && (
-                <div className="mb-8 bg-blue-500/10 border border-blue-500/20 rounded-2xl p-6">
-                    <div className="flex items-start gap-4">
-                        <Loader2 className="w-6 h-6 animate-spin text-blue-400 flex-shrink-0 mt-1" />
+                <div className="mb-6 rounded-2xl p-5" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.15)' }}>
+                    <div className="flex items-start gap-3.5">
+                        <Loader2 className="w-5 h-5 animate-spin text-blue-400 flex-shrink-0 mt-0.5" />
                         <div className="flex-1">
-                            <h3 className="font-bold text-blue-400 mb-2">Generiranje u tijeku</h3>
-                            <p className="text-blue-300 text-sm leading-relaxed">
-                                AI trenutno stvara vašu web stranicu na temelju unesenih podataka. 
-                                Proces može potrajati 15-20 sekundi. Stranica će se automatski osvježiti kada bude spremno.
+                            <h3 className="font-bold text-blue-400 text-sm mb-1">Generiranje u tijeku</h3>
+                            <p className="text-blue-300/80 text-xs leading-relaxed">
+                                Webica AI trenutno stvara vašu web stranicu. Proces može potrajati 15-20 sekundi. Stranica će se osvježiti automatski.
                             </p>
-                            <p className="text-blue-400/70 text-xs mt-3 italic">
-                                Možete zatvoriti ovu stranicu i vratiti se kasnije - generiranje će se nastaviti u pozadini.
+                            <p className="text-blue-400/50 text-[11px] mt-2 italic">
+                                Možete zatvoriti stranicu i vratiti se kasnije.
                             </p>
                         </div>
                     </div>

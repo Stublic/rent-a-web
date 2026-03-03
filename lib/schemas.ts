@@ -1,20 +1,79 @@
 import { z } from 'zod';
 
-const ctaSchema = z.object({
+// Croatian field name mapping for user-friendly error messages
+const FIELD_LABELS: Record<string, string> = {
+    businessName: 'Ime biznisa',
+    industry: 'Industrija',
+    description: 'Opis',
+    email: 'Email',
+    phone: 'Telefon',
+    primaryColor: 'Primarna boja',
+    secondaryColor: 'Sekundarna boja',
+    backgroundColor: 'Boja pozadine',
+    textColor: 'Boja teksta',
+    metaTitle: 'Meta naslov',
+    metaDescription: 'Meta opis',
+    services: 'Usluge',
+    heroCta: 'CTA gumb',
+    logoUrl: 'Logo',
+    heroImageUrl: 'Hero slika',
+};
+
+/** Convert Zod validation errors into a specific Croatian error message */
+export function formatValidationErrors(error: z.ZodError): string {
+    const fieldErrors = error.flatten().fieldErrors;
+    const issues: string[] = [];
+
+    // Fields that are optional — skip their errors
+    const SKIP_FIELDS = new Set(['heroCta', 'services', 'styleKey', 'template', 'autoColors', 'seoSettings']);
+
+    for (const [field, msgs] of Object.entries(fieldErrors)) {
+        if (SKIP_FIELDS.has(field)) continue;
+        const messages = msgs as string[] | undefined;
+        if (messages && messages.length > 0) {
+            const label = FIELD_LABELS[field] || field;
+            const msg = messages[0];
+            // Only show Croatian custom messages, skip English Zod defaults
+            if (msg && !/^(Invalid|Expected|Required|String|Number)/.test(msg)) {
+                issues.push(`${label}: ${msg}`);
+            } else {
+                issues.push(`${label} je obavezno polje`);
+            }
+        }
+    }
+
+    if (issues.length === 0) return 'Molimo ispunite sva obavezna polja.';
+    return issues.join('\n');
+}
+
+const ctaObjectSchema = z.object({
     type: z.enum(['contact', 'phone', 'link', 'email', 'whatsapp']).default('contact'),
     label: z.string().optional().or(z.literal('')),
     url: z.string().optional().or(z.literal(''))
-}).optional().default({ type: 'contact', label: '', url: '' });
+});
+
+// Preprocess: convert null, undefined, or empty objects to null
+const ctaSchema = z.preprocess(
+    (val) => {
+        if (!val || typeof val !== 'object') return null;
+        const v = val as any;
+        if (!v.type && !v.label && !v.url) return null;
+        return val;
+    },
+    ctaObjectSchema.nullable().optional().default(null)
+);
 
 export const contentSchema = z.object({
     // Basic Info
-    businessName: z.string().min(2, "Ime biznisa mora imati bar 2 znaka"),
-    industry: z.string().min(2, "Industrija je obavezna"),
-    description: z.string().min(10, "Opis mora imati bar 10 znakova"),
+    businessName: z.string().min(2, "Ime biznisa mora imati barem 2 znaka"),
+    industry: z.string().min(2, "Odaberite industriju"),
+    description: z.string().min(10, "Opis mora imati barem 10 znakova"),
 
     // Template & Style
     template: z.enum(['modern', 'professional', 'creative', 'minimal']).default('modern'),
-    primaryColor: z.string().regex(/^#([0-9A-F]{3}){1,2}$/i, "Neispravan kod boje"),
+    styleKey: z.string().optional().or(z.literal('')).or(z.null()),
+    autoColors: z.boolean().optional().default(true),
+    primaryColor: z.string().regex(/^#([0-9A-F]{3}){1,2}$/i, "Neispravan kod boje").optional().or(z.literal('')),
     secondaryColor: z.string().regex(/^#([0-9A-F]{3}){1,2}$/i).optional().or(z.literal('')),
     backgroundColor: z.string().regex(/^#([0-9A-F]{3}){1,2}$/i).optional().or(z.literal('')),
     textColor: z.string().regex(/^#([0-9A-F]{3}){1,2}$/i).optional().or(z.literal('')),
@@ -31,13 +90,17 @@ export const contentSchema = z.object({
     featuresImageUrl: z.string().url().optional().or(z.literal('')),
     servicesBackgroundUrl: z.string().url().optional().or(z.literal('')),
 
-    // SEO
-    metaTitle: z.string().max(60, "Naslov ne smije biti duži od 60 znakova").optional().or(z.literal('')),
-    metaDescription: z.string().max(160, "Opis ne smije biti duži od 160 znakova").optional().or(z.literal('')),
+    // Design Reference (optional user URL for inspiration)
+    designReferenceUrl: z.string().url().optional().or(z.literal('')),
+
+    // SEO — now managed in Settings tab, kept here for backward compatibility
+    metaTitle: z.string().max(60).optional().or(z.literal('')),
+    metaDescription: z.string().max(160).optional().or(z.literal('')),
     metaKeywords: z.array(z.string()).optional().default([]),
+    seoSettings: z.any().optional(),
 
     // Contact
-    email: z.string().email("Neispravan email"),
+    email: z.string().email("Unesite ispravan email"),
     phone: z.string().optional(),
     address: z.string().optional().or(z.literal('')),
     mapEmbed: z.string().optional().or(z.literal('')),
@@ -50,13 +113,13 @@ export const contentSchema = z.object({
         closed: z.boolean().default(false)
     })).optional().default([]),
 
-    // Services (enhanced with CTA)
+    // Services (optional)
     services: z.array(z.object({
-        name: z.string().min(1, "Naziv usluge je obavezan"),
+        name: z.string().optional().or(z.literal('')),
         description: z.string().optional().or(z.literal('')),
         imageUrl: z.string().url().optional().or(z.literal('')),
         cta: ctaSchema
-    })).min(1, "Bar jedna usluga je obavezna"),
+    })).optional().default([]),
 
     // Testimonials
     testimonials: z.array(z.object({

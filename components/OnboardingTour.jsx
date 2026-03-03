@@ -30,7 +30,7 @@ export default function OnboardingTour() {
                 {
                     element: '#tour-welcome',
                     popover: {
-                        title: '👋 Dobrodošli u Rent a Web!',
+                        title: '👋 Dobrodošli u Rent a webica!',
                         description: 'Ovo je vaša kontrolna ploča. Odavde upravljate svim aspektima vaše web prisutnosti. Dozvolite nam da vam pokažemo osnove.',
                         side: 'bottom',
                         align: 'center',

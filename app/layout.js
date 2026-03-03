@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import CookieConsent from "@/components/CookieConsent";
+import { Analytics } from "@vercel/analytics/react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Rent a Web | Profesionalne Web Stranice",
+  title: "Rent a webica | Profesionalne Web Stranice",
   description: "Najbrži način da dođete do moderne i funkcionalne web stranice. Unajmite web stranicu za samo 39€/mjesečno.",
   keywords: ["web dizajn", "cijena web stranica", "najam weba", "automatizacija salesa"],
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
@@ -23,16 +24,16 @@ export const metadata = {
     apple: "https://framerusercontent.com/images/fbLxHSQG15wQ5GLsHXeLv64Nvlo.png",
   },
   openGraph: {
-    title: "Rent a Web | Profesionalne Web Stranice",
+    title: "Rent a webica | Profesionalne Web Stranice",
     description: "Moderni web dizajn i automatizirani prodajni sustavi za vaš biznis.",
     url: "/",
-    siteName: "Rent a Web",
+    siteName: "Rent a webica",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Rent a Web Preview",
+        alt: "Rent a webica Preview",
       },
     ],
     locale: "hr_HR",
@@ -40,7 +41,7 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Rent a Web",
+    title: "Rent a webica",
     description: "Moderne web stranice za moderni biznis.",
     images: ["/og-image.png"],
   },
@@ -53,6 +54,7 @@ export default function RootLayout({ children }) {
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
+        <Analytics />
         <CookieConsent />
       </body>
     </html>

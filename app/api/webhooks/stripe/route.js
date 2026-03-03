@@ -156,6 +156,15 @@ export async function POST(req) {
                     }
                 });
 
+                // Grant 500 initial tokens for new subscriptions (not renewals)
+                if (!renewProjectId) {
+                    await prisma.user.update({
+                        where: { id: user.id },
+                        data: { editorTokens: { increment: 500 } }
+                    });
+                    console.log(`🎁 Granted 500 initial tokens to user ${user.id}`);
+                }
+
 
                 // 3. Solo fiscal receipt
                 let invoiceNumber = null;
@@ -286,7 +295,7 @@ export async function POST(req) {
                         `;
 
                         await transporter.sendMail({
-                            from: process.env.SMTP_FROM || 'Rent a Web <noreply@rentaweb.hr>',
+                            from: process.env.SMTP_FROM || 'Rent a webica <noreply@rentaweb.hr>',
                             to: customerEmail,
                             subject: `✅ Potvrda narudžbe - ${planName} - Račun ${invoiceNumber || ''}`,
                             html: emailHtml,

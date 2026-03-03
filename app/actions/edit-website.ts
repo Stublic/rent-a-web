@@ -1,25 +1,87 @@
 'use server';
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { injectContactFormScript } from '@/lib/contact-form-script';
+import { sanitizeHtml } from '@/lib/sanitize-html';
+import { parseAiResponse } from '@/lib/parse-ai-response';
+
+import { getModel } from '@/lib/gemini-with-fallback';
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 if (!GOOGLE_API_KEY) {
     console.error('❌ GOOGLE_API_KEY is not configured!');
 }
 
-const genAI = GOOGLE_API_KEY ? new GoogleGenerativeAI(GOOGLE_API_KEY) : null;
-const model = genAI ? genAI.getGenerativeModel({ model: "gemini-3-flash-preview" }) : null;
+// ─── System prompt — establishes the editing persona ──────────────────────────
+const SYSTEM_PROMPT = `Ti si Webica AI Editor — stručan web developer koji uređuje postojeće HTML stranice.
 
-export async function editWebsiteAction(projectId: string, editRequest: string) {
-    const TOKENS_PER_EDIT = 50; // Cost per AI edit
+## TVOJ PRISTUP
+1. Čitaj korisnikov zahtjev pažljivo
+2. Napravi SAMO tražene izmjene — zadrži SVE ostalo netaknuto
+3. NE mijenjaj strukturu, boje, fontove ili layout osim ako korisnik to eksplicitno ne traži
+4. Ako korisnik kaže "vrati nazad" ili "kao prije" — referenciraj prethodne razgovore
+
+## KRITIČNA PRAVILA
+- NIKADA ne dodavaj klasu "hidden" na vidljive elemente
+- NIKADA ne dupliciraj sadržaj — svaka sekcija smije postojati samo jednom
+- UVIJEK osiguraj overflow-x: hidden na html i body elementima
+- SVE container elementi moraju imati max-width: 100%
+- Ako navigacija ima fixed/sticky — dodaj padding-top na prvi sadržaj ispod
+- URL-ovi u src/href moraju biti čisti (bez escape znakova)
+- Zadrži SVE postojeće skripte, forme, animacije i funkcionalnosti
+- Ako primjetiš probleme u HTML-u, ispravi ih uz traženu izmjenu
+
+## FORMAT ODGOVORA
+Vrati SAMO čisti JSON (bez markdown blokova):
+{
+  "html": "...kompletni HTML počevši s <!DOCTYPE html>...",
+  "summary": "Kratki opis izmjene (hrvatski, 1-2 rečenice, počni s ✅)",
+  "suggestion": "Prijedlog za sljedeću izmjenu (hrvatski, pitanje)"
+}`;
+
+// ─── Build conversation history for Gemini Chat API ───────────────────────────
+interface ConversationEntry {
+    role: 'user' | 'assistant';
+    content: string;
+}
+
+function buildChatHistory(conversationHistory: ConversationEntry[]): Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> {
+    const history: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = [];
+
+    // System prompt as first user message + model acknowledgment
+    history.push({
+        role: 'user',
+        parts: [{ text: SYSTEM_PROMPT }],
+    });
+    history.push({
+        role: 'model',
+        parts: [{ text: 'Razumijem. Spreman sam za uređivanje HTML stranica. Čekam zahtjev.' }],
+    });
+
+    // Add previous conversation turns
+    for (const entry of conversationHistory) {
+        history.push({
+            role: entry.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: entry.content }],
+        });
+    }
+
+    return history;
+}
+
+// ─── Main edit action — multi-turn with conversation history ──────────────────
+export async function editWebsiteAction(
+    projectId: string,
+    editRequest: string,
+    conversationHistory: ConversationEntry[] = []
+) {
+    const TOKENS_PER_EDIT = 50;
 
     // 1. Environment Check
-    if (!GOOGLE_API_KEY || !model) {
+    if (!GOOGLE_API_KEY) {
         return { error: 'AI sustav nije konfiguriran.' };
     }
 
@@ -29,7 +91,7 @@ export async function editWebsiteAction(projectId: string, editRequest: string) 
         return { error: 'Niste prijavljeni.' };
     }
 
-    // 3. Get project (admin can access any project)
+    // 3. Get project
     const currentUser = await prisma.user.findUnique({ where: { id: session.user.id }, select: { role: true } });
     const isAdmin = currentUser?.role === 'ADMIN';
     const project = await prisma.project.findUnique({
@@ -41,86 +103,99 @@ export async function editWebsiteAction(projectId: string, editRequest: string) 
     }
 
     // 4. Check token balance
-    if (project.editorTokens < TOKENS_PER_EDIT) {
+    const currentUserTokens = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { editorTokens: true }
+    });
+    const userTokens = currentUserTokens?.editorTokens ?? 0;
+
+    if (userTokens < TOKENS_PER_EDIT) {
         return {
-            error: `Nemate dovoljno tokena. Potrebno: ${TOKENS_PER_EDIT}, Preostalo: ${project.editorTokens}`,
+            error: `Nemate dovoljno tokena. Potrebno: ${TOKENS_PER_EDIT}, Preostalo: ${userTokens}`,
             insufficientTokens: true,
             tokensNeeded: TOKENS_PER_EDIT,
-            tokensRemaining: project.editorTokens
+            tokensRemaining: userTokens
         };
     }
 
     console.log(`🎨 Applying edit: "${editRequest}" to project ${projectId}`);
-    console.log(`💰 Tokens before: ${project.editorTokens}`);
+    console.log(`💬 Conversation history: ${conversationHistory.length} turns`);
 
     try {
-        // 4. Build prompt for Gemini
-        const prompt = `
-You are an expert HTML/CSS editor. The user has a website and wants to make a change.
+        // 5. Build multi-turn chat with full HTML context
+        const chatHistory = buildChatHistory(conversationHistory);
 
-**Current HTML:**
+        // The current message includes the FULL HTML + user's edit request
+        const currentMessage = `**Trenutni HTML stranice:**
 \`\`\`html
 ${project.generatedHtml}
 \`\`\`
 
-**User's Edit Request (in Croatian):**
+**Zahtjev korisnika:**
 "${editRequest}"
 
-**Your Task:**
-1. Understand what the user wants to change
-2. Modify the HTML accordingly
-3. Return ONLY the complete, modified HTML
-4. Do NOT add markdown code blocks (\`\`\`html), just raw HTML
-5. Keep all existing functionality intact
-6. Make minimal changes - only what's requested
+Primijeni izmjenu i vrati JSON odgovor.`;
 
-**Guidelines:**
-- If the request is about COLOR: modify the appropriate CSS/Tailwind classes
-- If about TEXT: change the text content
-- If about IMAGES: update src attributes (suggest placeholder if user needs to upload new image)
-- If about LAYOUT: adjust CSS/Tailwind spacing, sizing, positioning, flexbox, grid
-- If about ADDING CONTENT: insert new sections/elements maintaining the existing style
-- If about REMOVING: delete the requested elements
-- If unclear: make a reasonable interpretation based on context
+        // 6. Use Chat API with fallback on 503/timeout
+        let rawText = '';
+        let usedFallback = false;
 
-**Critical:**
-- Start output with <!DOCTYPE html>
-- Return valid, complete HTML
-- No explanations, no markdown, no comments outside HTML
+        for (let modelAttempt = 0; modelAttempt < 2; modelAttempt++) {
+            try {
+                const { model } = await getModel(modelAttempt > 0);
+                const chat = model.startChat({ history: chatHistory });
+                const result = await Promise.race([
+                    chat.sendMessage(currentMessage),
+                    new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error('AI timeout')), 120000)
+                    )
+                ]) as any;
 
-**Output:** Complete HTML document
-`;
+                const response = await result.response;
+                rawText = response.text();
+                if (modelAttempt > 0) usedFallback = true;
+                break;
+            } catch (err: any) {
+                const msg = err.message || '';
+                const isRetryable = msg.includes('503') || msg.includes('Service Unavailable') ||
+                    msg.includes('high demand') || msg.includes('quota') || msg === 'AI timeout';
+                if (isRetryable && modelAttempt === 0) {
+                    console.warn(`⚠️ Primary model failed (${msg.substring(0, 60)}), trying fallback...`);
+                    continue;
+                }
+                throw err;
+            }
+        }
 
-        // 5. Call Gemini
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        let modifiedHtml = response.text();
+        console.log(`✅ Gemini returned ${rawText.length} characters`);
 
-        console.log(`✅ Gemini returned ${modifiedHtml.length} characters`);
+        // 7. Parse AI response
+        const parsed = parseAiResponse(rawText);
+        if (!parsed) {
+            console.error('❌ Could not parse AI response');
+            return { error: 'AI nije vratio ispravan odgovor. Pokušajte ponovno ili reformulirajte zahtjev.' };
+        }
 
-        // 6. Clean up output
-        modifiedHtml = modifiedHtml
-            .replace(/```html/g, '')
-            .replace(/```/g, '')
-            .trim();
+        // 8. Sanitize HTML
+        let modifiedHtml = sanitizeHtml(parsed.html);
 
-        // 7. Basic validation
+        // 9. Basic validation
         if (!modifiedHtml.includes('<!DOCTYPE') && !modifiedHtml.includes('<html')) {
             console.error('❌ Invalid HTML returned by AI');
             return { error: 'AI nije vratio ispravan HTML. Pokušajte ponovno ili reformulirajte zahtjev.' };
         }
 
-        // 8. Save edit history with token info
+        // 10. Save edit history
         const editHistory = Array.isArray(project.editHistory) ? project.editHistory : [];
         editHistory.push({
             timestamp: new Date().toISOString(),
             request: editRequest,
             success: true,
             tokensConsumed: TOKENS_PER_EDIT,
-            htmlSnapshot: project.generatedHtml // For undo
+            htmlSnapshot: project.generatedHtml
         });
 
-        // 9. Update database - consume tokens on success
+        // 11. Update database
         const finalHtml = injectContactFormScript(modifiedHtml, projectId);
         await prisma.project.update({
             where: { id: projectId },
@@ -128,30 +203,39 @@ ${project.generatedHtml}
                 generatedHtml: finalHtml,
                 editHistory: editHistory as any,
                 lastEditedAt: new Date(),
+            }
+        });
+
+        // 12. Deduct tokens
+        await prisma.user.update({
+            where: { id: session.user.id },
+            data: {
                 editorTokens: { decrement: TOKENS_PER_EDIT },
                 editorTokensUsed: { increment: TOKENS_PER_EDIT }
             }
         });
 
-        console.log(`✅ Edit applied successfully`);
-        console.log(`💰 Tokens after: ${project.editorTokens - TOKENS_PER_EDIT}`);
+        console.log(`✅ Edit applied successfully (${conversationHistory.length + 1} turn conversation)`);
 
         revalidatePath(`/dashboard/projects/${projectId}/editor`);
 
         return {
             success: true,
-            updatedHtml: modifiedHtml,
-            message: 'Izmjena uspješno primijenjena!',
-            tokensRemaining: project.editorTokens - TOKENS_PER_EDIT,
-            tokensConsumed: TOKENS_PER_EDIT
+            updatedHtml: finalHtml,
+            message: parsed.summary,
+            suggestion: parsed.suggestion,
+            tokensRemaining: userTokens - TOKENS_PER_EDIT,
+            tokensConsumed: TOKENS_PER_EDIT,
+            // Return the conversation entries so client can accumulate
+            conversationEntry: {
+                userMessage: editRequest,
+                assistantMessage: parsed.summary,
+            }
         };
 
     } catch (error: any) {
         console.error('❌ Edit error:', error);
-        console.error('❌ Error message:', error.message);
-        console.error('❌ Error stack:', error.stack);
 
-        // Save failed attempt in history
         const editHistory = Array.isArray(project.editHistory) ? project.editHistory : [];
         editHistory.push({
             timestamp: new Date().toISOString(),
@@ -165,12 +249,17 @@ ${project.generatedHtml}
             data: { editHistory: editHistory as any }
         });
 
+        if (error.message === 'AI timeout') {
+            return { error: 'Zahtjev je predugo trajao. Pokušajte ponovo ili skratite zahtjev.' };
+        }
+
         return {
             error: `Greška: ${error.message || 'Pokušajte reformulirati zahtjev.'}`
         };
     }
 }
 
+// ─── Undo last edit ───────────────────────────────────────────────────────────
 export async function undoLastEditAction(projectId: string) {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) {
@@ -193,7 +282,6 @@ export async function undoLastEditAction(projectId: string) {
         return { error: 'Nema izmjena za poništiti.' };
     }
 
-    // Find last successful edit
     const successfulEdits = history.filter((edit: any) => edit.success);
     if (successfulEdits.length === 0) {
         return { error: 'Nema uspješnih izmjena za poništiti.' };

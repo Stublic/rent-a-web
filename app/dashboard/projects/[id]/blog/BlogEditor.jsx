@@ -13,6 +13,7 @@ import {
     Link2, Undo2, Redo2, Eye, EyeOff, Upload, FolderOpen, X,
     Tag, FolderPlus, Plus, ChevronDown
 } from "lucide-react";
+import { useToast } from "@/app/dashboard/components/ToastProvider";
 
 // MediaPickerModal (reuse pattern from ContentForm)
 function MediaPickerModal({ onSelect, onClose }) {
@@ -83,6 +84,7 @@ function ToolbarButton({ onClick, active, disabled, children, title }) {
 
 export default function BlogEditor({ projectId, existingPost }) {
     const router = useRouter();
+    const toast = useToast();
     const [title, setTitle] = useState(existingPost?.title || "");
     const [excerpt, setExcerpt] = useState(existingPost?.excerpt || "");
     const [coverImage, setCoverImage] = useState(existingPost?.coverImage || "");
@@ -90,7 +92,6 @@ export default function BlogEditor({ projectId, existingPost }) {
     const [metaDescription, setMetaDescription] = useState(existingPost?.metaDescription || "");
     const [status, setStatus] = useState(existingPost?.status || "DRAFT");
     const [saving, setSaving] = useState(false);
-    const [error, setError] = useState("");
     const [showMediaPicker, setShowMediaPicker] = useState(null); // null | 'cover' | 'editor'
     const [showSeo, setShowSeo] = useState(false);
     const [uploadingCover, setUploadingCover] = useState(false);
@@ -172,11 +173,10 @@ export default function BlogEditor({ projectId, existingPost }) {
     const handleCoverUpload = async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        if (file.size > 10 * 1024 * 1024) { setError('Slika je prevelika (max 10MB)'); return; }
-        if (!file.type.startsWith('image/')) { setError('Samo slike su dozvoljene'); return; }
+        if (file.size > 10 * 1024 * 1024) { toast.error('Slika je prevelika (max 10MB)'); return; }
+        if (!file.type.startsWith('image/')) { toast.error('Samo slike su dozvoljene'); return; }
 
         setUploadingCover(true);
-        setError('');
         try {
             const formData = new FormData();
             formData.append('file', file);
@@ -185,7 +185,7 @@ export default function BlogEditor({ projectId, existingPost }) {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Upload error');
             setCoverImage(data.media.url);
-        } catch (err) { setError(err.message); }
+        } catch (err) { toast.error(err.message); }
         finally { setUploadingCover(false); }
     };
 
@@ -205,7 +205,7 @@ export default function BlogEditor({ projectId, existingPost }) {
             setCategoryId(data.category.id);
             setNewCategoryName("");
             setShowCategoryDropdown(false);
-        } catch (err) { setError(err.message); }
+        } catch (err) { toast.error(err.message); }
         finally { setCreatingCategory(false); }
     };
 
@@ -233,11 +233,10 @@ export default function BlogEditor({ projectId, existingPost }) {
     };
 
     const handleSave = async (publishStatus) => {
-        if (!title.trim()) { setError("Naslov je obavezan."); return; }
-        if (!editor?.getHTML() || editor.getHTML() === '<p></p>') { setError("Sadržaj je obavezan."); return; }
+        if (!title.trim()) { toast.error("Naslov je obavezan."); return; }
+        if (!editor?.getHTML() || editor.getHTML() === '<p></p>') { toast.error("Sadržaj je obavezan."); return; }
 
         setSaving(true);
-        setError("");
 
         try {
             const body = {
@@ -276,7 +275,7 @@ export default function BlogEditor({ projectId, existingPost }) {
             router.push(`/dashboard/projects/${projectId}/blog`);
             router.refresh();
         } catch (err) {
-            setError(err.message);
+            toast.error(err.message);
         } finally {
             setSaving(false);
         }
@@ -285,7 +284,6 @@ export default function BlogEditor({ projectId, existingPost }) {
     const handleAiGenerate = async () => {
         if (!aiTopic.trim()) return;
         setGenerating(true);
-        setError("");
 
         try {
             const res = await fetch('/api/blog/generate', {
@@ -314,7 +312,7 @@ export default function BlogEditor({ projectId, existingPost }) {
                 setShowAiPanel(false);
             }
         } catch (err) {
-            setError(err.message);
+            toast.error(err.message);
         } finally {
             setGenerating(false);
         }
@@ -348,9 +346,7 @@ export default function BlogEditor({ projectId, existingPost }) {
                 </div>
             </div>
 
-            {error && (
-                <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-red-400 text-sm">{error}</div>
-            )}
+
 
             {/* AI Generate Panel */}
             <div className="bg-gradient-to-r from-purple-500/10 to-green-500/10 border border-purple-500/20 rounded-2xl overflow-hidden">
@@ -359,7 +355,7 @@ export default function BlogEditor({ projectId, existingPost }) {
                     <div className="flex items-center gap-3">
                         <Sparkles className="text-purple-400" size={20} />
                         <span className="text-white font-bold text-sm">AI Napiši Članak</span>
-                        <span className="text-zinc-500 text-xs">Opišite temu i AI će napisati potpun članak</span>
+                        <span className="text-zinc-500 text-xs">Opišite temu i Webica AI će napisati potpun članak</span>
                     </div>
                     <span className="text-zinc-500 text-xs">{showAiPanel ? '▲' : '▼'}</span>
                 </button>

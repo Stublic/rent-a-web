@@ -9,6 +9,7 @@
 
 import { GoogleGenAI } from '@google/genai';
 import { put } from '@vercel/blob';
+import { logGeminiUsage } from '@/lib/gemini-usage';
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
@@ -200,6 +201,13 @@ export async function generateAndUploadImage(
         const imagePart = parts.find((p: any) => p.inlineData?.data);
         if (!imagePart?.inlineData?.data) return null;
 
+        // Log usage if successful
+        logGeminiUsage({
+            type: 'generate_image',
+            model: IMAGE_MODEL,
+            isImage: true,
+        });
+
         const { data, mimeType } = imagePart.inlineData;
         const buffer = Buffer.from(data, 'base64');
         const ext = mimeType === 'image/jpeg' ? 'jpg' : 'png';
@@ -274,4 +282,56 @@ export async function generatePageImages(config: {
         about: aboutUrl ?? await pexelsFallback((ind?.about ?? 'professional team') + mod) ?? FALLBACKS.about,
         services: servicesUrl ?? await pexelsFallback((ind?.services ?? 'professional service') + mod) ?? FALLBACKS.services,
     };
+}
+
+/**
+ * Generate gallery images using Pexels ONLY (no AI generation).
+ * Returns up to 6 diverse stock photos relevant to the business/industry.
+ */
+export async function generateGalleryImages(config: {
+    businessName: string;
+    businessDescription: string;
+    industry?: string;
+}): Promise<{ url: string; caption: string }[]> {
+    const PEXELS_KEY = process.env.PEXELS_API_KEY;
+    if (!PEXELS_KEY) {
+        console.warn('⚠️ Pexels API key not configured, skipping gallery images');
+        return [];
+    }
+
+    const text = `${config.businessName} ${config.businessDescription}`.toLowerCase();
+    const ind = INDUSTRY_IMAGE_MAP.find(e => e.kw.some(kw => text.includes(kw)));
+
+    // Build 2 search queries for variety
+    const queries = [
+        ind?.hero ?? `${config.industry || 'business'} professional`,
+        ind?.services ?? `${config.industry || 'business'} work`,
+    ];
+
+    const allImages: { url: string; caption: string }[] = [];
+
+    for (const query of queries) {
+        try {
+            const res = await fetch(
+                `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=6&orientation=landscape`,
+                { headers: { Authorization: PEXELS_KEY } }
+            );
+            const data = await res.json();
+            const photos = data?.photos || [];
+            for (const photo of photos) {
+                const url = photo.src?.large || photo.src?.medium || null;
+                if (url && !allImages.find(img => img.url === url)) {
+                    allImages.push({
+                        url,
+                        caption: photo.alt || config.businessName,
+                    });
+                }
+            }
+        } catch (err: any) {
+            console.warn(`⚠️ Pexels gallery search failed for "${query}":`, err.message?.slice(0, 80));
+        }
+    }
+
+    // Return max 6 unique images
+    return allImages.slice(0, 6);
 }

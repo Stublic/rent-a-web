@@ -40,15 +40,17 @@ export async function POST(req) {
             return NextResponse.json({ error: 'Datoteka nije pronađena' }, { status: 400 });
         }
 
-        // Validate file size (max 10MB)
-        if (file.size > 10 * 1024 * 1024) {
-            return NextResponse.json({ error: 'Datoteka je prevelika (max 10MB)' }, { status: 400 });
+        // Validate file size (images: max 10MB, videos: max 50MB)
+        const isVideo = file.type.startsWith('video/');
+        const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+        if (file.size > maxSize) {
+            return NextResponse.json({ error: isVideo ? 'Video je prevelik (max 50MB)' : 'Datoteka je prevelika (max 10MB)' }, { status: 400 });
         }
 
         // Validate file type
-        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'video/mp4', 'video/webm', 'application/pdf'];
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'video/mp4', 'video/webm', 'video/quicktime', 'application/pdf'];
         if (!allowedTypes.includes(file.type)) {
-            return NextResponse.json({ error: 'Nepodržani tip datoteke. Dozvoljeni: slike, videa, PDF.' }, { status: 400 });
+            return NextResponse.json({ error: 'Nepodržani tip datoteke. Dozvoljeni: slike, videa (MP4, WebM, MOV), PDF.' }, { status: 400 });
         }
 
         // Upload to Vercel Blob

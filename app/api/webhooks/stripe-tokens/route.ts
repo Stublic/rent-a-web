@@ -44,18 +44,18 @@ export async function POST(req: Request) {
         const customerEmail = session.customer_email || session.customer_details?.email;
         const amountPaid = session.amount_total ? (session.amount_total / 100).toFixed(2).replace('.', ',') : '0,00';
 
-        console.log(`💰 Token purchase completed: ${tokens} tokens for project ${projectId}`);
+        console.log(`💰 Token purchase completed: ${tokens} tokens for user ${userId}`);
 
         try {
-            // 1. Add tokens to project
-            await prisma.project.update({
-                where: { id: projectId },
+            // 1. Add tokens to USER (account-level, shared across all projects)
+            await prisma.user.update({
+                where: { id: userId },
                 data: {
                     editorTokens: { increment: parseInt(tokens) }
                 }
             });
 
-            console.log(`✅ Added ${tokens} tokens to project ${projectId}`);
+            console.log(`✅ Added ${tokens} tokens to user ${userId}`);
 
             // 2. Fiscal receipt via Solo API
             let invoiceNumber = null;
@@ -190,7 +190,7 @@ export async function POST(req: Request) {
                     `;
 
                     await transporter.sendMail({
-                        from: process.env.SMTP_FROM || 'Rent a Web <noreply@rentaweb.hr>',
+                        from: process.env.SMTP_FROM || 'Rent a webica <noreply@rentaweb.hr>',
                         to: customerEmail,
                         subject: `✅ Kupnja ${tokens} tokena - Račun ${invoiceNumber || ''}`,
                         html: emailHtml,

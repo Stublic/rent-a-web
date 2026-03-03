@@ -79,19 +79,52 @@ export default function Hero() {
           <HeroBadge />
 
           <h1
-            className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight mb-6 leading-[1.1]"
-            style={{ color: 'var(--lp-heading)', animation: 'fade-up 0.7s ease-out 0.1s both' }}
+            className="text-5xl sm:text-6xl lg:text-6xl font-extrabold tracking-tight mb-6"
+            style={{
+              color: 'var(--lp-heading)',
+              lineHeight: 1.05,
+              letterSpacing: '-0.03em',
+              animation: 'fade-up 0.7s ease-out 0.1s both',
+            }}
           >
-            Pokreni web stranicu u{' '}
-            <span className="underline decoration-wavy decoration-2 underline-offset-4 decoration-current opacity-80">5 minuta</span>,
-            <br className="hidden lg:block" />već od 39€/mjesečno.
+            Kreiraj i lansiraj web stranicu u 5 minuta, 
+            <br />
+            <span style={{ color: 'var(--lp-accent-green)'}}>za 39€/mj.</span>
           </h1>
 
+          {/* Metric chips */}
+          <div
+            className="flex items-center gap-2 flex-wrap mb-8"
+            style={{
+              animation: 'fade-up 0.7s ease-out 0.15s both',
+              justifyContent: 'inherit',
+            }}
+          >
+            {[
+              { icon: '⚡', text: 'Online za 5 minuta' },
+              { icon: '💳', text: 'Od 39€/mj' },
+              { icon: '✓', text: 'Otkaži bilo kada' },
+            ].map(({ icon, text }) => (
+              <span
+                key={text}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold"
+                style={{
+                  background: 'var(--lp-surface)',
+                  border: '1px solid var(--lp-border)',
+                  color: 'var(--lp-text-secondary)',
+                }}
+              >
+                <span>{icon}</span>
+                {text}
+              </span>
+            ))}
+          </div>
+
           <p
-            className="text-lg sm:text-xl max-w-2xl mx-auto lg:mx-0 mb-8 leading-relaxed"
+            className="text-lg sm:text-xl max-w-lg mx-auto lg:mx-0 mb-8 leading-relaxed"
             style={{ color: 'var(--lp-text-secondary)', animation: 'fade-up 0.7s ease-out 0.2s both' }}
           >
-            Samo ispuni podatke o svom biznisu i objavi svoju web stranicu u 5 minuta. Plaćaj mjesečno, otkaži bilo kada. Bez velikih početnih troškova i bez ugovorne obveze.
+            Ispuni podatke o svom biznisu i AI kreira tvoju web stranicu. Bez ugovora, bez skrivenih troškova.
           </p>
 
           {/* CTAs */}

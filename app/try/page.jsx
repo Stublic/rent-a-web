@@ -20,9 +20,11 @@ export default function TryPage() {
     const [isGenerating, setIsGenerating] = useState(false);
     const [html, setHtml] = useState('');
     const [error, setError] = useState('');
+    const [hasGenerated, setHasGenerated] = useState(false); // locked after first generation
 
     const [editsUsed, setEditsUsed] = useState(0);
     const [isEditing, setIsEditing] = useState(false);
+    const [chatMessages, setChatMessages] = useState([]);
     const [showOverlay, setShowOverlay] = useState(false);
     const [showSideButton, setShowSideButton] = useState(false);
     const [showMobileChat, setShowMobileChat] = useState(false);
@@ -38,6 +40,7 @@ export default function TryPage() {
                     setHtml(data.generatedHtml);
                     setEditsUsed(data.editsUsed || 0);
                     setStyleKey(data.styleKey ?? null);
+                    setHasGenerated(true);
                     setPhase('preview');
                     setShowSideButton(true);
                     if (data.editsUsed >= 2) setShowOverlay(true);
@@ -67,6 +70,13 @@ export default function TryPage() {
     };
 
     const handleGenerate = async () => {
+        // Guard: if already generated, show pricing overlay
+        if (hasGenerated) {
+            setShowOverlay(true);
+            setPhase('preview');
+            return;
+        }
+
         setError('');
         setIsGenerating(true);
         setPhase('preview');
@@ -86,7 +96,13 @@ export default function TryPage() {
 
             if (res.ok && data.html) {
                 setHtml(data.html);
+                setHasGenerated(true);
                 setShowSideButton(true);
+            } else if (data.error === 'already_generated') {
+                // Already generated — go to preview and show pricing
+                setPhase('preview');
+                setHasGenerated(true);
+                setShowOverlay(true);
             } else {
                 setError(data.error || 'Greška pri generiranju.');
                 setPhase('style');
@@ -142,7 +158,7 @@ export default function TryPage() {
                                 Isprobaj u 30 sekundi
                             </h1>
                             <p className="text-zinc-400 text-lg">
-                                Unesi osnovne podatke o svom biznisu i AI će ti generirati web stranicu. Odmah.
+                                Unesi osnovne podatke o svom biznisu i Webica AI će ti generirati web stranicu. Odmah.
                             </p>
                         </div>
 
@@ -236,7 +252,7 @@ export default function TryPage() {
                         <div className="text-center mb-8">
                             <h2 className="text-3xl font-bold mb-2">Odaberi vizualni stil</h2>
                             <p className="text-zinc-400">
-                                AI će prilagoditi dizajn za <strong className="text-white">{businessName}</strong> prema odabranom stilu.
+                                Webica AI će prilagoditi dizajn za <strong className="text-white">{businessName}</strong> prema odabranom stilu.
                             </p>
                         </div>
 
@@ -275,13 +291,17 @@ export default function TryPage() {
             {/* Top nav */}
             <nav className="px-4 py-2.5 border-b border-zinc-800/50 flex items-center justify-between flex-shrink-0">
                 <div className="flex items-center gap-3 min-w-0">
-                    <button
-                        onClick={() => setPhase('style')}
-                        className="text-zinc-400 hover:text-white flex items-center gap-1.5 transition-colors text-sm flex-shrink-0"
-                    >
-                        <ArrowLeft size={14} />
-                        <span className="hidden sm:inline">Promijeni stil</span>
-                    </button>
+                    {!hasGenerated ? (
+                        <button
+                            onClick={() => setPhase('style')}
+                            className="text-zinc-400 hover:text-white flex items-center gap-1.5 transition-colors text-sm flex-shrink-0"
+                        >
+                            <ArrowLeft size={14} />
+                            <span className="hidden sm:inline">Promijeni stil</span>
+                        </button>
+                    ) : (
+                        <span className="text-xs text-zinc-600 flex-shrink-0 hidden sm:inline">Besplatni demo</span>
+                    )}
                     <div className="h-4 w-px bg-zinc-800 flex-shrink-0" />
                     <span className="text-sm text-zinc-500 truncate">{businessName}</span>
                     {styleKey && STYLES[styleKey] && (
@@ -314,6 +334,8 @@ export default function TryPage() {
                             onLimitReached={() => setShowOverlay(true)}
                             isEditing={isEditing}
                             setIsEditing={setIsEditing}
+                            messages={chatMessages}
+                            setMessages={setChatMessages}
                         />
                     </div>
                 )}
@@ -330,7 +352,7 @@ export default function TryPage() {
                         <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800 flex-shrink-0">
                             <span className="text-sm font-semibold text-white flex items-center gap-2">
                                 <MessageSquare size={15} className="text-zinc-400" />
-                                AI Editor
+                                Webica AI Editor
                             </span>
                             <button
                                 onClick={() => setShowMobileChat(false)}
@@ -341,7 +363,7 @@ export default function TryPage() {
                             </button>
                         </div>
                         <div className="flex-1 min-h-0 overflow-hidden">
-                            <TrialChat
+                             <TrialChat
                                 html={html}
                                 onHtmlUpdate={(h) => setHtml(h)}
                                 editsUsed={editsUsed}
@@ -349,22 +371,23 @@ export default function TryPage() {
                                 onLimitReached={() => { setShowMobileChat(false); setShowOverlay(true); }}
                                 isEditing={isEditing}
                                 setIsEditing={setIsEditing}
+                                messages={chatMessages}
+                                setMessages={setChatMessages}
                             />
                         </div>
                     </div>
                 )}
 
-                {html && !isGenerating && !showOverlay && (
+                {html && !isGenerating && !showOverlay && !showMobileChat && (
                     <button
                         onClick={() => setShowMobileChat(v => !v)}
                         className="absolute bottom-5 right-5 z-40 flex items-center gap-2 px-4 py-3 rounded-2xl font-semibold text-sm shadow-2xl transition-all active:scale-95"
                         style={{
-                            background: showMobileChat ? '#27272a' : '#ffffff',
-                            color: showMobileChat ? '#ffffff' : '#000000',
-                            border: showMobileChat ? '1px solid #3f3f46' : 'none',
+                            background: '#ffffff',
+                            color: '#000000',
                         }}
                     >
-                        {showMobileChat ? <><Eye size={16} /> Vidi stranicu</> : <><MessageSquare size={16} /> Uredi chatom</>}
+                        <MessageSquare size={16} /> Uredi chatom
                     </button>
                 )}
             </div>

@@ -129,7 +129,7 @@ export async function POST(
                             </table>
 
                             <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid #f3f4f6; text-align: center;">
-                                <a href="https://webica.hr/dashboard" style="display: inline-block; background: #2563eb; color: #fff; text-decoration: none; padding: 10px 24px; border-radius: 8px; font-size: 14px; font-weight: 600;">Pogledaj u dashboardu →</a>
+                                <a href="https://rent.webica.hr/dashboard" style="display: inline-block; background: #2563eb; color: #fff; text-decoration: none; padding: 10px 24px; border-radius: 8px; font-size: 14px; font-weight: 600;">Pogledaj u dashboardu →</a>
                             </div>
                         </div>
                         <p style="text-align: center; margin-top: 20px; color: #9ca3af; font-size: 12px;">

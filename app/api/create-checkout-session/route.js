@@ -27,9 +27,13 @@ export async function POST(req) {
         }
 
         // Create Checkout Session
+        // Stripe only accepts ONE of customer or customer_email — never both
+        const hasStripeCustomer = typeof session.user.stripeCustomerId === 'string' && session.user.stripeCustomerId.trim().length > 0;
         const checkoutSession = await stripe.checkout.sessions.create({
-            customer: session.user.stripeCustomerId,
-            customer_email: session.user.stripeCustomerId ? undefined : session.user.email,
+            ...(hasStripeCustomer
+                ? { customer: session.user.stripeCustomerId }
+                : { customer_email: session.user.email }
+            ),
             mode: 'subscription',
             line_items: [
                 {

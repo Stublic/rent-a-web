@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
-import { contentSchema } from '@/lib/schemas';
+import { contentSchema, formatValidationErrors } from '@/lib/schemas';
 
 /**
  * Save content data without regenerating the website
@@ -25,7 +25,7 @@ export async function saveContentAction(projectId: string, formData: any) {
 
     if (!validatedFields.success) {
         console.error('Validation failed:', validatedFields.error.flatten().fieldErrors);
-        return { error: 'Podaci forme nisu ispravni. Molimo provjerite sva polja.' };
+        return { error: formatValidationErrors(validatedFields.error) };
     }
 
     const data = validatedFields.data;
@@ -41,10 +41,16 @@ export async function saveContentAction(projectId: string, formData: any) {
 
     try {
         // 4. Update only content data and name
+        // Preserve _customSubpages metadata from existing contentData
+        const existingContentData = (project.contentData as any) || {};
+        const savedData = existingContentData._customSubpages
+            ? { ...(data as any), _customSubpages: existingContentData._customSubpages }
+            : data;
+
         await prisma.project.update({
             where: { id: projectId },
             data: {
-                contentData: data as any,
+                contentData: savedData as any,
                 name: data.businessName
             }
         });

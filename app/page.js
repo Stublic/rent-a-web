@@ -14,7 +14,6 @@ import AIConsultant from './components/landing/AIConsultant';
 import Pricing from './components/landing/Pricing';
 import Testimonials from './components/landing/Testimonials';
 import FAQ from './components/landing/FAQ';
-import Contact from './components/landing/Contact';
 import Footer from './components/landing/Footer';
 
 // Init Stripe
@@ -58,8 +57,6 @@ export default function LandingPage() {
         <Testimonials />
 
         <FAQ />
-
-        <Contact />
 
         <Footer />
       </main>

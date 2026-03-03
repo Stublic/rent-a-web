@@ -119,8 +119,9 @@ export async function POST(req: NextRequest) {
     });
     if (!project) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-    if (!project.planName?.toLowerCase().includes('growth')) {
-        return NextResponse.json({ error: 'Blog je dostupan samo u Growth paketu.' }, { status: 403 });
+    const plan = project.planName?.toLowerCase() || '';
+    if (!plan.includes('growth') && !plan.includes('advanced')) {
+        return NextResponse.json({ error: 'Blog je dostupan u Advanced i Growth paketu.' }, { status: 403 });
     }
 
     // Generate unique slug
