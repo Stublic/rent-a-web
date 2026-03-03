@@ -6,6 +6,7 @@ import { saveSeoSettingsAction } from "@/app/actions/seo-settings";
 import { resetProjectAction } from "@/app/actions/reset-project";
 import { useRouter } from 'next/navigation';
 import { useToast } from "@/app/dashboard/components/ToastProvider";
+import InfoTooltip from "@/components/InfoTooltip";
 
 const SETTINGS_TABS = [
     { id: 'publish', label: 'Objava', icon: Rocket },
@@ -351,9 +352,10 @@ export default function SettingsPage({ params }) {
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             className={`settings-tab ${isActive ? 'settings-tab-active' : ''}`}
+                            title={tab.label}
                         >
                             <Icon size={14} />
-                            {tab.label}
+                            <span className="hidden sm:inline">{tab.label}</span>
                         </button>
                     );
                 })}
@@ -465,7 +467,10 @@ export default function SettingsPage({ params }) {
                                 <Link2 size={20} className="text-blue-400" />
                             </div>
                             <div>
-                                <h2 className="text-lg font-semibold text-white">Custom domena</h2>
+                                <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                                    Custom domena
+                                    <InfoTooltip text="Povežite vlastitu domenu (npr. www.moj-biznis.hr) umjesto privremene .webica.hr adrese. Potrebno je podesiti DNS zapise kod vašeg pružatelja domene." side="bottom" />
+                                </h2>
                                 <p className="text-zinc-500 text-sm">Poveži vlastitu domenu</p>
                             </div>
                         </div>
@@ -644,6 +649,7 @@ export default function SettingsPage({ params }) {
                                                     placeholder={`Naslov za stranicu "${page.label}"`}
                                                     className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500"
                                                 />
+                                                <p className="text-[10px] mt-0.5" style={{ color: 'var(--lp-text-muted, #71717a)' }}>Naslov koji se prikazuje u Google rezultatima. Najbolje do 60 znakova.</p>
                                             </div>
                                             <div>
                                                 <label className="text-xs text-zinc-400 flex justify-between mb-1">
@@ -657,9 +663,13 @@ export default function SettingsPage({ params }) {
                                                     placeholder={`Kratki opis za Google rezultate (${page.label})`}
                                                     className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:border-emerald-500 resize-none"
                                                 />
+                                                <p className="text-[10px] mt-0.5" style={{ color: 'var(--lp-text-muted, #71717a)' }}>Kratki opis koji se prikazuje na Googleu ispod naslova. 150–160 znakova je idealno.</p>
                                             </div>
                                             <div>
-                                                <label className="text-xs text-zinc-400 mb-1 block">OG:Image (slika za dijeljenje)</label>
+                                                <label className="text-xs text-zinc-400 mb-1 flex items-center gap-1">
+                                                    OG:Image (slika za dijeljenje)
+                                                    <InfoTooltip text="Slika koja se prikazuje kad netko podijeli vaš link na Facebooku, LinkedInu ili WhatsAppu. Preporučena veličina: 1200×630 px." side="bottom" />
+                                                </label>
                                                 <div className="flex items-center gap-3">
                                                     {pageData.ogImage ? (
                                                         <div className="relative">
@@ -711,6 +721,7 @@ export default function SettingsPage({ params }) {
                         <h2 className="text-base font-semibold text-red-400 flex items-center gap-2 mb-1">
                             <AlertTriangle size={18} />
                             Opasna zona
+                            <InfoTooltip text="Ove radnje su nepovratne. Resetiranjem projekta trajno brišete sav sadržaj, stranicu, blog i postavke. Pretplata ostaje aktivna." side="right" />
                         </h2>
                         <p className="text-sm text-zinc-400 mb-4">
                             Resetiranje projekta trajno briše sve podatke i ne može se poništiti.

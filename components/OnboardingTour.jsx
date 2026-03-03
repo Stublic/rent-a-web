@@ -31,7 +31,7 @@ export default function OnboardingTour() {
                     element: '#tour-welcome',
                     popover: {
                         title: '👋 Dobrodošli u Rent a webica!',
-                        description: 'Ovo je vaša kontrolna ploča. Odavde upravljate svim aspektima vaše web prisutnosti. Dozvolite nam da vam pokažemo osnove.',
+                        description: 'Ovo je vaša kontrolna ploča. Odavde upravljate svim aspektima vaše web prisutnosti — od pretplate do vaših web stranica. Dozvolite nam da vam pokažemo osnove!',
                         side: 'bottom',
                         align: 'center',
                     }
@@ -39,8 +39,8 @@ export default function OnboardingTour() {
                 {
                     element: '#tour-subscription',
                     popover: {
-                        title: '💳 Pretplata',
-                        description: 'Ovdje vidite status vaše pretplate, plan koji koristite i upravljate plaćanjima putem Stripe portala.',
+                        title: '📊 Pregled pretplate i tokena',
+                        description: 'Ovdje vidite status vaše pretplate, plan koji koristite i koliko AI tokena imate na raspolaganju. Tokeni se koriste za AI izmjene na vašoj web stranici.',
                         side: 'right',
                         align: 'start',
                     }
@@ -48,17 +48,33 @@ export default function OnboardingTour() {
                 {
                     element: '#tour-projects',
                     popover: {
-                        title: '📁 Projekti',
-                        description: 'Vaši web projekti se nalaze ovdje. Svaki projekt predstavlja jednu web stranicu koju AI generira za vas. Kliknite "Novi projekt" da započnete!',
+                        title: '📁 Vaši projekti',
+                        description: 'Ovdje se nalaze svi vaši web projekti. Kliknite na bilo koji projekt da ga otvorite — tamo unosite sadržaj, koristite AI editor i upravljate postavkama.',
                         side: 'right',
                         align: 'start',
                     }
                 },
                 {
+                    element: '#tour-new-project',
+                    popover: {
+                        title: '✨ Kreirajte novi projekt',
+                        description: 'Želite novu web stranicu? Kliknite ovdje! Odaberite paket i u par minuta AI će vam generirati profesionalnu web stranicu.',
+                        side: 'bottom',
+                        align: 'end',
+                    },
+                    onHighlightStarted: () => {
+                        // Switch to Projects tab if not already there
+                        const projectsTab = document.getElementById('tour-projects');
+                        if (projectsTab) projectsTab.click();
+                        // Wait for the tab content to render
+                        return new Promise(resolve => setTimeout(resolve, 400));
+                    },
+                },
+                {
                     element: '#tour-support',
                     popover: {
                         title: '🎫 Podrška',
-                        description: 'Trebate pomoć? Ovdje možete otvoriti ticket za podršku i pratiti njegov status.',
+                        description: 'Trebate pomoć ili imate pitanje? Ovdje možete otvoriti ticket za podršku i pratiti njegov status. Tu smo za vas!',
                         side: 'right',
                         align: 'start',
                     }
@@ -67,7 +83,7 @@ export default function OnboardingTour() {
                     element: '#tour-user-menu',
                     popover: {
                         title: '👤 Vaš profil',
-                        description: 'Kliknite na vaše ime za pristup postavkama računa, promjenu lozinke ili odjavu.',
+                        description: 'Kliknite na vaše ime za pristup postavkama računa, promjenu lozinke ili odjavu iz sustava.',
                         side: 'bottom',
                         align: 'end',
                     }

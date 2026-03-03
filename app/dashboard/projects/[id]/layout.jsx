@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { headers } from 'next/headers';
 import { auth } from '@/lib/auth';
 import ProjectOnboarding from './ProjectOnboarding';
+import PublishIndicator from './PublishIndicator';
 
 const GRACE_PERIOD_DAYS = 90;
 
@@ -85,15 +86,17 @@ export default async function ProjectLayout({ children, params }) {
   
     return (
         <div className="min-h-screen text-white flex flex-col" data-landing="true" style={{ background: 'var(--lp-bg)' }}>
+           {/* ── TOP HEADER ── */}
            <header className="sticky top-0 z-50" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderBottom: '1px solid var(--lp-border)' }}>
               <div className="max-w-7xl mx-auto px-4 md:px-6">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between h-auto md:h-14 py-3 md:py-0 gap-3 md:gap-0">
+                  <div className="flex items-center justify-between h-14">
+                      {/* Left: Back */}
                       <Link href="/dashboard" className="flex items-center gap-2 text-sm font-medium transition-colors" style={{ color: 'var(--lp-text-muted)' }}>
                         <ArrowLeft size={16} /> <span className="hidden sm:inline">Natrag na projekte</span><span className="sm:hidden">Natrag</span>
                       </Link>
 
-                      {/* Navigation */}
-                      <div className="flex items-center gap-1 md:gap-1.5 overflow-x-auto pb-1 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-hide">
+                      {/* Center: Desktop-only navigation */}
+                      <div className="hidden md:flex items-center gap-1.5">
                           {navItems.map(item => {
                               const isDisabled = item.requires === 'generated' && !project?.hasGenerated;
                               const Icon = item.icon;
@@ -119,8 +122,13 @@ export default async function ProjectLayout({ children, params }) {
                           })}
                       </div>
 
-                      {/* Right side: token count + preview */}
+                      {/* Right: publish + tokens + preview */}
                       <div className="flex items-center gap-2 flex-shrink-0">
+                          {/* Publish indicator */}
+                          {project?.hasGenerated && (
+                              <PublishIndicator projectId={id} />
+                          )}
+
                           {/* Token count badge */}
                           <Link
                               href={`/dashboard/projects/${id}/tokens`}
@@ -133,18 +141,18 @@ export default async function ProjectLayout({ children, params }) {
                               <span className="hidden sm:inline" style={{ color: 'var(--lp-text-muted)' }}>tokena</span>
                           </Link>
 
-                          {/* Preview in new tab */}
+                          {/* Preview in new tab — desktop only */}
                           {project?.hasGenerated && previewUrl && (
                               <a
                                   href={previewUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="flex items-center gap-1.5 text-xs font-medium rounded-lg px-2.5 py-1.5 transition-all hover:bg-white/5"
+                                  className="hidden md:flex items-center gap-1.5 text-xs font-medium rounded-lg px-2.5 py-1.5 transition-all hover:bg-white/5"
                                   style={{ color: 'var(--lp-text-secondary)', border: '1px solid var(--lp-border)' }}
                                   title="Otvori živu preview u novom prozoru"
                               >
                                   <ExternalLink size={13} />
-                                  <span className="hidden sm:inline">Preview</span>
+                                  <span>Preview</span>
                               </a>
                           )}
                       </div>
@@ -152,9 +160,53 @@ export default async function ProjectLayout({ children, params }) {
               </div>
            </header>
            
-           <main className="flex-1">
+           {/* ── MAIN CONTENT ── */}
+           <main className="flex-1 pb-[4.5rem] md:pb-0">
              {children}
            </main>
+
+           {/* ── MOBILE BOTTOM TAB BAR ── */}
+           <nav
+               id="mobile-tab-bar"
+               className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex items-stretch justify-around"
+               style={{
+                   background: 'rgba(0,0,0,0.85)',
+                   backdropFilter: 'blur(20px)',
+                   WebkitBackdropFilter: 'blur(20px)',
+                   borderTop: '1px solid var(--lp-border)',
+                   paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+               }}
+           >
+               {navItems.map(item => {
+                   const isDisabled = item.requires === 'generated' && !project?.hasGenerated;
+                   const Icon = item.icon;
+
+                   if (isDisabled) {
+                       return (
+                           <span
+                               key={item.href}
+                               className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 opacity-30 cursor-not-allowed"
+                               style={{ color: 'var(--lp-text-muted)' }}
+                           >
+                               <Icon size={20} />
+                               <span className="text-[10px] font-medium leading-tight">{item.label}</span>
+                           </span>
+                       );
+                   }
+
+                   return (
+                       <Link
+                           key={item.href}
+                           href={item.href}
+                           className="flex-1 flex flex-col items-center justify-center gap-0.5 py-2 transition-colors active:bg-white/10"
+                           style={{ color: 'var(--lp-text-secondary)' }}
+                       >
+                           <Icon size={20} />
+                           <span className="text-[10px] font-medium leading-tight">{item.label}</span>
+                       </Link>
+                   );
+               })}
+           </nav>
            
            <ProjectOnboarding projectId={id} />
         </div>

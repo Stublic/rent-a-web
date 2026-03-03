@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation";
 import { ExtendedWaitBanner } from "@/app/dashboard/components/ExtendedWaitMessages";
 import SuccessCelebration from "@/app/dashboard/components/SuccessCelebration";
 import IndustryPicker from "./IndustryPicker";
+import InfoTooltip from "@/components/InfoTooltip";
 
 import {
     Section, SectionHint, CtaSelector,
@@ -694,6 +695,7 @@ export default function ContentForm({ project }) {
                                 style={{ background: 'var(--lp-surface)', border: '1px solid var(--lp-border)', color: 'var(--lp-heading)' }}
                                 placeholder="Opišite što radite, vaše prednosti i ciljeve..." />
                             {errors.description && <span className="text-red-400 text-xs">{errors.description.message}</span>}
+                            <p className="text-[11px] mt-1" style={{ color: 'var(--lp-text-muted)' }}>Opišite što radite, za koga i zašto ste posebni. AI koristi ovaj tekst kao osnovu za cijelu stranicu.</p>
                         </div>
                     </Section>
                 </motion.div>
@@ -851,24 +853,30 @@ export default function ContentForm({ project }) {
                 })()}
 
                 {/* ── Submit Buttons ── */}
-                <div className="sticky bottom-0 left-0 right-0 backdrop-blur-md p-4 sm:relative sm:bg-transparent sm:backdrop-blur-none sm:border-t-0 sm:pt-6 sm:p-0 -mx-4 sm:mx-0"
+                <div className="sticky bottom-0 left-0 right-0 backdrop-blur-md p-4 pb-[calc(1rem+4.5rem)] md:pb-4 sm:relative sm:bg-transparent sm:backdrop-blur-none sm:border-t-0 sm:pt-6 sm:p-0 -mx-4 sm:mx-0"
                     style={{ background: 'rgba(0,0,0,0.85)', borderTop: '1px solid var(--lp-border)' }}>
                     <div className="flex items-center justify-end gap-2.5 sm:gap-3">
-                        <button type="button" onClick={() => onSave(getValues())} disabled={uploading || generating || saving || updating}
-                            className="flex-1 sm:flex-none px-5 sm:px-7 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-40 text-sm hover:scale-105"
-                            style={{ background: 'var(--lp-surface)', color: 'var(--lp-text-secondary)', border: '1px solid var(--lp-border)' }}>
-                            {(saving || updating) ? <><Loader2 className="animate-spin" size={16} /><span className="hidden sm:inline">{updating ? 'Ažuriranje...' : 'Spremanje...'}</span></> : (
-                                <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
-                                <span className="hidden sm:inline">{project.hasGenerated ? 'Ažuriraj Web Stranicu' : 'Spremi Podatke'}</span>
-                                <span className="sm:hidden">{project.hasGenerated ? 'Ažuriraj' : 'Spremi'}</span></>
-                            )}
-                        </button>
-                        {!project.hasGenerated && (
-                            <button type="submit" disabled={uploading || generating || saving || updating}
-                                className="flex-1 sm:flex-none px-7 sm:px-9 py-3 rounded-xl font-bold flex items-center justify-center gap-2.5 transition-all disabled:opacity-40 text-sm hover:scale-105"
-                                style={{ background: 'var(--lp-heading)', color: 'var(--lp-bg)' }}>
-                                {generating ? <><Loader2 className="animate-spin" size={18} /><span className="hidden sm:inline">Generiranje...</span></> : <><Sparkles size={18} /><span className="hidden sm:inline">Generiraj Web Stranicu</span><span className="sm:hidden">Generiraj</span></>}
+                        <div className="flex items-center gap-1.5 flex-1 sm:flex-none">
+                            <button type="button" onClick={() => onSave(getValues())} disabled={uploading || generating || saving || updating}
+                                className="flex-1 sm:flex-none px-5 sm:px-7 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-40 text-sm hover:scale-105"
+                                style={{ background: 'var(--lp-surface)', color: 'var(--lp-text-secondary)', border: '1px solid var(--lp-border)' }}>
+                                {(saving || updating) ? <><Loader2 className="animate-spin" size={16} /><span className="hidden sm:inline">{updating ? 'Ažuriranje...' : 'Spremanje...'}</span></> : (
+                                    <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                                    <span className="hidden sm:inline">{project.hasGenerated ? 'Ažuriraj Web Stranicu' : 'Spremi Podatke'}</span>
+                                    <span className="sm:hidden">{project.hasGenerated ? 'Ažuriraj' : 'Spremi'}</span></>
+                                )}
                             </button>
+                            <span className="hidden sm:inline"><InfoTooltip text={project.hasGenerated ? 'Sprema promjene i ažurira samo dijelove stranice koje ste promijenili. Stranica ostaje objavljena.' : 'Sprema unesene podatke kao skicu. Stranica se još neće generirati.'} side="top" /></span>
+                        </div>
+                        {!project.hasGenerated && (
+                            <div className="flex items-center gap-1.5 flex-1 sm:flex-none">
+                                <button type="submit" disabled={uploading || generating || saving || updating}
+                                    className="flex-1 sm:flex-none px-7 sm:px-9 py-3 rounded-xl font-bold flex items-center justify-center gap-2.5 transition-all disabled:opacity-40 text-sm hover:scale-105"
+                                    style={{ background: 'var(--lp-heading)', color: 'var(--lp-bg)' }}>
+                                    {generating ? <><Loader2 className="animate-spin" size={18} /><span className="hidden sm:inline">Generiranje...</span></> : <><Sparkles size={18} /><span className="hidden sm:inline">Generiraj Web Stranicu</span><span className="sm:hidden">Generiraj</span></>}
+                                </button>
+                                <span className="hidden sm:inline"><InfoTooltip text="AI koristi sve unesene podatke da izradi kompletnu, profesionalnu web stranicu. Proces traje oko 45-90 sekundi." side="top" /></span>
+                            </div>
                         )}
                     </div>
                 </div>

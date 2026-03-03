@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Pencil, Settings, FileText, Inbox, X, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Sparkles, Pencil, Settings, FileText, Inbox, X, ArrowRight, CheckCircle2, Eye, MessageSquare, Globe } from "lucide-react";
 
 const ONBOARDING_STEPS = [
     {
@@ -16,23 +16,31 @@ const ONBOARDING_STEPS = [
     {
         id: "sadrzaj",
         title: "Sadržaj (AI generator)",
-        description: "Ovdje unosite osnovne informacije o svom biznisu, kontakt podatke, odabirete boje i slike. Kada sve ispunite, klikom na gumb AI automatski generira cijelu web stranicu za vas.",
+        description: "Ovdje unosite osnovne informacije o svom biznisu — naziv, opis, kontakt podatke, slike i usluge. Kada sve ispunite, kliknite 'Generiraj' i AI automatski izradi cijelu web stranicu za vas.",
         icon: Sparkles,
         color: "#f59e0b",
         bg: "rgba(245, 158, 11, 0.1)"
     },
     {
-        id: "editor",
-        title: "AI Editor",
-        description: "Ovdje se događa čarolija! Ne morate znati programirati — samo objasnite našem AI asistentu što želite promijeniti (npr. 'Promijeni pozadinu u plavo' ili 'Dodaj novu sekciju za usluge') i on će to napraviti umjesto vas.",
-        icon: Pencil,
+        id: "visual-editor",
+        title: "✏️ Vizualno uređivanje (besplatno!)",
+        description: "U editoru uključite \"Vizualno uređivanje\" — ovo vam omogućuje da besplatno, direktno na stranici, promijenite tekst i slike. Samo kliknite na element i uredite ga. Ne troši tokene!",
+        icon: Eye,
         color: "#3b82f6",
         bg: "rgba(59, 130, 246, 0.1)"
     },
     {
+        id: "ai-editor",
+        title: "🤖 AI Editor (koristi tokene)",
+        description: "Za veće promjene poput dodavanja novih sekcija, promjene boja ili rasporeda — koristite AI chat. Opišite što želite riječima (npr. \"Dodaj sekciju s cjenikom\") i AI to napravi umjesto vas. Svaka izmjena troši tokene.",
+        icon: MessageSquare,
+        color: "#8b5cf6",
+        bg: "rgba(139, 92, 246, 0.1)"
+    },
+    {
         id: "upiti",
         title: "Upiti (Inbox)",
-        description: "Kada god Vam netko pošalje poruku preko kontakt forme na vašoj novoj web stranici, ta poruka će se pojaviti ovdje, a obavijest ćete dobiti i na email.",
+        description: "Kada god vam netko pošalje poruku preko kontakt forme na vašoj web stranici, ta poruka će se pojaviti ovdje. Obavijest ćete dobiti i na email.",
         icon: Inbox,
         color: "#8b5cf6",
         bg: "rgba(139, 92, 246, 0.1)"
@@ -46,9 +54,17 @@ const ONBOARDING_STEPS = [
         bg: "rgba(236, 72, 153, 0.1)"
     },
     {
+        id: "podstranice",
+        title: "📄 Podstranice",
+        description: "Growth plan omogućava dodavanje podstranica poput \"O nama\", \"Usluge\" ili \"Kontakt\". AI automatski generira svaku podstranicu u skladu s dizajnom vaše naslovne stranice.",
+        icon: FileText,
+        color: "#06b6d4",
+        bg: "rgba(6, 182, 212, 0.1)"
+    },
+    {
         id: "postavke",
-        title: "Postavke",
-        description: "Ovdje upravljate naprednim opcijama poput spajanja vlastite domene (npr. www.moj-biznis.hr), brisanja projekta i upravljanja pretplatom.",
+        title: "Postavke i domena",
+        description: "U postavkama objavljujete stranicu na internet, spajate vlastitu domenu (npr. www.moj-biznis.hr), upravljate SEO postavkama i kontakt emailom. Sve na jednom mjestu!",
         icon: Settings,
         color: "#64748b",
         bg: "rgba(100, 116, 139, 0.1)"

@@ -1,7 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
-import { ExternalLink, RefreshCw } from "lucide-react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { ExternalLink, RefreshCw, Pencil, Save, Loader2, Check, HelpCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import MediaPickerPopup from "./MediaPickerPopup";
+import InfoTooltip from "@/components/InfoTooltip";
+import VisualEditorHelp from "./VisualEditorHelp";
 
 // ─── Nav injection helpers (mirrored from PreviewPanel) ──────────────
 
@@ -128,13 +132,31 @@ function injectNavLinks(html, project, hasBlog) {
     return html;
 }
 
+// ─── Visual Editor Injection Script (inlined) ───────────────────────
+// We read the injection script as a string and inject it into the iframe
+import { VISUAL_EDITOR_SCRIPT } from "@/lib/visual-editor-injection";
+
 // ─── Component ──────────────────────────────────────────────────────
 
-export default function EditorPreview({ html, projectId, project, hasBlog = false }) {
+export default function EditorPreview({ html, projectId, project, hasBlog = false, activePage = 'home' }) {
     const [refreshKey, setRefreshKey] = useState(0);
     const iframeRef = useRef(null);
+    const router = useRouter();
 
-    const handleRefresh = () => setRefreshKey(prev => prev + 1);
+    // Visual editor state
+    const [isVisualEditMode, setIsVisualEditMode] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveSuccess, setSaveSuccess] = useState(false);
+    const [hasChanges, setHasChanges] = useState(false);
+    const [showImagePicker, setShowImagePicker] = useState(false);
+    const [showHelp, setShowHelp] = useState(false);
+    const pendingImgIdRef = useRef(null);
+
+    const handleRefresh = () => {
+        setIsVisualEditMode(false);
+        setHasChanges(false);
+        setRefreshKey(prev => prev + 1);
+    };
 
     const injectedHtml = useMemo(
         () => injectNavLinks(html, project, hasBlog),
@@ -146,6 +168,13 @@ export default function EditorPreview({ html, projectId, project, hasBlog = fals
         if (newWindow && injectedHtml) { newWindow.document.write(injectedHtml); newWindow.document.close(); }
     };
 
+    // ── Turn visual edit mode OFF when switching pages ───────────────
+    useEffect(() => {
+        setIsVisualEditMode(false);
+        setHasChanges(false);
+    }, [activePage]);
+
+    // ── Inject editor script into iframe on load ────────────────────
     useEffect(() => {
         const iframe = iframeRef.current;
         if (!iframe) return;
@@ -153,7 +182,11 @@ export default function EditorPreview({ html, projectId, project, hasBlog = fals
             try {
                 const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
                 if (!iframeDoc) return;
+
+                // Default link behavior (when NOT in visual edit mode)
                 iframeDoc.addEventListener('click', (e) => {
+                    // If visual editor is active, let the injection script handle clicks
+                    if (iframe.contentWindow?.__visualEditorActive) return;
                     const target = e.target.closest('a');
                     if (target && target.tagName === 'A') {
                         e.preventDefault();
@@ -164,6 +197,12 @@ export default function EditorPreview({ html, projectId, project, hasBlog = fals
                         }
                     }
                 });
+
+                // Inject the visual editor script
+                const script = iframeDoc.createElement('script');
+                script.setAttribute('data-ve-script', 'true');
+                script.textContent = VISUAL_EDITOR_SCRIPT;
+                iframeDoc.body.appendChild(script);
             } catch (error) { console.warn('Cannot access iframe content (cross-origin)'); }
         };
         iframe.addEventListener('load', handleIframeLoad);
@@ -171,20 +210,180 @@ export default function EditorPreview({ html, projectId, project, hasBlog = fals
         return () => iframe.removeEventListener('load', handleIframeLoad);
     }, [refreshKey]);
 
+    // ── Toggle visual edit mode ─────────────────────────────────────
+    const toggleVisualEdit = useCallback(() => {
+        const iframe = iframeRef.current;
+        if (!iframe?.contentWindow) return;
+
+        if (isVisualEditMode) {
+            // Turning OFF — discard changes (user didn't click save)
+            iframe.contentWindow.postMessage({ type: 'disable-visual-edit' }, '*');
+            setIsVisualEditMode(false);
+            setHasChanges(false);
+        } else {
+            // Turning ON
+            iframe.contentWindow.postMessage({ type: 'enable-visual-edit' }, '*');
+            setIsVisualEditMode(true);
+            setHasChanges(false);
+        }
+    }, [isVisualEditMode]);
+
+    // ── Save changes ────────────────────────────────────────────────
+    const handleSave = useCallback(() => {
+        const iframe = iframeRef.current;
+        if (!iframe?.contentWindow) return;
+        setIsSaving(true);
+        iframe.contentWindow.postMessage({ type: 'get-clean-html' }, '*');
+    }, []);
+
+    // ── Listen for messages from iframe ─────────────────────────────
+    useEffect(() => {
+        const handleMessage = async (e) => {
+            if (!e.data || typeof e.data.type !== 'string') return;
+
+            switch (e.data.type) {
+                case 'visual-edit-change':
+                    setHasChanges(true);
+                    break;
+
+                case 'image-upload-request': {
+                    pendingImgIdRef.current = e.data.imgId;
+                    setShowImagePicker(true);
+                    break;
+                }
+
+                case 'clean-html': {
+                    const cleanHtml = e.data.html;
+                    if (!cleanHtml) {
+                        setIsSaving(false);
+                        return;
+                    }
+                    try {
+                        const res = await fetch(`/api/project/${projectId}/html`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ html: cleanHtml, pageSlug: activePage }),
+                        });
+                        if (res.ok) {
+                            // Disable edit mode in iframe
+                            const iframe = iframeRef.current;
+                            if (iframe?.contentWindow) {
+                                iframe.contentWindow.postMessage({ type: 'disable-visual-edit' }, '*');
+                            }
+                            setIsVisualEditMode(false);
+                            setHasChanges(false);
+                            setSaveSuccess(true);
+                            setTimeout(() => setSaveSuccess(false), 2000);
+                            // Notify the PublishIndicator that HTML was saved
+                            window.dispatchEvent(new Event('project-html-saved'));
+                            router.refresh();
+                        } else {
+                            console.error('Save failed:', await res.text());
+                            alert('Greška pri spremanju. Pokušajte ponovno.');
+                        }
+                    } catch (err) {
+                        console.error('Save error:', err);
+                        alert('Greška pri spremanju. Pokušajte ponovno.');
+                    } finally {
+                        setIsSaving(false);
+                    }
+                    break;
+                }
+            }
+        };
+
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
+    }, [projectId, activePage, router]);
+
+    // ── Handle image selected from MediaPickerPopup ─────────────────
+    const handleImageFromPicker = useCallback((mediaItem) => {
+        const imgId = pendingImgIdRef.current;
+        if (!imgId || !mediaItem?.url) return;
+        pendingImgIdRef.current = null;
+
+        const iframe = iframeRef.current;
+        if (iframe?.contentWindow) {
+            iframe.contentWindow.postMessage({
+                type: 'image-uploaded',
+                imgId,
+                newSrc: mediaItem.url,
+            }, '*');
+        }
+    }, []);
+
     return (
         <div className="h-full flex flex-col" style={{ background: 'var(--lp-bg)' }}>
             {/* Header */}
-            <div className="px-4 py-2.5 flex items-center justify-between" style={{ background: 'var(--lp-bg-alt)', borderBottom: '1px solid var(--lp-border)' }}>
-                <h2 className="font-bold text-sm" style={{ color: 'var(--lp-heading)' }}>Live Preview</h2>
-                <div className="flex items-center gap-1.5">
+            <div className="px-4 py-2.5 flex items-center justify-between gap-2" style={{ background: 'var(--lp-bg-alt)', borderBottom: '1px solid var(--lp-border)' }}>
+                <h2 className="font-bold text-sm flex-shrink-0" style={{ color: 'var(--lp-heading)' }}>Live Preview</h2>
+                <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                    {/* Visual Edit Toggle */}
+                    <button
+                        onClick={toggleVisualEdit}
+                        className="px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all"
+                        style={isVisualEditMode
+                            ? { background: 'rgba(59,130,246,0.15)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.3)' }
+                            : { color: 'var(--lp-text-muted)', border: '1px solid var(--lp-border)' }
+                        }
+                        title={isVisualEditMode ? 'Isključi vizualno uređivanje' : 'Uključi vizualno uređivanje'}
+                    >
+                        <Pencil size={13} />
+                        <span className="hidden sm:inline">{isVisualEditMode ? 'Uređivanje ON' : 'Vizualno uređivanje'}</span>
+                    </button>
+                    <span className="hidden sm:inline"><InfoTooltip text="Besplatno uređivanje teksta i slika direktno na stranici. Kliknite na bilo koji element da ga promijenite. Ne troši tokene!" side="bottom" /></span>
+
+                    {/* Help Button */}
+                    <button
+                        onClick={() => setShowHelp(true)}
+                        className="px-2 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-all hover:bg-white/5"
+                        style={{ color: 'var(--lp-text-muted)', border: '1px solid var(--lp-border)' }}
+                        title="Kako koristiti vizualno uređivanje"
+                    >
+                        <HelpCircle size={13} /><span className="hidden sm:inline">Pomoć</span>
+                    </button>
+
+                    {/* Save Button — only visible when edit mode is on */}
+                    {isVisualEditMode && (
+                        <>
+                            <button
+                                onClick={handleSave}
+                                disabled={isSaving || !hasChanges}
+                                className="px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-40"
+                                style={{
+                                    background: saveSuccess ? 'rgba(34,197,94,0.15)' : 'rgba(59,130,246,0.15)',
+                                    color: saveSuccess ? '#22c55e' : '#3b82f6',
+                                    border: saveSuccess ? '1px solid rgba(34,197,94,0.3)' : '1px solid rgba(59,130,246,0.3)',
+                                }}
+                                title="Spremi promjene"
+                            >
+                                {isSaving ? <Loader2 size={13} className="animate-spin" /> : saveSuccess ? <Check size={13} /> : <Save size={13} />}
+                                <span className="hidden sm:inline">{isSaving ? 'Spremam...' : saveSuccess ? 'Spremljeno!' : 'Spremi promjene'}</span>
+                            </button>
+                            <span className="hidden sm:inline"><InfoTooltip text="Sprema vaše vizualne izmjene na server. Promjene odmah postaju vidljive." side="bottom" /></span>
+                        </>
+                    )}
+
+                    {/* Refresh */}
                     <button onClick={handleRefresh} className="px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all hover:bg-white/5" style={{ color: 'var(--lp-text-muted)', border: '1px solid var(--lp-border)' }} title="Osvježi preview">
                         <RefreshCw size={13} /><span className="hidden sm:inline">Osvježi</span>
                     </button>
+                    {/* New Tab */}
                     <button onClick={openInNewTab} className="px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all hover:bg-white/5" style={{ color: 'var(--lp-text-muted)', border: '1px solid var(--lp-border)' }} title="Otvori u novom tabu">
                         <ExternalLink size={13} /><span className="hidden sm:inline">Novi Tab</span>
                     </button>
                 </div>
             </div>
+
+            {/* Image Picker Popup (opened when clicking an image in visual edit mode) */}
+            {showImagePicker && (
+                <MediaPickerPopup
+                    projectId={projectId}
+                    onClose={() => { setShowImagePicker(false); pendingImgIdRef.current = null; }}
+                    onMediaSelected={handleImageFromPicker}
+                    imagesOnly={true}
+                />
+            )}
 
             {/* Preview */}
             <div className="flex-1 bg-white relative overflow-auto">
@@ -196,6 +395,9 @@ export default function EditorPreview({ html, projectId, project, hasBlog = fals
                     </div>
                 )}
             </div>
+
+            {/* Visual Editor Help Modal */}
+            <VisualEditorHelp isOpen={showHelp} onClose={() => setShowHelp(false)} />
         </div>
     );
 }

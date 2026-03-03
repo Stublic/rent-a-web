@@ -651,3 +651,14 @@ body {
     gap: 0.375rem;
   }
 }
+
+/* ═══════════════════════════════════════════════════════
+   MOBILE BOTTOM TAB BAR
+   ═══════════════════════════════════════════════════════ */
+
+/* Adjust toast container on mobile to sit above the bottom tab bar */
+@media (max-width: 768px) {
+  .toast-container {
+    bottom: 5rem !important;
+  }
+}
