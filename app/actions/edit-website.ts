@@ -76,7 +76,8 @@ function buildChatHistory(conversationHistory: ConversationEntry[]): Array<{ rol
 export async function editWebsiteAction(
     projectId: string,
     editRequest: string,
-    conversationHistory: ConversationEntry[] = []
+    conversationHistory: ConversationEntry[] = [],
+    pageSlug: string = 'home'
 ) {
     const TOKENS_PER_EDIT = 50;
 
@@ -118,8 +119,17 @@ export async function editWebsiteAction(
         };
     }
 
-    console.log(`🎨 Applying edit: "${editRequest}" to project ${projectId}`);
+    console.log(`🎨 Applying edit: "${editRequest}" to project ${projectId} (page: ${pageSlug})`);
     console.log(`💬 Conversation history: ${conversationHistory.length} turns`);
+
+    // Determine which HTML to edit
+    const isSubpage = pageSlug !== 'home';
+    const reactFiles = (project.reactFiles || {}) as Record<string, string>;
+    const currentHtml = isSubpage ? (reactFiles[pageSlug] || '') : project.generatedHtml;
+
+    if (!currentHtml) {
+        return { error: isSubpage ? 'Podstranica nije pronađena.' : 'Stranica nije generirana.' };
+    }
 
     try {
         // 5. Build multi-turn chat with full HTML context
@@ -128,7 +138,7 @@ export async function editWebsiteAction(
         // The current message includes the FULL HTML + user's edit request
         const currentMessage = `**Trenutni HTML stranice:**
 \`\`\`html
-${project.generatedHtml}
+${currentHtml}
 \`\`\`
 
 **Zahtjev korisnika:**
@@ -192,19 +202,34 @@ Primijeni izmjenu i vrati JSON odgovor.`;
             request: editRequest,
             success: true,
             tokensConsumed: TOKENS_PER_EDIT,
-            htmlSnapshot: project.generatedHtml
+            htmlSnapshot: currentHtml,
+            pageSlug,
         });
 
         // 11. Update database
         const finalHtml = injectContactFormScript(modifiedHtml, projectId);
-        await prisma.project.update({
-            where: { id: projectId },
-            data: {
-                generatedHtml: finalHtml,
-                editHistory: editHistory as any,
-                lastEditedAt: new Date(),
-            }
-        });
+
+        if (isSubpage) {
+            // Update the specific subpage in reactFiles
+            const updatedReactFiles = { ...reactFiles, [pageSlug]: finalHtml };
+            await prisma.project.update({
+                where: { id: projectId },
+                data: {
+                    reactFiles: updatedReactFiles as any,
+                    editHistory: editHistory as any,
+                    lastEditedAt: new Date(),
+                }
+            });
+        } else {
+            await prisma.project.update({
+                where: { id: projectId },
+                data: {
+                    generatedHtml: finalHtml,
+                    editHistory: editHistory as any,
+                    lastEditedAt: new Date(),
+                }
+            });
+        }
 
         // 12. Deduct tokens
         await prisma.user.update({
@@ -260,7 +285,7 @@ Primijeni izmjenu i vrati JSON odgovor.`;
 }
 
 // ─── Undo last edit ───────────────────────────────────────────────────────────
-export async function undoLastEditAction(projectId: string) {
+export async function undoLastEditAction(projectId: string, pageSlug: string = 'home') {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) {
         return { error: 'Niste prijavljeni.' };
@@ -278,24 +303,38 @@ export async function undoLastEditAction(projectId: string) {
 
     const history = Array.isArray(project.editHistory) ? project.editHistory : [];
 
-    if (history.length === 0) {
+    // Filter edits for this specific page
+    const isSubpage = pageSlug !== 'home';
+    const pageEdits = history.filter((edit: any) =>
+        edit.success && (edit.pageSlug || 'home') === pageSlug
+    );
+
+    if (pageEdits.length === 0) {
         return { error: 'Nema izmjena za poništiti.' };
     }
 
-    const successfulEdits = history.filter((edit: any) => edit.success);
-    if (successfulEdits.length === 0) {
-        return { error: 'Nema uspješnih izmjena za poništiti.' };
+    const lastEdit = pageEdits[pageEdits.length - 1];
+    const editIdx = history.lastIndexOf(lastEdit);
+
+    if (isSubpage) {
+        const reactFiles = (project.reactFiles || {}) as Record<string, string>;
+        const updatedReactFiles = { ...reactFiles, [pageSlug]: (lastEdit as any).htmlSnapshot };
+        await prisma.project.update({
+            where: { id: projectId },
+            data: {
+                reactFiles: updatedReactFiles as any,
+                editHistory: history.slice(0, editIdx) as any
+            }
+        });
+    } else {
+        await prisma.project.update({
+            where: { id: projectId },
+            data: {
+                generatedHtml: (lastEdit as any).htmlSnapshot,
+                editHistory: history.slice(0, editIdx) as any
+            }
+        });
     }
-
-    const lastEdit = successfulEdits[successfulEdits.length - 1];
-
-    await prisma.project.update({
-        where: { id: projectId },
-        data: {
-            generatedHtml: (lastEdit as any).htmlSnapshot,
-            editHistory: history.slice(0, history.lastIndexOf(lastEdit)) as any
-        }
-    });
 
     revalidatePath(`/dashboard/projects/${projectId}/editor`);
 

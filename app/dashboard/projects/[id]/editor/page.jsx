@@ -21,5 +21,9 @@ export default async function EditorPage({ params }) {
     // Allow access if HTML is generated
     if (!project.hasGenerated || !project.generatedHtml) redirect(`/dashboard/projects/${id}/content`);
 
-    return <EditorPageClient project={project} userTokens={userTokens} />;
+    const blogPostCount = await prisma.blogPost.count({
+        where: { projectId: id, status: 'PUBLISHED' }
+    });
+
+    return <EditorPageClient project={project} userTokens={userTokens} hasBlog={blogPostCount > 0} />;
 }

@@ -330,7 +330,7 @@ function MediaPickerPopup({ projectId, onClose, onMediaSelected, onFileUpload })
 }
 
 // ─── Main EditorChat ──────────────────────────────────────────────────────────
-export default function EditorChat({ project, userTokens = 0 }) {
+export default function EditorChat({ project, userTokens = 0, activePage = 'home', pageLabel = 'Početna' }) {
     const projectId = project.id;
     // Persist messages in sessionStorage so they survive tab navigation
     const [messages, setMessages] = useState(() => loadMessages(projectId));
@@ -376,7 +376,7 @@ export default function EditorChat({ project, userTokens = 0 }) {
         try {
             // Send conversation history for multi-turn context
             const conversationHistory = buildConversationHistory();
-            const result = await editWebsiteAction(project.id, editText, conversationHistory);
+            const result = await editWebsiteAction(project.id, editText, conversationHistory, activePage);
             if (result.success) {
                 if (result.tokensRemaining !== undefined) setTokens(result.tokensRemaining);
                 setMessages((prev) => [...prev, {
@@ -442,7 +442,7 @@ export default function EditorChat({ project, userTokens = 0 }) {
     const handleUndo = async () => {
         setUndoing(true);
         try {
-            const result = await undoLastEditAction(project.id);
+            const result = await undoLastEditAction(project.id, activePage);
             if (result.success) {
                 setMessages((prev) => {
                     const newMsgs = [...prev];
@@ -479,8 +479,15 @@ export default function EditorChat({ project, userTokens = 0 }) {
                     <div>
                         <h2 className="font-bold text-sm flex items-center gap-2" style={{ color: 'var(--lp-heading)' }}>
                             <Sparkles size={16} className="text-emerald-400" /> Webica AI Editor
+                            {activePage !== 'home' && (
+                                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ background: 'var(--lp-surface)', color: 'var(--lp-text-muted)', border: '1px solid var(--lp-border)' }}>
+                                    {pageLabel}
+                                </span>
+                            )}
                         </h2>
-                        <p className="text-[11px] mt-0.5" style={{ color: 'var(--lp-text-muted)' }}>Razgovaraj s AI-em o promjenama</p>
+                        <p className="text-[11px] mt-0.5" style={{ color: 'var(--lp-text-muted)' }}>
+                            {activePage === 'home' ? 'Razgovaraj s AI-em o promjenama' : `Uređuješ: ${pageLabel}`}
+                        </p>
                     </div>
                     <button onClick={handleUndo} disabled={!hasEdits || undoing}
                         className="px-2.5 py-1.5 rounded-lg text-xs font-medium disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1.5 transition-all hover:bg-white/5"
@@ -518,7 +525,10 @@ export default function EditorChat({ project, userTokens = 0 }) {
                             Zdravo! 👋 Ja sam tvoj AI asistent.
                         </p>
                         <p className="text-[11px]" style={{ color: 'var(--lp-text-muted)' }}>
-                            Reci mi što želiš promijeniti na stranici.
+                            {activePage === 'home'
+                                ? 'Reci mi što želiš promijeniti na stranici.'
+                                : `Reci mi što želiš promijeniti na stranici "${pageLabel}".`
+                            }
                         </p>
                         <div className="space-y-2 max-w-sm mx-auto mt-4">
                             {[
