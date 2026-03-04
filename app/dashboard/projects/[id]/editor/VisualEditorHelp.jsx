@@ -243,7 +243,7 @@ function ImageEditDemo() {
                         className="absolute top-4 right-4 rounded-xl shadow-2xl p-3 w-36"
                         style={{ background: '#18181b', border: '1px solid #3f3f46' }}
                     >
-                        <p className="text-[9px] font-bold text-zinc-400 mb-2 uppercase">Mediji</p>
+                        <p className="text-[9px] font-bold text-[color:var(--db-text-muted)] mb-2 uppercase">Mediji</p>
                         <div className="grid grid-cols-3 gap-1">
                             {[1, 2, 3, 4, 5, 6].map(i => (
                                 <motion.div
@@ -303,7 +303,7 @@ function SaveDemo() {
         <div className="relative rounded-xl overflow-hidden" style={{ background: '#fafafa', border: '1px solid #e4e4e7' }}>
             {/* Fake editor toolbar */}
             <div className="px-4 py-2.5 flex items-center justify-between" style={{ background: '#18181b', borderBottom: '1px solid #3f3f46' }}>
-                <span className="text-[11px] font-bold text-zinc-300">Live Preview</span>
+                <span className="text-[11px] font-bold text-[color:var(--db-text-secondary)]">Live Preview</span>
                 <div className="flex items-center gap-1.5">
                     {/* Visual Edit button (active) */}
                     <div className="px-2 py-1 rounded text-[10px] font-medium flex items-center gap-1"
@@ -490,13 +490,13 @@ export default function VisualEditorHelp({ isOpen, onClose }) {
                         exit={{ opacity: 0, scale: 0.95, y: 15 }}
                         transition={{ type: "spring", damping: 25, stiffness: 300 }}
                         className="relative w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden"
-                        style={{ background: 'var(--lp-bg-alt, #18181b)', border: '1px solid var(--lp-border, #3f3f46)' }}
+                        style={{ background: 'var(--db-bg-alt, #18181b)', border: '1px solid var(--db-border, #3f3f46)' }}
                     >
                         {/* Close */}
                         <button
                             onClick={onClose}
                             className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/10 transition-colors z-10"
-                            style={{ color: 'var(--lp-text-muted)' }}
+                            style={{ color: 'var(--db-text-muted)' }}
                         >
                             <X size={18} />
                         </button>
@@ -520,7 +520,7 @@ export default function VisualEditorHelp({ isOpen, onClose }) {
                                         initial={{ opacity: 0, x: 10 }}
                                         animate={{ opacity: 1, x: 0 }}
                                         className="text-lg font-bold"
-                                        style={{ color: 'var(--lp-heading, #fff)' }}
+                                        style={{ color: 'var(--db-heading, #fff)' }}
                                     >
                                         {current.title}
                                     </motion.h2>
@@ -530,7 +530,7 @@ export default function VisualEditorHelp({ isOpen, onClose }) {
                                         animate={{ opacity: 1 }}
                                         transition={{ delay: 0.1 }}
                                         className="text-xs"
-                                        style={{ color: 'var(--lp-text-muted, #71717a)' }}
+                                        style={{ color: 'var(--db-text-muted, #71717a)' }}
                                     >
                                         {current.subtitle}
                                     </motion.p>
@@ -575,7 +575,7 @@ export default function VisualEditorHelp({ isOpen, onClose }) {
                                                 style={{ background: current.bg, color: current.color }}>
                                                 {i + 1}
                                             </span>
-                                            <span style={{ color: 'var(--lp-text-secondary, #a1a1aa)' }}>{tip}</span>
+                                            <span style={{ color: 'var(--db-text-secondary, #a1a1aa)' }}>{tip}</span>
                                         </motion.div>
                                     ))}
                                 </motion.div>
@@ -592,7 +592,7 @@ export default function VisualEditorHelp({ isOpen, onClose }) {
                                         className="h-1.5 rounded-full transition-all duration-300"
                                         style={{
                                             width: i === step ? 24 : 8,
-                                            background: i === step ? current.color : 'var(--lp-border, #3f3f46)',
+                                            background: i === step ? current.color : 'var(--db-border, #3f3f46)',
                                         }}
                                     />
                                 ))}
@@ -603,7 +603,7 @@ export default function VisualEditorHelp({ isOpen, onClose }) {
                                     <button
                                         onClick={() => setStep(s => s - 1)}
                                         className="px-3 py-2 rounded-xl text-xs font-medium flex items-center gap-1 transition-all hover:bg-white/5"
-                                        style={{ color: 'var(--lp-text-muted)', border: '1px solid var(--lp-border, #3f3f46)' }}
+                                        style={{ color: 'var(--db-text-muted)', border: '1px solid var(--db-border, #3f3f46)' }}
                                     >
                                         <ChevronLeft size={14} /> Natrag
                                     </button>

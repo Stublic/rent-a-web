@@ -38,11 +38,11 @@ export default async function ContentPage({ params }) {
 
     const getStatusBadge = (status) => {
         switch (status) {
-            case 'DRAFT': return { label: 'Nacrt', icon: '📝', style: 'bg-zinc-500/15 text-zinc-400' };
+            case 'DRAFT': return { label: 'Nacrt', icon: '📝', style: 'bg-zinc-500/15 text-[color:var(--db-text-muted)]' };
             case 'PROCESSING': return { label: 'Generiranje...', icon: null, pulsing: true, pulseColor: '#60a5fa', style: 'bg-blue-500/15 text-blue-400' };
             case 'PUBLISHED': return { label: 'Objavljeno', live: true };
             case 'GENERATED': return { label: isPublished ? 'Objavljeno' : 'Generirano', live: isPublished, style: 'bg-emerald-500/15 text-emerald-400' };
-            default: return { label: status, icon: '•', style: 'bg-zinc-500/15 text-zinc-400' };
+            default: return { label: status, icon: '•', style: 'bg-zinc-500/15 text-[color:var(--db-text-muted)]' };
         }
     };
 
@@ -66,7 +66,7 @@ export default async function ContentPage({ params }) {
             {/* Header */}
             <div className="mb-6 db-fade-in">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
-                    <h1 className="text-xl font-bold" style={{ color: 'var(--lp-heading)' }}>Uredite sadržaj</h1>
+                    <h1 className="text-xl font-bold" style={{ color: 'var(--db-heading)' }}>Uredite sadržaj</h1>
 
                     {/* Status badge */}
                     {badge.live ? (
@@ -100,7 +100,7 @@ export default async function ContentPage({ params }) {
                         </span>
                     )}
                 </div>
-                <p className="text-sm" style={{ color: 'var(--lp-text-muted)' }}>
+                <p className="text-sm" style={{ color: 'var(--db-text-muted)' }}>
                     {message || 'Ovdje unesite sve informacije o vašem poslovanju.'}
                 </p>
             </div>

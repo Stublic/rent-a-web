@@ -84,7 +84,7 @@ export default function LoginPage() {
                         <div className="space-y-2">
                             <div className="flex items-center justify-between ml-1">
                                 <label className="text-sm font-medium text-zinc-400">Lozinka</label>
-                                <Link href="/auth/forgot-password" virtual className="text-xs text-green-500 hover:underline">
+                                <Link href="/auth/forgot-password" className="text-xs text-green-500 hover:underline">
                                     Izgubljena lozinka?
                                 </Link>
                             </div>

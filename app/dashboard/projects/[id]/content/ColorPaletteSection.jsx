@@ -174,8 +174,8 @@ export default function ColorPaletteSection({ watch, setValue }) {
                 onClick={resetToAuto}
                 className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all text-left group"
                 style={{
-                    background: autoColors ? 'rgba(139,92,246,0.1)' : 'var(--lp-surface)',
-                    border: autoColors ? '2px solid rgba(139,92,246,0.4)' : '1px solid var(--lp-border)',
+                    background: autoColors ? 'rgba(139,92,246,0.1)' : 'var(--db-surface)',
+                    border: autoColors ? '2px solid rgba(139,92,246,0.4)' : '1px solid var(--db-border)',
                 }}
             >
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -183,10 +183,10 @@ export default function ColorPaletteSection({ watch, setValue }) {
                     <Sparkles size={18} className="text-white" />
                 </div>
                 <div className="flex-1">
-                    <span className="text-sm font-semibold block" style={{ color: autoColors ? '#A78BFA' : 'var(--lp-heading)' }}>
+                    <span className="text-sm font-semibold block" style={{ color: autoColors ? '#A78BFA' : 'var(--db-heading)' }}>
                         AI odabire boje
                     </span>
-                    <span className="text-[11px]" style={{ color: 'var(--lp-text-muted)' }}>
+                    <span className="text-[11px]" style={{ color: 'var(--db-text-muted)' }}>
                         AI automatski bira paletu boja prema industriji i sadržaju
                     </span>
                 </div>
@@ -199,7 +199,7 @@ export default function ColorPaletteSection({ watch, setValue }) {
 
             {/* Industry Palettes */}
             <div>
-                <p className="text-xs font-semibold uppercase tracking-wide mb-2.5" style={{ color: 'var(--lp-text-muted)' }}>
+                <p className="text-xs font-semibold uppercase tracking-wide mb-2.5" style={{ color: 'var(--db-text-muted)' }}>
                     Preporučeno za {industry || 'vašu industriju'}
                 </p>
                 <div className="grid grid-cols-2 gap-2.5">
@@ -212,8 +212,8 @@ export default function ColorPaletteSection({ watch, setValue }) {
                                 onClick={() => applyPalette(palette)}
                                 className="group relative rounded-xl overflow-hidden transition-all hover:scale-[1.02] active:scale-[0.98]"
                                 style={{
-                                    border: isSelected ? '2px solid rgba(34,197,94,0.5)' : '1px solid var(--lp-border)',
-                                    background: 'var(--lp-surface)',
+                                    border: isSelected ? '2px solid rgba(34,197,94,0.5)' : '1px solid var(--db-border)',
+                                    background: 'var(--db-surface)',
                                 }}
                             >
                                 {/* Color Preview Bar */}
@@ -230,7 +230,7 @@ export default function ColorPaletteSection({ watch, setValue }) {
                                 </div>
                                 {/* Label */}
                                 <div className="px-3 py-2 flex items-center justify-between">
-                                    <span className="text-xs font-medium" style={{ color: 'var(--lp-heading)' }}>{palette.name}</span>
+                                    <span className="text-xs font-medium" style={{ color: 'var(--db-heading)' }}>{palette.name}</span>
                                     {isSelected && (
                                         <div className="w-4 h-4 rounded-full flex items-center justify-center" style={{ background: '#22c55e' }}>
                                             <Check size={10} className="text-white" />
@@ -249,7 +249,7 @@ export default function ColorPaletteSection({ watch, setValue }) {
                     type="button"
                     onClick={() => setShowCustom(v => !v)}
                     className="flex items-center gap-2 text-xs font-medium transition-colors hover:opacity-80"
-                    style={{ color: 'var(--lp-text-muted)' }}
+                    style={{ color: 'var(--db-text-muted)' }}
                 >
                     <Palette size={13} />
                     Prilagođene boje
@@ -257,7 +257,7 @@ export default function ColorPaletteSection({ watch, setValue }) {
                 </button>
 
                 {showCustom && (
-                    <div className="mt-3 grid grid-cols-2 gap-3 p-4 rounded-xl" style={{ background: 'var(--lp-bg)', border: '1px solid var(--lp-border)' }}>
+                    <div className="mt-3 grid grid-cols-2 gap-3 p-4 rounded-xl" style={{ background: 'var(--db-bg)', border: '1px solid var(--db-border)' }}>
                         <ColorInput
                             label="Primarna"
                             value={currentPrimary || '#3B82F6'}
@@ -292,7 +292,7 @@ export default function ColorPaletteSection({ watch, setValue }) {
                         />
 
                         {/* Live preview */}
-                        <div className="col-span-2 rounded-xl overflow-hidden" style={{ border: '1px solid var(--lp-border)' }}>
+                        <div className="col-span-2 rounded-xl overflow-hidden" style={{ border: '1px solid var(--db-border)' }}>
                             <div className="p-4" style={{ background: currentBg || '#FFFFFF' }}>
                                 <h4 className="text-sm font-bold mb-1" style={{ color: currentPrimary || '#3B82F6' }}>
                                     Primjer naslova
@@ -326,7 +326,7 @@ export default function ColorPaletteSection({ watch, setValue }) {
 function ColorInput({ label, value, onChange }) {
     return (
         <div className="space-y-1.5">
-            <label className="text-[11px] font-medium" style={{ color: 'var(--lp-text-muted)' }}>{label}</label>
+            <label className="text-[11px] font-medium" style={{ color: 'var(--db-text-muted)' }}>{label}</label>
             <div className="flex items-center gap-2">
                 <div className="relative">
                     <input
@@ -337,7 +337,7 @@ function ColorInput({ label, value, onChange }) {
                     />
                     <div
                         className="w-8 h-8 rounded-lg border cursor-pointer shadow-sm"
-                        style={{ background: value, borderColor: 'var(--lp-border)' }}
+                        style={{ background: value, borderColor: 'var(--db-border)' }}
                     />
                 </div>
                 <input
@@ -348,7 +348,7 @@ function ColorInput({ label, value, onChange }) {
                         if (/^#[0-9A-Fa-f]{0,6}$/.test(v)) onChange(v);
                     }}
                     className="flex-1 rounded-lg px-2.5 py-1.5 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-white/20"
-                    style={{ background: 'var(--lp-surface)', border: '1px solid var(--lp-border)', color: 'var(--lp-heading)' }}
+                    style={{ background: 'var(--db-surface)', border: '1px solid var(--db-border)', color: 'var(--db-heading)' }}
                     placeholder="#000000"
                 />
             </div>

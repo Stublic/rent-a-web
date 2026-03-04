@@ -135,19 +135,21 @@ export async function POST(req: Request) {
                     });
 
                     const emailHtml = `
-                        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-                            <div style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-                                <h1 style="color: white; margin: 0;">💰 Kupnja Tokena Uspješna!</h1>
+                        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+                            <div style="background: linear-gradient(135deg, #7c3aed, #6d28d9); padding: 40px 30px; text-align: center; border-radius: 12px 12px 0 0;">
+                                <h1 style="color: white; margin: 0; font-size: 24px;">🚀 Uspješna kupnja!</h1>
+                                <p style="color: rgba(255,255,255,0.85); margin: 8px 0 0; font-size: 14px;">Vaši AI tokeni su spremni</p>
                             </div>
                             
-                            <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
-                                <p style="font-size: 16px;">Hvala na kupnji!</p>
+                            <div style="background: #fafafa; border: 1px solid #e5e5e5; border-top: none; padding: 30px; border-radius: 0 0 12px 12px;">
+                                <p style="font-size: 16px; margin-top: 0;">Pozdrav,</p>
+                                <p style="font-size: 15px; line-height: 1.6;">Vaša kupnja dodatnih tokena je uspješno provedena. Sada imate još više slobode za kreativno oblikovanje vaše web stranice uz našeg AI asistenta!</p>
                                 
-                                <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #22c55e;">
-                                    <h2 style="margin-top: 0; color: #22c55e;">Detalji kupnje:</h2>
-                                    <table style="width: 100%; border-collapse: collapse;">
+                                <div style="background: white; border: 1px solid #e5e5e5; border-left: 4px solid #7c3aed; padding: 20px; border-radius: 8px; margin: 24px 0;">
+                                    <h2 style="margin-top: 0; color: #7c3aed; font-size: 18px;">Detalji kupnje:</h2>
+                                    <table style="width: 100%; border-collapse: collapse; font-size: 15px;">
                                         <tr>
-                                            <td style="padding: 8px 0; border-bottom: 1px solid #eee;"><strong>Tokeni:</strong></td>
+                                            <td style="padding: 8px 0; border-bottom: 1px solid #eee;"><strong>Količina:</strong></td>
                                             <td style="padding: 8px 0; border-bottom: 1px solid #eee; text-align: right;">${tokens} tokena</td>
                                         </tr>
                                         <tr>
@@ -163,27 +165,25 @@ export async function POST(req: Request) {
                                     </table>
                                 </div>
 
-                                <p style="font-size: 14px; color: #666;">
-                                    Tokeni su automatski dodani na vaš projekt i možete ih odmah koristiti u AI Editoru.
+                                <p style="font-size: 14px; color: #4b5563; line-height: 1.6;">
+                                    Tokeni su već na vašem računu. Podsjećamo da svaka strukturna ili dizajnerska AI promjena u Editoru troši samo 50 tokena, dok brze uređivačke poteze uvijek možete raditi u potpuno besplatnom Vizualnom Editoru.
                                 </p>
 
                                 <div style="text-align: center; margin: 30px 0;">
                                     <a href="${process.env.NEXT_PUBLIC_APP_URL}/auth/login?redirect=/dashboard/projects/${projectId}/editor" 
-                                       style="background-color: #22c55e; color: white; padding: 14px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
-                                        Otvori Editor
+                                       style="background: linear-gradient(135deg, #7c3aed, #6d28d9); color: white; padding: 14px 32px; text-decoration: none; border-radius: 10px; font-weight: 600; display: inline-block; box-shadow: 0 4px 6px -1px rgba(124, 58, 237, 0.2);">
+                                        Otvori AI Editor
                                     </a>
                                 </div>
 
                                 ${invoiceUrl ? `
-                                <p style="font-size: 12px; color: #888; text-align: center; margin-top: 20px;">
-                                    <a href="${invoiceUrl}" style="color: #22c55e;">Preuzmite račun (PDF)</a>
+                                <p style="font-size: 13px; color: #666; text-align: center; margin-top: 20px;">
+                                    <a href="${invoiceUrl}" style="color: #7c3aed; text-decoration: none; font-weight: 500;">Preuzmite račun (PDF) ↓</a>
                                 </p>
                                 ` : ''}
 
-                                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-                                
-                                <p style="font-size: 12px; color: #888;">
-                                    Račun možete uvijek preuzeti u dashboardu pod "Povijest računa".
+                                <p style="color: #666; font-size: 13px; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
+                                    Srdačan pozdrav,<br><strong>Rent a webica tim</strong>
                                 </p>
                             </div>
                         </div>
@@ -192,11 +192,11 @@ export async function POST(req: Request) {
                     await transporter.sendMail({
                         from: process.env.SMTP_FROM || 'Rent a webica <noreply@rentaweb.hr>',
                         to: customerEmail,
-                        subject: `✅ Kupnja ${tokens} tokena - Račun ${invoiceNumber || ''}`,
+                        subject: `🚀 Uspješna kupnja ${tokens} AI tokena${invoiceNumber ? ` - Račun ${invoiceNumber}` : ''}`,
                         html: emailHtml,
                         attachments: invoiceUrl ? [
                             {
-                                filename: `Racun-${invoiceNumber}.pdf`,
+                                filename: `Racun - ${invoiceNumber}.pdf`,
                                 path: invoiceUrl
                             }
                         ] : []

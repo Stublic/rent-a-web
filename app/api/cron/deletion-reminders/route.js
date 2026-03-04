@@ -55,36 +55,36 @@ function getReminderEmail(projectName, planName, daysLeft, label, urgency, userN
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; color: #333; background: #ffffff;">
             <div style="background: ${colors.headerBg}; padding: 40px 30px; border-radius: 12px 12px 0 0; text-align: center;">
                 <h1 style="color: white; margin: 0 0 8px; font-size: 22px;">
-                    ${urgency === 'critical' ? '🚨' : urgency === 'high' ? '⚠️' : '📋'} Brisanje za ${label}
+                    ${urgency === 'critical' ? '🚨' : urgency === 'high' ? '⚠️' : '📋'} Upozorenje pred brisanje
                 </h1>
                 <p style="color: rgba(255,255,255,0.85); margin: 0; font-size: 14px;">
-                    Vaši podaci za "${projectName}" će biti trajno obrisani
+                    Vaši podaci za "${projectName}" istječu za ${label}
                 </p>
             </div>
             <div style="padding: 30px; background: #fafafa; border: 1px solid #e5e5e5; border-top: none; border-radius: 0 0 12px 12px;">
                 <p>Pozdrav${name},</p>
-                <p>Vaša pretplata za web stranicu <strong>"${projectName}"</strong> (${planName}) je otkazana.</p>
+                <p>Vaša pretplata za web stranicu <strong>"${projectName}"</strong> (${planName}) je ranije otkazana i vaša stranica je trenutno offline.</p>
 
                 <div style="background: ${colors.bg}; border: 1px solid ${colors.border}; border-left: 4px solid ${colors.border}; padding: 16px 20px; border-radius: 8px; margin: 20px 0;">
                     <p style="margin: 0; font-weight: 600; color: ${colors.text}; font-size: 16px;">
-                        ⏳ Preostalo: ${daysLeft} ${daysLeft === 1 ? 'dan' : 'dana'}
+                        ⏳ Garancija čuvanja podataka ističe za ${daysLeft} ${daysLeft === 1 ? 'dan' : 'dana'}
                     </p>
-                    <p style="margin: 8px 0 0; color: ${colors.text}; font-size: 14px;">
-                        Nakon isteka ovog roka, svi podaci — uključujući web stranicu, blog postove, slike i postavke — bit će <strong>trajno obrisani</strong>.
+                    <p style="margin: 8px 0 0; color: ${colors.text}; font-size: 14px; line-height: 1.5;">
+                        Nakon toga, cijela vaša stranica, dizajn, tekstovi i slike bit će <strong>trajno obrisani</strong> iz našeg sustava. Ne dajte da vaš dosadašnji trud propadne!
                     </p>
                 </div>
 
-                <p style="font-size: 15px;">Želite zadržati svoju web stranicu? Obnovite pretplatu i svi vaši podaci će ostati sačuvani.</p>
+                <p style="font-size: 15px;">Želite pod svaku cijenu zadržati svoju web stranicu i dosadašnji trud? Nastavite točno tamo gdje ste stali.</p>
 
                 <div style="text-align: center; margin: 30px 0;">
                     <a href="${APP_URL}/dashboard"
-                       style="background: #22c55e; color: white; padding: 14px 32px; text-decoration: none; border-radius: 10px; font-weight: 600; display: inline-block; font-size: 16px;">
-                        Obnovi pretplatu →
+                       style="background: linear-gradient(135deg, #7c3aed, #6d28d9); color: white; padding: 14px 32px; text-decoration: none; border-radius: 10px; font-weight: 600; display: inline-block; font-size: 16px; box-shadow: 0 4px 6px -1px rgba(124, 58, 237, 0.2);">
+                        Obnovi pretplatu i sačuvaj podatke
                     </a>
                 </div>
 
                 <p style="color: #666; font-size: 13px; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
-                    Ako ne želite obnoviti pretplatu, ne trebate ništa poduzimati. Podaci će biti automatski obrisani nakon ${GRACE_PERIOD_DAYS} dana od otkazivanja.<br><br>
+                    Ukoliko svjesno želite obrisati podatke, slobodno ignorirajte ovu poruku. Podaci će se automatski obrisati na dan isteka roka.<br><br>
                     Srdačan pozdrav,<br><strong>Rent a webica tim</strong>
                 </p>
             </div>
@@ -147,18 +147,27 @@ export async function GET(req) {
                                 to: project.user.email,
                                 subject: `❌ Web stranica "${project.name}" je trajno obrisana`,
                                 html: `
-                                    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto;">
+                                    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
                                         <div style="background: linear-gradient(135deg, #0a0a0a, #1a1a1a); padding: 40px 30px; border-radius: 12px 12px 0 0; text-align: center;">
-                                            <h1 style="color: #ef4444; margin: 0; font-size: 22px;">Podaci obrisani</h1>
+                                            <h1 style="color: #ef4444; margin: 0; font-size: 24px;">❌ Podaci su trajno obrisani</h1>
                                         </div>
                                         <div style="padding: 30px; background: #fafafa; border: 1px solid #e5e5e5; border-top: none; border-radius: 0 0 12px 12px;">
-                                            <p>Pozdrav${project.user.name ? ` ${project.user.name}` : ''},</p>
-                                            <p>Vaša web stranica <strong>"${project.name}"</strong> i svi povezani podaci su trajno obrisani jer je prošlo ${GRACE_PERIOD_DAYS} dana od otkazivanja pretplate.</p>
-                                            <p>Ako želite novu web stranicu, uvijek ste dobrodošli natrag!</p>
+                                            <p style="font-size: 16px;">Pozdrav${project.user.name ? ` ${project.user.name}` : ''},</p>
+                                            <p style="font-size: 15px; line-height: 1.6;">
+                                                Kao što smo i najavili, prošlo je ${GRACE_PERIOD_DAYS} dana od ukidanja vaše pretplate. Svi podaci vaše web stranice <strong>"${project.name}"</strong> su sada trajno obrisani iz našeg sustava.
+                                            </p>
+                                            <p style="font-size: 15px; line-height: 1.6;">
+                                                Žao nam je što odlazite, ali naša vrata ostaju otvorena. Ako u budućnosti poželite novu web stranicu, bit će nam nevjerojatno drago ponovno surađivati!
+                                            </p>
                                             <div style="text-align: center; margin: 30px 0;">
-                                                <a href="${APP_URL}/dashboard/new-project" style="background: #22c55e; color: white; padding: 14px 32px; text-decoration: none; border-radius: 10px; font-weight: 600; display: inline-block;">Kreiraj novu stranicu →</a>
+                                                <a href="${APP_URL}/dashboard/new-project" 
+                                                   style="background: linear-gradient(135deg, #7c3aed, #6d28d9); color: white; padding: 14px 32px; text-decoration: none; border-radius: 10px; font-weight: 600; display: inline-block; box-shadow: 0 4px 6px -1px rgba(124, 58, 237, 0.2);">
+                                                    Kreiraj novu stranicu →
+                                                </a>
                                             </div>
-                                            <p style="color: #666; font-size: 13px; border-top: 1px solid #eee; padding-top: 20px;">Srdačan pozdrav,<br><strong>Rent a webica tim</strong></p>
+                                            <p style="color: #666; font-size: 13px; border-top: 1px solid #eee; padding-top: 20px;">
+                                                Želimo vam pregršt uspjeha u daljnjem poslovanju!<br><strong>Rent a webica tim</strong>
+                                            </p>
                                         </div>
                                     </div>
                                 `,

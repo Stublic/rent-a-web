@@ -49,7 +49,7 @@ const plans = [
     description: "Za tvrtke koje žele više: ozbiljniji web i SEO potencijal.",
     targetAudience: "Mali biznisi, uslužne djelatnosti",
     recommended: true,
-    color: "bg-zinc-900 border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.15)]",
+    color: "bg-[color:var(--db-surface)] border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.15)]",
     textColor: "text-green-500",
     buttonColor: "bg-green-500 text-white hover:bg-green-400",
     available: true,
@@ -71,9 +71,9 @@ const plans = [
     priceId: null,
     description: "Online prodaja bez kompliciranog sustava plaćanja.",
     targetAudience: "Web shopovi, online prodaja",
-    color: "bg-zinc-800 opacity-60",
+    color: "bg-[color:var(--db-surface)] opacity-60",
     textColor: "text-purple-400",
-    buttonColor: "bg-zinc-700 text-zinc-400 cursor-not-allowed",
+    buttonColor: "bg-zinc-700 text-[color:var(--db-text-muted)] cursor-not-allowed",
     available: false,
     comingSoon: true,
   }
@@ -103,18 +103,18 @@ export default function NewProjectPage() {
 
     return (
         <div className="min-h-screen bg-[#050505] text-white p-8">
-            <Link href="/dashboard" className="text-zinc-400 hover:text-white flex items-center gap-2 mb-8 transition-colors w-fit">
+            <Link href="/dashboard" className="text-[color:var(--db-text-muted)] hover:text-white flex items-center gap-2 mb-8 transition-colors w-fit">
                 <ArrowLeft size={20} /> Povratak na Dashboard
             </Link>
 
             <div className="text-center max-w-2xl mx-auto mb-16">
                 <h1 className="text-4xl font-bold mb-4">Dodaj novi projekt</h1>
-                <p className="text-zinc-400">Odaberite paket za vašu novu web stranicu. Svi paketi uključuju hosting, domenu i održavanje.</p>
+                <p className="text-[color:var(--db-text-muted)]">Odaberite paket za vašu novu web stranicu. Svi paketi uključuju hosting, domenu i održavanje.</p>
             </div>
 
             <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
                 {plans.map((plan) => (
-                    <div key={plan.name} className={`relative p-8 rounded-3xl border ${plan.recommended ? 'border-green-500 scale-105 z-10' : plan.comingSoon ? 'border-zinc-800 bg-zinc-900/30 opacity-70' : 'border-zinc-800 bg-zinc-900/50'} flex flex-col`}>
+                    <div key={plan.name} className={`relative p-8 rounded-3xl border ${plan.recommended ? 'border-green-500 scale-105 z-10' : plan.comingSoon ? 'border-[color:var(--db-border)] bg-zinc-900/30 opacity-70' : 'border-[color:var(--db-border)] bg-[color:var(--db-surface)]'} flex flex-col`}>
                         {plan.recommended && (
                             <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-green-500 text-black text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
                                 Najpopularnije
@@ -126,25 +126,25 @@ export default function NewProjectPage() {
                             </div>
                         )}
                         <h3 className={`text-xl font-bold mb-0.5 ${plan.textColor}`}>{plan.name}</h3>
-                        {plan.subtitle && <p className="text-xs font-semibold text-zinc-500 mb-3 uppercase tracking-wide">{plan.subtitle}</p>}
-                        <p className="text-sm mb-4 text-zinc-400 min-h-[40px]">{plan.description}</p>
+                        {plan.subtitle && <p className="text-xs font-semibold text-[color:var(--db-text-muted)] mb-3 uppercase tracking-wide">{plan.subtitle}</p>}
+                        <p className="text-sm mb-4 text-[color:var(--db-text-muted)] min-h-[40px]">{plan.description}</p>
                         
                         <div className="flex items-baseline gap-2 mb-2">
                             <div className="flex items-baseline gap-1">
                                 <span className="text-4xl font-extrabold">{plan.price}€</span>
-                                <span className="text-sm text-zinc-500">/ mj</span>
+                                <span className="text-sm text-[color:var(--db-text-muted)]">/ mj</span>
                             </div>
                         </div>
 
                         {plan.targetAudience && (
-                            <div className="text-xs text-zinc-500 italic border-t border-zinc-800/50 pt-2 mt-2 mb-6">
+                            <div className="text-xs text-[color:var(--db-text-muted)] italic border-t border-[color:var(--db-border)]/50 pt-2 mt-2 mb-6">
                                 Za: {plan.targetAudience}
                             </div>
                         )}
 
                         <ul className="space-y-4 mb-8 flex-1">
                             {plan.features.map((feature) => (
-                                <li key={feature} className="flex items-start gap-3 text-sm text-zinc-300">
+                                <li key={feature} className="flex items-start gap-3 text-sm text-[color:var(--db-text-secondary)]">
                                     <Check size={16} className="text-green-500 mt-0.5 shrink-0" /> 
                                     <span className="leading-snug">{feature}</span>
                                 </li>

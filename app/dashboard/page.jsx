@@ -159,7 +159,7 @@ export default function DashboardPage() {
     // Sidebar content — shared between desktop and mobile
     const SidebarNav = () => (
         <>
-            <div className="p-5 border-b" style={{ borderColor: 'var(--lp-border)' }} id="tour-welcome">
+            <div className="p-5 border-b" style={{ borderColor: 'var(--db-border)' }} id="tour-welcome">
                 <Link href="/" className="flex items-center gap-3 group">
                     <div className="w-9 h-9 rounded-lg overflow-hidden transition-transform group-hover:scale-105">
                         <img
@@ -168,7 +168,7 @@ export default function DashboardPage() {
                             className="w-full h-full object-cover"
                         />
                     </div>
-                    <span className="font-bold text-lg tracking-tight" style={{ color: 'var(--lp-heading)' }}>
+                    <span className="font-bold text-lg tracking-tight" style={{ color: 'var(--db-heading)' }}>
                         Rent a webica
                     </span>
                 </Link>
@@ -190,7 +190,7 @@ export default function DashboardPage() {
                 ))}
             </nav>
 
-            <div className="p-3 border-t" style={{ borderColor: 'var(--lp-border)' }}>
+            <div className="p-3 border-t" style={{ borderColor: 'var(--db-border)' }}>
                 <button
                     onClick={logout}
                     className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium db-nav-item hover:!text-red-400"
@@ -203,13 +203,13 @@ export default function DashboardPage() {
     );
 
     return (
-        <div className="min-h-screen text-white flex" data-landing="true" data-dashboard="true" style={{ background: 'var(--lp-bg)' }}>
+        <div className="min-h-screen flex" data-dashboard="true" style={{ background: 'var(--db-bg)', color: 'var(--db-text)' }}>
             {/* Desktop Sidebar */}
             <aside
                 className="w-60 flex-col hidden md:flex sticky top-0 h-screen"
                 style={{
-                    background: 'var(--lp-bg-alt)',
-                    borderRight: '1px solid var(--lp-border)',
+                    background: 'var(--db-bg-alt)',
+                    borderRight: '1px solid var(--db-border)',
                 }}
             >
                 <SidebarNav />
@@ -222,8 +222,8 @@ export default function DashboardPage() {
                     <aside
                         className="db-drawer fixed left-0 top-0 bottom-0 w-64 z-50 flex flex-col md:hidden"
                         style={{
-                            background: 'var(--lp-bg-alt)',
-                            borderRight: '1px solid var(--lp-border)',
+                            background: 'var(--db-bg-alt)',
+                            borderRight: '1px solid var(--db-border)',
                         }}
                     >
                         <SidebarNav />
@@ -237,21 +237,21 @@ export default function DashboardPage() {
                 <header
                     className="h-14 flex items-center justify-between px-4 md:px-6 sticky top-0 z-30"
                     style={{
-                        background: 'rgba(0, 0, 0, 0.7)',
+                        background: 'var(--db-header-bg)',
                         backdropFilter: 'blur(16px)',
                         WebkitBackdropFilter: 'blur(16px)',
-                        borderBottom: '1px solid var(--lp-border)',
+                        borderBottom: '1px solid var(--db-border)',
                     }}
                 >
                     <div className="flex items-center gap-3">
                         <button
-                            className="md:hidden p-1.5 rounded-lg hover:bg-white/5 transition-colors"
+                            className="md:hidden p-1.5 rounded-lg transition-colors"
                             onClick={() => setMobileOpen(true)}
-                            style={{ color: 'var(--lp-text-secondary)' }}
+                            style={{ color: 'var(--db-text-secondary)' }}
                         >
                             <Menu size={20} />
                         </button>
-                        <h2 className="text-base font-semibold" style={{ color: 'var(--lp-heading)' }}>
+                        <h2 className="text-base font-semibold" style={{ color: 'var(--db-heading)' }}>
                             {tabLabel}
                         </h2>
                     </div>
@@ -264,7 +264,7 @@ export default function DashboardPage() {
                     {/* Subtle ambient glow */}
                     <div
                         className="absolute top-0 right-0 w-[300px] h-[300px] rounded-full blur-[120px] pointer-events-none opacity-30"
-                        style={{ background: 'var(--lp-hero-glow)' }}
+                        style={{ background: 'var(--db-hero-glow)' }}
                     />
 
                     {/* Tab content with fade animation */}
@@ -289,19 +289,19 @@ function PlaceholderTab({ title, desc, icon: Icon }) {
                 <div
                     className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6"
                     style={{
-                        background: 'var(--lp-surface)',
-                        border: '1px solid var(--lp-border)',
+                        background: 'var(--db-surface)',
+                        border: '1px solid var(--db-border)',
                     }}
                 >
-                    <Icon size={36} strokeWidth={1.5} style={{ color: 'var(--lp-text-muted)' }} />
+                    <Icon size={36} strokeWidth={1.5} style={{ color: 'var(--db-text-muted)' }} />
                 </div>
-                <h3 className="text-xl font-bold mb-3" style={{ color: 'var(--lp-heading)' }}>{title}</h3>
-                <p className="leading-relaxed text-sm" style={{ color: 'var(--lp-text-muted)' }}>{desc}</p>
+                <h3 className="text-xl font-bold mb-3" style={{ color: 'var(--db-heading)' }}>{title}</h3>
+                <p className="leading-relaxed text-sm" style={{ color: 'var(--db-text-muted)' }}>{desc}</p>
                 <div
                     className="mt-6 px-4 py-2 rounded-full inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest"
                     style={{
-                        border: '1px solid var(--lp-border)',
-                        color: 'var(--lp-text-muted)',
+                        border: '1px solid var(--db-border)',
+                        color: 'var(--db-text-muted)',
                     }}
                 >
                     Uskoro dostupno 🛠️
@@ -319,29 +319,29 @@ function UserDropdown({ user, logout, setActiveTab }) {
             <button
                 id="tour-user-menu"
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-3 p-1.5 rounded-xl transition-all hover:bg-white/5"
+                className="flex items-center gap-3 p-1.5 rounded-xl transition-all"
             >
                 <div className="text-right hidden sm:block">
-                    <div className="text-sm font-semibold" style={{ color: 'var(--lp-heading)' }}>{user.name}</div>
-                    <div className="text-xs" style={{ color: 'var(--lp-text-muted)' }}>{user.email}</div>
+                    <div className="text-sm font-semibold" style={{ color: 'var(--db-heading)' }}>{user.name}</div>
+                    <div className="text-xs" style={{ color: 'var(--db-text-muted)' }}>{user.email}</div>
                 </div>
                 <div
                     className="w-9 h-9 rounded-full flex items-center justify-center overflow-hidden"
                     style={{
-                        background: 'var(--lp-surface)',
-                        border: '1px solid var(--lp-border)',
+                        background: 'var(--db-surface)',
+                        border: '1px solid var(--db-border)',
                     }}
                 >
                     {user.image ? (
                         <img src={user.image} alt="Avatar" className="w-full h-full object-cover" />
                     ) : (
-                        <UserIcon size={16} style={{ color: 'var(--lp-text-muted)' }} />
+                        <UserIcon size={16} style={{ color: 'var(--db-text-muted)' }} />
                     )}
                 </div>
                 <ChevronDown
                     size={14}
                     className={`transition-transform ${isOpen ? 'rotate-180' : ''}`}
-                    style={{ color: 'var(--lp-text-muted)' }}
+                    style={{ color: 'var(--db-text-muted)' }}
                 />
             </button>
 
@@ -351,20 +351,20 @@ function UserDropdown({ user, logout, setActiveTab }) {
                     <div
                         className="absolute right-0 mt-2 w-52 rounded-xl shadow-2xl py-1.5 z-20 db-fade-in"
                         style={{
-                            background: 'var(--lp-surface)',
-                            border: '1px solid var(--lp-border)',
+                            background: 'var(--db-surface)',
+                            border: '1px solid var(--db-border)',
                         }}
                     >
                         <button
                             onClick={() => { setActiveTab("settings"); setIsOpen(false); }}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-all db-nav-item hover:bg-white/5"
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-all db-nav-item"
                         >
                             <SettingsIcon size={16} /> Postavke računa
                         </button>
-                        <div className="my-1" style={{ borderTop: '1px solid var(--lp-border)' }} />
+                        <div className="my-1" style={{ borderTop: '1px solid var(--db-border)' }} />
                         <button
                             onClick={logout}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-all db-nav-item hover:!text-red-400 hover:bg-red-400/5"
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-all db-nav-item hover:!text-red-400"
                         >
                             <LogOut size={16} /> Odjava
                         </button>

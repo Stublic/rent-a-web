@@ -40,7 +40,34 @@ export async function GET() {
         try {
             projects = await prisma.project.findMany({
                 where: { userId: session.user.id },
-                orderBy: { createdAt: 'desc' }
+                orderBy: { createdAt: 'desc' },
+                select: {
+                    id: true,
+                    name: true,
+                    domain: true,
+                    subdomain: true,
+                    customDomain: true,
+                    contactEmail: true,
+                    publishedAt: true,
+                    status: true,
+                    planName: true,
+                    stripeSubscriptionId: true,
+                    userId: true,
+                    contentData: true,
+                    hasGenerated: true,
+                    aiVersion: true,
+                    lastEditedAt: true,
+                    editorTokens: true,
+                    editorTokensUsed: true,
+                    blogPostsUsedThisMonth: true,
+                    blogPostsResetAt: true,
+                    cancelledAt: true,
+                    deletionReminders: true,
+                    buyoutStatus: true,
+                    exportExpiresAt: true,
+                    createdAt: true,
+                    updatedAt: true,
+                }
             });
             console.log(`API /projects - Query successful. Found ${projects ? projects.length : 0} projects.`);
         } catch (dbErr) {
@@ -49,8 +76,8 @@ export async function GET() {
             throw dbErr;
         }
 
-        // Debug console log
-        console.log("API /projects - Found projects:", projects);
+        // Debug summary (no heavy fields)
+        console.log(`API /projects - Found ${projects.length} projects:`, projects.map(p => ({ id: p.id, name: p.name, status: p.status })));
 
         // Explicitly check for array
         if (!Array.isArray(projects)) {

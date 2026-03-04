@@ -39,24 +39,7 @@ export default function EditorPageClient({ project, userTokens = 0, hasBlog = fa
 
     const pageLabel = activePage === 'home' ? 'Početna' : (subpageLabels[activePage] || activePage);
 
-    // Page tabs component
-    const PageTabs = () => hasSubpages ? (
-        <div className="flex items-center gap-1 px-3 py-1.5 overflow-x-auto flex-shrink-0" style={{ background: 'var(--lp-bg)', borderBottom: '1px solid var(--lp-border)' }}>
-            {pages.map(page => (
-                <button
-                    key={page}
-                    onClick={() => setActivePage(page)}
-                    className="px-3 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-all"
-                    style={activePage === page
-                        ? { background: 'var(--lp-heading)', color: 'var(--lp-bg)' }
-                        : { color: 'var(--lp-text-muted)', background: 'transparent' }
-                    }
-                >
-                    {page === 'home' ? 'Početna' : (subpageLabels[page] || page)}
-                </button>
-            ))}
-        </div>
-    ) : null;
+
 
     return (
         <>
@@ -64,13 +47,12 @@ export default function EditorPageClient({ project, userTokens = 0, hasBlog = fa
             {/* Mobile: full height minus header minus bottom tab bar */}
             <div
                 className="h-[calc(100dvh-56px-4.5rem)] md:h-[calc(100dvh-56px)] flex flex-col overflow-hidden"
-                data-landing="true"
-                style={{ background: 'var(--lp-bg)' }}
+                data-dashboard="true"
+                style={{ background: 'var(--db-bg)' }}
             >
                 {/* ── DESKTOP: side-by-side with toggleable chat ── */}
                 <div className="hidden md:flex flex-1 min-h-0 relative">
                     <div className="flex-1 min-w-0 flex flex-col">
-                        <PageTabs />
                         <div className="flex-1 min-h-0">
                             <EditorPreview
                                 html={activeHtml}
@@ -78,6 +60,9 @@ export default function EditorPageClient({ project, userTokens = 0, hasBlog = fa
                                 project={project}
                                 hasBlog={hasBlog}
                                 activePage={activePage}
+                                pages={pages}
+                                setActivePage={setActivePage}
+                                subpageLabels={subpageLabels}
                             />
                         </div>
                     </div>
@@ -99,9 +84,9 @@ export default function EditorPageClient({ project, userTokens = 0, hasBlog = fa
                         onClick={() => setShowDesktopChat(v => !v)}
                         className="absolute bottom-4 z-40 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold shadow-lg transition-all hover:scale-105"
                         style={{
-                            background: showDesktopChat ? 'var(--lp-surface)' : 'var(--lp-heading)',
-                            color: showDesktopChat ? 'var(--lp-text-muted)' : 'var(--lp-bg)',
-                            border: showDesktopChat ? '1px solid var(--lp-border)' : 'none',
+                            background: showDesktopChat ? 'var(--db-surface)' : 'var(--db-heading)',
+                            color: showDesktopChat ? 'var(--db-text-muted)' : 'var(--db-bg)',
+                            border: showDesktopChat ? '1px solid var(--db-border)' : 'none',
                             ...(showDesktopChat
                                 ? { right: 'calc(24rem + 0.75rem)' }
                                 : { right: '0.75rem' }
@@ -120,7 +105,6 @@ export default function EditorPageClient({ project, userTokens = 0, hasBlog = fa
                 <div className="md:hidden flex-1 min-h-0 flex flex-col relative">
                     {/* Preview container (always rendered, but hidden when chat is shown) */}
                     <div className={`flex-1 min-h-0 flex flex-col ${showMobileChat ? 'hidden' : ''}`}>
-                        <PageTabs />
                         <div className="flex-1 min-h-0">
                             <EditorPreview
                                 html={activeHtml}
@@ -128,6 +112,9 @@ export default function EditorPageClient({ project, userTokens = 0, hasBlog = fa
                                 project={project}
                                 hasBlog={hasBlog}
                                 activePage={activePage}
+                                pages={pages}
+                                setActivePage={setActivePage}
+                                subpageLabels={subpageLabels}
                             />
                         </div>
                     </div>
@@ -135,12 +122,12 @@ export default function EditorPageClient({ project, userTokens = 0, hasBlog = fa
                     {/* Chat container (shown when toggle is active) */}
                     {showMobileChat && (
                         <div className="flex-1 min-h-0 flex flex-col">
-                            <div className="flex items-center justify-between px-4 py-3 flex-shrink-0" style={{ borderBottom: '1px solid var(--lp-border)' }}>
-                                <span className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--lp-heading)' }}>
-                                    <MessageSquare size={15} style={{ color: 'var(--lp-text-muted)' }} />
+                            <div className="flex items-center justify-between px-4 py-3 flex-shrink-0" style={{ borderBottom: '1px solid var(--db-border)' }}>
+                                <span className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--db-heading)' }}>
+                                    <MessageSquare size={15} style={{ color: 'var(--db-text-muted)' }} />
                                     AI Editor
                                     {activePage !== 'home' && (
-                                        <span className="text-xs font-normal px-1.5 py-0.5 rounded" style={{ background: 'var(--lp-surface)', color: 'var(--lp-text-muted)' }}>
+                                        <span className="text-xs font-normal px-1.5 py-0.5 rounded" style={{ background: 'var(--db-surface)', color: 'var(--db-text-muted)' }}>
                                             {pageLabel}
                                         </span>
                                     )}
@@ -148,7 +135,7 @@ export default function EditorPageClient({ project, userTokens = 0, hasBlog = fa
                                 <button
                                     onClick={() => setShowMobileChat(false)}
                                     className="flex items-center gap-1.5 text-sm transition-colors hover:opacity-80"
-                                    style={{ color: 'var(--lp-text-muted)' }}
+                                    style={{ color: 'var(--db-text-muted)' }}
                                 >
                                     <Eye size={14} />
                                     Stranica
@@ -170,8 +157,8 @@ export default function EditorPageClient({ project, userTokens = 0, hasBlog = fa
                         onClick={() => setShowMobileChat(v => !v)}
                         className="absolute bottom-3 right-3 z-40 flex items-center gap-2 px-4 py-2.5 rounded-2xl font-semibold text-xs shadow-2xl transition-all active:scale-95"
                         style={showMobileChat
-                            ? { background: 'var(--lp-surface)', color: 'var(--lp-heading)', border: '1px solid var(--lp-border)' }
-                            : { background: 'var(--lp-heading)', color: 'var(--lp-bg)', border: 'none' }
+                            ? { background: 'var(--db-surface)', color: 'var(--db-heading)', border: '1px solid var(--db-border)' }
+                            : { background: 'var(--db-heading)', color: 'var(--db-bg)', border: 'none' }
                         }
                     >
                         {showMobileChat ? <><Eye size={14} /> Stranica</> : <><MessageSquare size={14} /> AI Chat</>}

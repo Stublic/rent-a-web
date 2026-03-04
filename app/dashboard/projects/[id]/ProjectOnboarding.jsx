@@ -129,13 +129,13 @@ export default function ProjectOnboarding({ projectId }) {
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
                 transition={{ type: "spring", damping: 25, stiffness: 300 }}
                 className="relative w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col"
-                style={{ background: 'var(--lp-bg-alt)', border: '1px solid var(--lp-border)' }}
+                style={{ background: 'var(--db-bg-alt)', border: '1px solid var(--db-border)' }}
             >
                 {/* Close Button */}
                 <button 
                     onClick={handleClose}
                     className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/10 transition-colors z-10"
-                    style={{ color: 'var(--lp-text-muted)' }}
+                    style={{ color: 'var(--db-text-muted)' }}
                 >
                     <X size={18} />
                 </button>
@@ -156,10 +156,10 @@ export default function ProjectOnboarding({ projectId }) {
                         >
                             <Icon size={32} />
                         </div>
-                        <h2 className="text-xl sm:text-2xl font-bold mb-3" style={{ color: 'var(--lp-heading)' }}>
+                        <h2 className="text-xl sm:text-2xl font-bold mb-3" style={{ color: 'var(--db-heading)' }}>
                             {stepInfo.title}
                         </h2>
-                        <p className="text-sm leading-relaxed" style={{ color: 'var(--lp-text-secondary)' }}>
+                        <p className="text-sm leading-relaxed" style={{ color: 'var(--db-text-secondary)' }}>
                             {stepInfo.description}
                         </p>
                     </motion.div>
@@ -173,7 +173,7 @@ export default function ProjectOnboarding({ projectId }) {
                             className="h-1.5 rounded-full transition-all duration-300"
                             style={{ 
                                 width: i === currentStep ? '24px' : '6px',
-                                background: i === currentStep ? 'var(--lp-heading)' : 'var(--lp-border)'
+                                background: i === currentStep ? 'var(--db-heading)' : 'var(--db-border)'
                             }}
                         />
                     ))}
@@ -185,7 +185,7 @@ export default function ProjectOnboarding({ projectId }) {
                         <button 
                             onClick={prevStep}
                             className="px-5 py-3 rounded-xl font-bold text-sm transition-all hover:bg-white/5"
-                            style={{ color: 'var(--lp-text-secondary)', border: '1px solid var(--lp-border)' }}
+                            style={{ color: 'var(--db-text-secondary)', border: '1px solid var(--db-border)' }}
                         >
                             Natrag
                         </button>
@@ -195,8 +195,8 @@ export default function ProjectOnboarding({ projectId }) {
                         onClick={nextStep}
                         className="flex-1 px-5 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] text-sm"
                         style={{ 
-                            background: isLast ? '#10b981' : 'var(--lp-heading)', 
-                            color: isLast ? '#fff' : 'var(--lp-bg)' 
+                            background: isLast ? '#10b981' : 'var(--db-heading)', 
+                            color: isLast ? '#fff' : 'var(--db-bg)' 
                         }}
                     >
                         {isLast ? (

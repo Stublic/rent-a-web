@@ -15,8 +15,8 @@ export async function GET(req: Request) {
 
         const isAdmin = (session.user as any).role === 'ADMIN';
         const project = isAdmin
-            ? await prisma.project.findUnique({ where: { id: projectId }, select: { id: true, name: true, contactEmail: true, contentData: true, planName: true, reactFiles: true, generatedHtml: true } })
-            : await prisma.project.findFirst({ where: { id: projectId, userId: session.user.id }, select: { id: true, name: true, contactEmail: true, contentData: true, planName: true, reactFiles: true, generatedHtml: true } });
+            ? await prisma.project.findUnique({ where: { id: projectId }, select: { id: true, name: true, contactEmail: true, contentData: true, planName: true, reactFiles: true, generatedHtml: true, buyoutStatus: true, stripeSubscriptionId: true } })
+            : await prisma.project.findFirst({ where: { id: projectId, userId: session.user.id }, select: { id: true, name: true, contactEmail: true, contentData: true, planName: true, reactFiles: true, generatedHtml: true, buyoutStatus: true, stripeSubscriptionId: true } });
 
         if (!project) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
@@ -42,7 +42,7 @@ export async function GET(req: Request) {
             autoSeo[key] = extractMeta(rf[key]);
         }
 
-        return NextResponse.json({ contactEmail: project.contactEmail ?? '', seoSettings, planName: project.planName || '', projectName: project.name || '', subpageKeys, autoSeo });
+        return NextResponse.json({ contactEmail: project.contactEmail ?? '', seoSettings, planName: project.planName || '', projectName: project.name || '', subpageKeys, autoSeo, buyoutStatus: project.buyoutStatus || 'NONE', hasSubscription: !!project.stripeSubscriptionId });
     } catch (err) {
         console.error('GET project-settings error:', err);
         return NextResponse.json({ error: 'Server error' }, { status: 500 });

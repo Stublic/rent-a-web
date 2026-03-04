@@ -187,8 +187,8 @@ export default function TypographySection({ watch, setValue }) {
                             onClick={() => selectPair(pair.id)}
                             className="group relative rounded-xl overflow-hidden transition-all hover:scale-[1.01] active:scale-[0.99] text-left"
                             style={{
-                                border: isSelected ? '2px solid rgba(34,197,94,0.5)' : '1px solid var(--lp-border)',
-                                background: 'var(--lp-surface)',
+                                border: isSelected ? '2px solid rgba(34,197,94,0.5)' : '1px solid var(--db-border)',
+                                background: 'var(--db-surface)',
                             }}
                         >
                             {pair.isAuto ? (
@@ -199,10 +199,10 @@ export default function TypographySection({ watch, setValue }) {
                                         <Sparkles size={18} className="text-white" />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <span className="text-sm font-semibold block" style={{ color: isSelected ? '#A78BFA' : 'var(--lp-heading)' }}>
+                                        <span className="text-sm font-semibold block" style={{ color: isSelected ? '#A78BFA' : 'var(--db-heading)' }}>
                                             AI odabire fontove
                                         </span>
-                                        <span className="text-[11px]" style={{ color: 'var(--lp-text-muted)' }}>
+                                        <span className="text-[11px]" style={{ color: 'var(--db-text-muted)' }}>
                                             {pair.mood}
                                         </span>
                                     </div>
@@ -217,20 +217,20 @@ export default function TypographySection({ watch, setValue }) {
                                 <div>
                                     {/* Font preview */}
                                     <div className="px-4 pt-3.5 pb-2">
-                                        <div className="text-lg font-bold leading-tight truncate" style={{ fontFamily: `'${pair.heading}', sans-serif`, color: 'var(--lp-heading)' }}>
+                                        <div className="text-lg font-bold leading-tight truncate" style={{ fontFamily: `'${pair.heading}', sans-serif`, color: 'var(--db-heading)' }}>
                                             Naslov stranice
                                         </div>
-                                        <div className="text-xs mt-1 leading-relaxed" style={{ fontFamily: `'${pair.body}', sans-serif`, color: 'var(--lp-text-secondary)' }}>
+                                        <div className="text-xs mt-1 leading-relaxed" style={{ fontFamily: `'${pair.body}', sans-serif`, color: 'var(--db-text-secondary)' }}>
                                             Ovo je primjer teksta koji se koristi na web stranici za opise i ostali sadržaj.
                                         </div>
                                     </div>
                                     {/* Label bar */}
-                                    <div className="px-4 py-2 flex items-center justify-between" style={{ borderTop: '1px solid var(--lp-border)' }}>
+                                    <div className="px-4 py-2 flex items-center justify-between" style={{ borderTop: '1px solid var(--db-border)' }}>
                                         <div className="min-w-0">
-                                            <span className="text-xs font-semibold block truncate" style={{ color: 'var(--lp-heading)' }}>
+                                            <span className="text-xs font-semibold block truncate" style={{ color: 'var(--db-heading)' }}>
                                                 {pair.name}
                                             </span>
-                                            <span className="text-[10px] block truncate" style={{ color: 'var(--lp-text-muted)' }}>
+                                            <span className="text-[10px] block truncate" style={{ color: 'var(--db-text-muted)' }}>
                                                 {pair.heading}{pair.heading !== pair.body ? ` + ${pair.body}` : ''} · {pair.mood}
                                             </span>
                                         </div>

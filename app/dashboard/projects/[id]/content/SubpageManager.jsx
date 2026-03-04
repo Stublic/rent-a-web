@@ -86,29 +86,29 @@ function SubpageGeneratingOverlay({ seconds, pageName }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.93)', backdropFilter: 'blur(12px)' }}>
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
                 className="rounded-3xl max-w-md w-full shadow-2xl overflow-hidden"
-                style={{ background: 'var(--lp-bg-alt)', border: '1px solid rgba(139,92,246,0.2)' }}>
+                style={{ background: 'var(--db-bg-alt)', border: '1px solid rgba(139,92,246,0.2)' }}>
                 <div className="px-6 pt-6 pb-4 text-center">
                     <div className="relative inline-flex items-center justify-center w-16 h-16 mb-4">
                         <div className="absolute inset-0 rounded-full animate-pulse" style={{ background: 'rgba(139,92,246,0.15)' }} />
                         <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#a78bfa' }} />
                     </div>
-                    <h3 className="text-lg font-bold" style={{ color: 'var(--lp-heading)' }}>Generiranje: {pageName}</h3>
-                    <p className="text-xs mt-1" style={{ color: 'var(--lp-text-muted)' }}>Generiranje traje u prosjeku 3–5 minuta.</p>
+                    <h3 className="text-lg font-bold" style={{ color: 'var(--db-heading)' }}>Generiranje: {pageName}</h3>
+                    <p className="text-xs mt-1" style={{ color: 'var(--db-text-muted)' }}>Generiranje traje u prosjeku 3–5 minuta.</p>
                 </div>
-                <div className="mx-6 mb-4 rounded-2xl px-5 py-3 flex items-center justify-between" style={{ background: 'var(--lp-surface)', border: '1px solid var(--lp-border)' }}>
+                <div className="mx-6 mb-4 rounded-2xl px-5 py-3 flex items-center justify-between" style={{ background: 'var(--db-surface)', border: '1px solid var(--db-border)' }}>
                     <div className="flex items-center gap-2.5">
                         <motion.span key={phase.icon} initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-xl">{phase.icon}</motion.span>
-                        <motion.p key={phase.label} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} className="text-xs font-medium" style={{ color: 'var(--lp-text-secondary)' }}>{phase.label}</motion.p>
+                        <motion.p key={phase.label} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} className="text-xs font-medium" style={{ color: 'var(--db-text-secondary)' }}>{phase.label}</motion.p>
                     </div>
                     <p className="text-2xl font-bold tabular-nums" style={{ color: '#a78bfa' }}>{seconds}s</p>
                 </div>
                 <div className="mx-6 mb-4">
-                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--lp-surface)' }}>
+                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--db-surface)' }}>
                         <motion.div className="h-full rounded-full" style={{ background: 'linear-gradient(90deg, #7c3aed, #a78bfa)' }} initial={{ width: '0%' }} animate={{ width: `${progress}%` }} transition={{ duration: 1, ease: 'linear' }} />
                     </div>
                     <div className="flex justify-between mt-1">
-                        <span className="text-[10px]" style={{ color: 'var(--lp-text-muted)' }}>Generiranje u tijeku</span>
-                        <span className="text-[10px]" style={{ color: 'var(--lp-text-muted)' }}>{seconds > 180 ? 'Koristi se jači model...' : '~3-5 min prosječno'}</span>
+                        <span className="text-[10px]" style={{ color: 'var(--db-text-muted)' }}>Generiranje u tijeku</span>
+                        <span className="text-[10px]" style={{ color: 'var(--db-text-muted)' }}>{seconds > 180 ? 'Koristi se jači model...' : '~3-5 min prosječno'}</span>
                     </div>
                 </div>
                 <div className="mx-6 mb-4 space-y-1.5">
@@ -119,7 +119,7 @@ function SubpageGeneratingOverlay({ seconds, pageName }) {
                             <div key={i} className="flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all"
                                 style={{ background: isActive ? 'rgba(139,92,246,0.08)' : isDone ? 'rgba(139,92,246,0.05)' : 'transparent', border: isActive ? '1px solid rgba(139,92,246,0.2)' : '1px solid transparent' }}>
                                 <span className="text-sm w-5 text-center flex-shrink-0">{isDone ? '✅' : isActive ? '⏳' : '○'}</span>
-                                <span className="text-xs" style={{ color: isActive ? 'var(--lp-heading)' : isDone ? 'var(--lp-text-secondary)' : 'var(--lp-text-muted)' }}>{p.label}</span>
+                                <span className="text-xs" style={{ color: isActive ? 'var(--db-heading)' : isDone ? 'var(--db-text-secondary)' : 'var(--db-text-muted)' }}>{p.label}</span>
                             </div>
                         );
                     })}
@@ -278,13 +278,13 @@ export default function SubpageManager({ project }) {
             )}
 
             {/* ─── Predefined Subpages ─── */}
-            <div className="rounded-2xl p-5 mb-4" style={{ background: 'var(--lp-surface)', border: '1px solid var(--lp-border)' }}>
+            <div className="rounded-2xl p-5 mb-4" style={{ background: 'var(--db-surface)', border: '1px solid var(--db-border)' }}>
                 <div className="flex items-center gap-2.5 mb-4">
                     <FileText size={18} style={{ color: '#a78bfa' }} />
-                    <h3 className="font-bold text-sm" style={{ color: 'var(--lp-heading)' }}>Podstranice</h3>
+                    <h3 className="font-bold text-sm" style={{ color: 'var(--db-heading)' }}>Podstranice</h3>
                     <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: 'rgba(139,92,246,0.1)', color: '#a78bfa' }}>Advanced</span>
                 </div>
-                <p className="text-xs mb-4" style={{ color: 'var(--lp-text-muted)' }}>
+                <p className="text-xs mb-4" style={{ color: 'var(--db-text-muted)' }}>
                     Odaberite koje podstranice želite za vašu web stranicu. Svaka se generira zasebno prema dizajnu naslovne.
                 </p>
 
@@ -297,14 +297,14 @@ export default function SubpageManager({ project }) {
                             <div key={page.slug}
                                 className="flex items-center justify-between gap-4 px-4 py-3 rounded-xl transition-all"
                                 style={{
-                                    background: isGenerated ? 'rgba(34,197,94,0.05)' : 'var(--lp-bg)',
-                                    border: isGenerated ? '1px solid rgba(34,197,94,0.15)' : '1px solid var(--lp-border)'
+                                    background: isGenerated ? 'rgba(34,197,94,0.05)' : 'var(--db-bg)',
+                                    border: isGenerated ? '1px solid rgba(34,197,94,0.15)' : '1px solid var(--db-border)'
                                 }}>
                                 <div className="flex items-center gap-3 min-w-0">
                                     <span className="text-xl flex-shrink-0">{page.icon}</span>
                                     <div className="min-w-0">
-                                        <p className="text-sm font-semibold" style={{ color: 'var(--lp-heading)' }}>{page.label}</p>
-                                        <p className="text-[11px] truncate" style={{ color: 'var(--lp-text-muted)' }}>{page.description}</p>
+                                        <p className="text-sm font-semibold" style={{ color: 'var(--db-heading)' }}>{page.label}</p>
+                                        <p className="text-[11px] truncate" style={{ color: 'var(--db-text-muted)' }}>{page.description}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2 flex-shrink-0">
@@ -319,7 +319,7 @@ export default function SubpageManager({ project }) {
                                                 className="p-1.5 rounded-lg transition-colors hover:bg-white/5 disabled:opacity-40"
                                                 title="Regeneriraj"
                                             >
-                                                <RefreshCw size={14} style={{ color: 'var(--lp-text-muted)' }} />
+                                                <RefreshCw size={14} style={{ color: 'var(--db-text-muted)' }} />
                                             </button>
                                         </>
                                     ) : (
@@ -341,8 +341,8 @@ export default function SubpageManager({ project }) {
 
                 {/* Custom generated subpages */}
                 {customSubpagesList.length > 0 && (
-                    <div className="mt-4 pt-4 space-y-2.5" style={{ borderTop: '1px solid var(--lp-border)' }}>
-                        <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: 'var(--lp-text-muted)' }}>Vaše podstranice</p>
+                    <div className="mt-4 pt-4 space-y-2.5" style={{ borderTop: '1px solid var(--db-border)' }}>
+                        <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: 'var(--db-text-muted)' }}>Vaše podstranice</p>
                         {customSubpagesList.map(page => {
                             const isGenerated = !!existingSubpages[page.slug];
                             return (
@@ -355,8 +355,8 @@ export default function SubpageManager({ project }) {
                                     <div className="flex items-center gap-3 min-w-0">
                                         <span className="text-xl flex-shrink-0">✨</span>
                                         <div className="min-w-0">
-                                            <p className="text-sm font-semibold" style={{ color: 'var(--lp-heading)' }}>{page.title}</p>
-                                            <p className="text-[11px] truncate" style={{ color: 'var(--lp-text-muted)' }}>/{page.slug} • {page.sections?.length || 0} sekcija</p>
+                                            <p className="text-sm font-semibold" style={{ color: 'var(--db-heading)' }}>{page.title}</p>
+                                            <p className="text-[11px] truncate" style={{ color: 'var(--db-text-muted)' }}>/{page.slug} • {page.sections?.length || 0} sekcija</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2 flex-shrink-0">
@@ -371,7 +371,7 @@ export default function SubpageManager({ project }) {
                                             className="p-1.5 rounded-lg transition-colors hover:bg-white/5 disabled:opacity-40"
                                             title="Regeneriraj"
                                         >
-                                            <RefreshCw size={14} style={{ color: 'var(--lp-text-muted)' }} />
+                                            <RefreshCw size={14} style={{ color: 'var(--db-text-muted)' }} />
                                         </button>
                                         <button
                                             onClick={() => setDeleteConfirm({ slug: page.slug, title: page.title })}
@@ -379,7 +379,7 @@ export default function SubpageManager({ project }) {
                                             className="p-1.5 rounded-lg transition-colors hover:bg-red-500/10 disabled:opacity-40"
                                             title="Obriši"
                                         >
-                                            <Trash2 size={14} style={{ color: 'var(--lp-text-muted)' }} />
+                                            <Trash2 size={14} style={{ color: 'var(--db-text-muted)' }} />
                                         </button>
                                     </div>
                                 </div>
@@ -390,7 +390,7 @@ export default function SubpageManager({ project }) {
             </div>
 
             {/* ─── Custom Subpage Creator ─── */}
-            <div className="rounded-2xl overflow-hidden mb-6" style={{ background: 'var(--lp-surface)', border: '1px solid var(--lp-border)' }}>
+            <div className="rounded-2xl overflow-hidden mb-6" style={{ background: 'var(--db-surface)', border: '1px solid var(--db-border)' }}>
                 <button
                     type="button"
                     onClick={() => setShowCreator(!showCreator)}
@@ -402,12 +402,12 @@ export default function SubpageManager({ project }) {
                             <Sparkles size={16} style={{ color: '#a78bfa' }} />
                         </div>
                         <div className="text-left">
-                            <h3 className="text-sm font-bold" style={{ color: 'var(--lp-heading)' }}>Kreiraj vlastitu podstranicu</h3>
-                            <p className="text-[11px]" style={{ color: 'var(--lp-text-muted)' }}>Odaberite naslov i sekcije — AI generira stranicu po mjeri</p>
+                            <h3 className="text-sm font-bold" style={{ color: 'var(--db-heading)' }}>Kreiraj vlastitu podstranicu</h3>
+                            <p className="text-[11px]" style={{ color: 'var(--db-text-muted)' }}>Odaberite naslov i sekcije — AI generira stranicu po mjeri</p>
                         </div>
                     </div>
                     <motion.div animate={{ rotate: showCreator ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                        <ChevronDown size={16} style={{ color: 'var(--lp-text-muted)' }} />
+                        <ChevronDown size={16} style={{ color: 'var(--db-text-muted)' }} />
                     </motion.div>
                 </button>
 
@@ -420,20 +420,20 @@ export default function SubpageManager({ project }) {
                             transition={{ duration: 0.25 }}
                             style={{ overflow: 'hidden' }}
                         >
-                            <div className="px-5 pb-5 space-y-4" style={{ borderTop: '1px solid var(--lp-border)' }}>
+                            <div className="px-5 pb-5 space-y-4" style={{ borderTop: '1px solid var(--db-border)' }}>
                                 {/* Title input */}
                                 <div className="pt-4 space-y-1.5">
-                                    <label className="text-xs font-semibold" style={{ color: 'var(--lp-text-secondary)' }}>Naslov podstranice</label>
+                                    <label className="text-xs font-semibold" style={{ color: 'var(--db-text-secondary)' }}>Naslov podstranice</label>
                                     <input
                                         type="text"
                                         value={customTitle}
                                         onChange={e => setCustomTitle(e.target.value)}
                                         placeholder="npr. Cjenik, Galerija, Naš Tim, Rezervacije..."
                                         className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500/30"
-                                        style={{ background: 'var(--lp-bg)', border: '1px solid var(--lp-border)', color: 'var(--lp-heading)' }}
+                                        style={{ background: 'var(--db-bg)', border: '1px solid var(--db-border)', color: 'var(--db-heading)' }}
                                     />
                                     {customSlug && (
-                                        <p className="text-[11px] flex items-center gap-1" style={{ color: slugConflict ? '#f87171' : 'var(--lp-text-muted)' }}>
+                                        <p className="text-[11px] flex items-center gap-1" style={{ color: slugConflict ? '#f87171' : 'var(--db-text-muted)' }}>
                                             URL: /{customSlug}
                                             {slugConflict && <span className="text-red-400 font-medium"> — već postoji!</span>}
                                         </p>
@@ -457,7 +457,7 @@ export default function SubpageManager({ project }) {
 
                                 {/* Section picker grid */}
                                 <div className="space-y-2">
-                                    <label className="text-xs font-semibold" style={{ color: 'var(--lp-text-secondary)' }}>
+                                    <label className="text-xs font-semibold" style={{ color: 'var(--db-text-secondary)' }}>
                                         Odaberite sekcije ({selectedSections.size} odabrano)
                                     </label>
                                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
@@ -470,16 +470,16 @@ export default function SubpageManager({ project }) {
                                                     onClick={() => toggleSection(section.id)}
                                                     className="flex items-start gap-2.5 p-3 rounded-xl text-left transition-all hover:scale-[1.02]"
                                                     style={{
-                                                        background: isSelected ? 'rgba(139,92,246,0.08)' : 'var(--lp-bg)',
-                                                        border: isSelected ? '1px solid rgba(139,92,246,0.3)' : '1px solid var(--lp-border)',
+                                                        background: isSelected ? 'rgba(139,92,246,0.08)' : 'var(--db-bg)',
+                                                        border: isSelected ? '1px solid rgba(139,92,246,0.3)' : '1px solid var(--db-border)',
                                                     }}
                                                 >
                                                     <span className="text-lg flex-shrink-0 mt-0.5">{section.icon}</span>
                                                     <div className="min-w-0">
-                                                        <p className="text-xs font-semibold leading-tight" style={{ color: isSelected ? '#c4b5fd' : 'var(--lp-heading)' }}>
+                                                        <p className="text-xs font-semibold leading-tight" style={{ color: isSelected ? '#c4b5fd' : 'var(--db-heading)' }}>
                                                             {section.label}
                                                         </p>
-                                                        <p className="text-[10px] leading-tight mt-0.5" style={{ color: 'var(--lp-text-muted)' }}>
+                                                        <p className="text-[10px] leading-tight mt-0.5" style={{ color: 'var(--db-text-muted)' }}>
                                                             {section.desc}
                                                         </p>
                                                     </div>
@@ -494,7 +494,7 @@ export default function SubpageManager({ project }) {
 
                                 {/* Generate button */}
                                 <div className="flex items-center justify-between pt-2">
-                                    <p className="text-[11px]" style={{ color: 'var(--lp-text-muted)' }}>
+                                    <p className="text-[11px]" style={{ color: 'var(--db-text-muted)' }}>
                                         {selectedSections.size === 0 ? 'Odaberite barem jednu sekciju' : `${selectedSections.size} sekcija odabrano`}
                                     </p>
                                     <button
@@ -517,13 +517,13 @@ export default function SubpageManager({ project }) {
             {/* ─── Regeneration confirmation modal ─── */}
             {regenConfirm && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}>
-                    <div className="rounded-2xl max-w-sm w-full p-6" style={{ background: 'var(--lp-bg-alt)', border: '1px solid var(--lp-border)' }}>
+                    <div className="rounded-2xl max-w-sm w-full p-6" style={{ background: 'var(--db-bg-alt)', border: '1px solid var(--db-border)' }}>
                         <div className="flex items-center gap-2 mb-3">
                             <RefreshCw size={18} style={{ color: '#a78bfa' }} />
-                            <h3 className="font-bold text-sm" style={{ color: 'var(--lp-heading)' }}>Regeneriraj: {regenConfirm.label}</h3>
+                            <h3 className="font-bold text-sm" style={{ color: 'var(--db-heading)' }}>Regeneriraj: {regenConfirm.label}</h3>
                         </div>
                         <div className="space-y-2 mb-4">
-                            <p className="text-xs" style={{ color: 'var(--lp-text-secondary)' }}>
+                            <p className="text-xs" style={{ color: 'var(--db-text-secondary)' }}>
                                 Regeneriranjem će se postojeća <strong>{regenConfirm.label}</strong> stranica zamijeniti potpuno novom verzijom.
                             </p>
                             <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.15)' }}>
@@ -574,7 +574,7 @@ export default function SubpageManager({ project }) {
                             <button
                                 onClick={() => { setRegenConfirm(null); }}
                                 className="px-4 py-2 text-xs font-medium rounded-xl transition-colors"
-                                style={{ color: 'var(--lp-text-muted)' }}
+                                style={{ color: 'var(--db-text-muted)' }}
                             >
                                 Odustani
                             </button>
@@ -586,12 +586,12 @@ export default function SubpageManager({ project }) {
             {/* ─── Delete confirmation modal ─── */}
             {deleteConfirm && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}>
-                    <div className="rounded-2xl max-w-sm w-full p-6" style={{ background: 'var(--lp-bg-alt)', border: '1px solid var(--lp-border)' }}>
+                    <div className="rounded-2xl max-w-sm w-full p-6" style={{ background: 'var(--db-bg-alt)', border: '1px solid var(--db-border)' }}>
                         <div className="flex items-center gap-2 mb-3">
                             <Trash2 size={18} style={{ color: '#f87171' }} />
-                            <h3 className="font-bold text-sm" style={{ color: 'var(--lp-heading)' }}>Obriši: {deleteConfirm.title}</h3>
+                            <h3 className="font-bold text-sm" style={{ color: 'var(--db-heading)' }}>Obriši: {deleteConfirm.title}</h3>
                         </div>
-                        <p className="text-xs mb-4" style={{ color: 'var(--lp-text-secondary)' }}>
+                        <p className="text-xs mb-4" style={{ color: 'var(--db-text-secondary)' }}>
                             Jeste li sigurni da želite obrisati podstranicu <strong>"{deleteConfirm.title}"</strong>? Ova akcija se ne može poništiti.
                         </p>
                         <div className="flex items-center gap-2">
@@ -606,7 +606,7 @@ export default function SubpageManager({ project }) {
                             <button
                                 onClick={() => setDeleteConfirm(null)}
                                 className="px-4 py-2 text-xs font-medium rounded-xl transition-colors"
-                                style={{ color: 'var(--lp-text-muted)' }}
+                                style={{ color: 'var(--db-text-muted)' }}
                             >
                                 Odustani
                             </button>

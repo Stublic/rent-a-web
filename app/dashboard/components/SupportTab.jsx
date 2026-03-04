@@ -45,7 +45,7 @@ function TicketDetail({ ticketId, onClose }) {
     if (loading) {
         return (
             <div className="flex items-center justify-center py-12">
-                <RefreshCw size={20} className="animate-spin" style={{ color: 'var(--lp-text-muted)' }} />
+                <RefreshCw size={20} className="animate-spin" style={{ color: 'var(--db-text-muted)' }} />
             </div>
         );
     }
@@ -55,16 +55,16 @@ function TicketDetail({ ticketId, onClose }) {
     const status = STATUS_CONFIG[ticket.status] || STATUS_CONFIG.OPEN;
 
     return (
-        <div className="rounded-2xl p-5" style={{ background: 'var(--lp-surface)', border: '1px solid var(--lp-border)' }}>
+        <div className="rounded-2xl p-5" style={{ background: 'var(--db-surface)', border: '1px solid var(--db-border)' }}>
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
                 <div>
-                    <h3 className="font-bold text-sm" style={{ color: 'var(--lp-heading)' }}>{ticket.subject}</h3>
-                    <p className="text-xs mt-0.5" style={{ color: 'var(--lp-text-muted)' }}>
+                    <h3 className="font-bold text-sm" style={{ color: 'var(--db-heading)' }}>{ticket.subject}</h3>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--db-text-muted)' }}>
                         {new Date(ticket.createdAt).toLocaleDateString('hr-HR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </p>
                 </div>
-                <button onClick={onClose} className="text-xs px-3 py-1.5 rounded-lg transition-colors hover:bg-white/5" style={{ color: 'var(--lp-text-muted)' }}>
+                <button onClick={onClose} className="text-xs px-3 py-1.5 rounded-lg transition-colors hover:bg-white/5" style={{ color: 'var(--db-text-muted)' }}>
                     ← Natrag
                 </button>
             </div>
@@ -79,8 +79,8 @@ function TicketDetail({ ticketId, onClose }) {
                             <div
                                 className="max-w-[80%] rounded-2xl px-4 py-3 text-sm"
                                 style={{
-                                    background: isUser ? 'var(--lp-accent, #22c55e)' : isAdmin ? '#7c3aed' : 'rgba(255,255,255,0.05)',
-                                    color: isUser || isAdmin ? 'white' : 'var(--lp-text-secondary)',
+                                    background: isUser ? 'var(--db-accent, #22c55e)' : isAdmin ? '#7c3aed' : 'rgba(255,255,255,0.05)',
+                                    color: isUser || isAdmin ? 'white' : 'var(--db-text-secondary)',
                                     borderBottomRightRadius: isUser ? '4px' : undefined,
                                     borderBottomLeftRadius: !isUser ? '4px' : undefined,
                                 }}
@@ -104,15 +104,15 @@ function TicketDetail({ ticketId, onClose }) {
                         className="flex-1 px-4 py-2.5 rounded-xl text-sm outline-none transition-all"
                         style={{
                             background: 'rgba(255,255,255,0.05)',
-                            border: '1px solid var(--lp-border)',
-                            color: 'var(--lp-heading)',
+                            border: '1px solid var(--db-border)',
+                            color: 'var(--db-heading)',
                         }}
                     />
                     <button
                         type="submit"
                         disabled={sending || !reply.trim()}
                         className="px-4 py-2.5 rounded-xl font-medium text-sm flex items-center gap-2 transition-all disabled:opacity-40"
-                        style={{ background: 'var(--lp-accent, #22c55e)', color: 'white' }}
+                        style={{ background: 'var(--db-accent, #22c55e)', color: 'white' }}
                     >
                         <Send size={14} />
                     </button>
@@ -150,32 +150,32 @@ export default function SupportTab() {
         <div>
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h2 className="text-xl font-bold" style={{ color: 'var(--lp-heading)' }}>Podrška & Ticketi</h2>
-                    <p className="text-sm mt-1" style={{ color: 'var(--lp-text-muted)' }}>
+                    <h2 className="text-xl font-bold" style={{ color: 'var(--db-heading)' }}>Podrška & Ticketi</h2>
+                    <p className="text-sm mt-1" style={{ color: 'var(--db-text-muted)' }}>
                         Vaši prethodni razgovori s podrškom i eskalirani problemi.
                     </p>
                 </div>
-                <button onClick={loadTickets} className="p-2 rounded-xl hover:bg-white/5 transition-colors" style={{ color: 'var(--lp-text-muted)' }}>
+                <button onClick={loadTickets} className="p-2 rounded-xl hover:bg-white/5 transition-colors" style={{ color: 'var(--db-text-muted)' }}>
                     <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
                 </button>
             </div>
 
             {loading && tickets.length === 0 ? (
                 <div className="flex items-center justify-center py-16">
-                    <RefreshCw size={20} className="animate-spin" style={{ color: 'var(--lp-text-muted)' }} />
+                    <RefreshCw size={20} className="animate-spin" style={{ color: 'var(--db-text-muted)' }} />
                 </div>
             ) : tickets.length === 0 ? (
                 <div className="flex items-center justify-center py-16">
                     <div className="text-center max-w-sm">
                         <div
                             className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-                            style={{ background: 'var(--lp-surface)', border: '1px solid var(--lp-border)' }}
+                            style={{ background: 'var(--db-surface)', border: '1px solid var(--db-border)' }}
                         >
-                            <MessageSquare size={28} strokeWidth={1.5} style={{ color: 'var(--lp-text-muted)' }} />
+                            <MessageSquare size={28} strokeWidth={1.5} style={{ color: 'var(--db-text-muted)' }} />
                         </div>
-                        <h3 className="font-bold mb-2" style={{ color: 'var(--lp-heading)' }}>Nema ticketa</h3>
-                        <p className="text-sm" style={{ color: 'var(--lp-text-muted)' }}>
-                            Koristite AI chat (ikona 💬 dolje desno) za pitanja i pomoć. Ako AI ne može riješiti vaš problem, automatski će kreirati ticket.
+                        <h3 className="font-bold mb-2" style={{ color: 'var(--db-heading)' }}>Nema ticketa</h3>
+                        <p className="text-sm" style={{ color: 'var(--db-text-muted)' }}>
+                            Koristite AI chat (ikona 💬 dolje lijevo) za pitanja i pomoć. Ako AI ne može riješiti vaš problem, automatski će kreirati ticket.
                         </p>
                     </div>
                 </div>
@@ -191,16 +191,16 @@ export default function SupportTab() {
                                 key={ticket.id}
                                 onClick={() => setSelectedTicketId(ticket.id)}
                                 className="w-full text-left p-4 rounded-xl transition-all hover:scale-[1.01] group"
-                                style={{ background: 'var(--lp-surface)', border: '1px solid var(--lp-border)' }}
+                                style={{ background: 'var(--db-surface)', border: '1px solid var(--db-border)' }}
                             >
                                 <div className="flex items-center justify-between">
                                     <div className="flex-1 min-w-0 mr-3">
                                         <div className="flex items-center gap-2 mb-1">
-                                            <h3 className="font-semibold text-sm truncate" style={{ color: 'var(--lp-heading)' }}>
+                                            <h3 className="font-semibold text-sm truncate" style={{ color: 'var(--db-heading)' }}>
                                                 {ticket.subject}
                                             </h3>
                                         </div>
-                                        <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--lp-text-muted)' }}>
+                                        <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--db-text-muted)' }}>
                                             <span className="flex items-center gap-1">
                                                 <StatusIcon size={12} style={{ color: status.color }} />
                                                 <span style={{ color: status.color }}>{status.label}</span>
@@ -214,7 +214,7 @@ export default function SupportTab() {
                                             <span>{ticket._count?.messages || 0} poruka</span>
                                         </div>
                                     </div>
-                                    <ChevronRight size={16} className="opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: 'var(--lp-text-muted)' }} />
+                                    <ChevronRight size={16} className="opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: 'var(--db-text-muted)' }} />
                                 </div>
                             </button>
                         );

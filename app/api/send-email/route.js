@@ -22,10 +22,10 @@ export async function POST(req) {
     await transporter.sendMail({
       from: process.env.SMTP_FROM,
       to: process.env.ADMIN_EMAIL,
-      subject: `🚀 Novi upit - ${name}`,
+      subject: `📬 Novi kontakt upit s platforme - ${name}`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-          <h2 style="color: #22c55e;">Novi kontakt upit</h2>
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+          <h2 style="color: #7c3aed;">Novi kontakt upit</h2>
           <table style="width: 100%; border-collapse: collapse;">
             <tr>
               <td style="padding: 10px; border-bottom: 1px solid #eee;"><strong>Ime:</strong></td>
@@ -34,7 +34,7 @@ export async function POST(req) {
             ${company ? `<tr><td style="padding: 10px; border-bottom: 1px solid #eee;"><strong>Tvrtka:</strong></td><td style="padding: 10px; border-bottom: 1px solid #eee;">${company}</td></tr>` : ''}
             <tr>
               <td style="padding: 10px; border-bottom: 1px solid #eee;"><strong>Email:</strong></td>
-              <td style="padding: 10px; border-bottom: 1px solid #eee;"><a href="mailto:${email}">${email}</a></td>
+              <td style="padding: 10px; border-bottom: 1px solid #eee;"><a href="mailto:${email}" style="color: #7c3aed;">${email}</a></td>
             </tr>
             <tr>
               <td style="padding: 10px; border-bottom: 1px solid #eee;"><strong>Telefon:</strong></td>
@@ -53,16 +53,21 @@ export async function POST(req) {
     await transporter.sendMail({
       from: process.env.SMTP_FROM,
       to: email,
-      subject: 'Primili smo vaš upit - Rent a webica',
+      subject: '✨ Zaprimili smo vaš upit',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333 text-align: left;">
-          <h2 style="color: #22c55e;">Hvala na upitu, ${name}!</h2>
-          <p>Primili smo vašu poruku i javit ćemo vam se u roku 24 sata.</p>
-          <div style="margin-top: 30px; padding: 20px; background: #f9fafb; border-left: 4px solid #22c55e;">
-            <strong>Vaša poruka:</strong><br>
-            ${message.replace(/\n/g, '<br>')}
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; color: #333; text-align: left;">
+          <div style="background: linear-gradient(135deg, #7c3aed, #6d28d9); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
+             <h1 style="color: white; margin: 0; font-size: 24px;">✨ Zaprimili smo vaš upit</h1>
           </div>
-          <p style="margin-top: 30px; color: #666;">Srdačan pozdrav,<br><strong>Rent a webica tim</strong></p>
+          <div style="padding: 30px; background: #fafafa; border: 1px solid #e5e5e5; border-top: none; border-radius: 0 0 12px 12px;">
+            <p style="font-size: 16px; margin-top: 0;">Pozdrav ${name},</p>
+            <p style="font-size: 15px; line-height: 1.5;">Hvala vam što ste nas kontaktirali! Uspješno smo zaprimili vašu poruku i naš tim će vam se javiti s konkretnim odgovorom u najkraćem mogućem roku.</p>
+            <div style="margin: 24px 0; padding: 20px; background: #ffffff; border: 1px solid #e5e5e5; border-left: 4px solid #7c3aed; border-radius: 8px;">
+              <strong style="color: #7c3aed;">Vaša poruka:</strong><br><br>
+              <div style="color: #4b5563; line-height: 1.5;">${message.replace(/\n/g, '<br>')}</div>
+            </div>
+            <p style="margin-top: 30px; color: #666; font-size: 15px;">Radujemo se prilici za suradnju!<br><br>Srdačan pozdrav,<br><strong>Rent a webica tim</strong></p>
+          </div>
         </div>
       `,
     });

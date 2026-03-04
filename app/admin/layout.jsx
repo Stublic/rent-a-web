@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Shield, Users, FolderOpen, FileText, BarChart3, LogOut, MessageSquare, Menu, X, Image, Settings, Ticket } from 'lucide-react';
+import { Shield, Users, FolderOpen, FileText, BarChart3, LogOut, MessageSquare, Menu, X, Image, Settings, Ticket, Megaphone } from 'lucide-react';
 import { TabLoader } from '../dashboard/components/DashboardLoader';
 
 export default function AdminLayout({ children }) {
@@ -45,6 +45,7 @@ export default function AdminLayout({ children }) {
         { href: '/admin/feedback', icon: MessageSquare, label: 'Feedback' },
         { href: '/admin/tickets', icon: Ticket, label: 'Ticketi' },
         { href: '/admin/references', icon: Image, label: 'Dizajn Reference' },
+        { href: '/admin/google-ads', icon: Megaphone, label: 'Google Ads' },
         { href: '/admin/settings', icon: Settings, label: 'Postavke' },
     ];
 

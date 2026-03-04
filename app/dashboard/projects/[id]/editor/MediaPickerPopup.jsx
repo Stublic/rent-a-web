@@ -118,17 +118,17 @@ export default function MediaPickerPopup({ projectId, onClose, onMediaSelected, 
             )}
 
             <div className="rounded-2xl max-w-2xl w-full max-h-[80vh] flex flex-col shadow-2xl"
-                style={{ background: 'var(--lp-bg-alt)', border: '1px solid var(--lp-border)' }}
+                style={{ background: 'var(--db-bg-alt)', border: '1px solid var(--db-border)' }}
                 onClick={e => e.stopPropagation()}>
 
                 {/* Header */}
-                <div className="flex items-center justify-between p-5" style={{ borderBottom: '1px solid var(--lp-border)' }}>
+                <div className="flex items-center justify-between p-5" style={{ borderBottom: '1px solid var(--db-border)' }}>
                     <div>
-                        <h3 className="text-base font-bold" style={{ color: 'var(--lp-heading)' }}>Odaberi sliku</h3>
-                        <p className="text-[11px] mt-0.5" style={{ color: 'var(--lp-text-muted)' }}>Odaberite iz knjižnice ili uploadajte novu datoteku</p>
+                        <h3 className="text-base font-bold" style={{ color: 'var(--db-heading)' }}>Odaberi sliku</h3>
+                        <p className="text-[11px] mt-0.5" style={{ color: 'var(--db-text-muted)' }}>Odaberite iz knjižnice ili uploadajte novu datoteku</p>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-lg transition-colors">
-                        <X size={18} style={{ color: 'var(--lp-text-muted)' }} />
+                        <X size={18} style={{ color: 'var(--db-text-muted)' }} />
                     </button>
                 </div>
 
@@ -137,16 +137,16 @@ export default function MediaPickerPopup({ projectId, onClose, onMediaSelected, 
                     <button onClick={() => setTab('library')}
                         className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all"
                         style={tab === 'library'
-                            ? { background: 'var(--lp-heading)', color: 'var(--lp-bg)' }
-                            : { background: 'var(--lp-surface)', border: '1px solid var(--lp-border)', color: 'var(--lp-text-muted)' }
+                            ? { background: 'var(--db-heading)', color: 'var(--db-bg)' }
+                            : { background: 'var(--db-surface)', border: '1px solid var(--db-border)', color: 'var(--db-text-muted)' }
                         }>
                         <FolderOpen size={14} /> Knjižnica
                     </button>
                     <button onClick={() => setTab('upload')}
                         className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all"
                         style={tab === 'upload'
-                            ? { background: 'var(--lp-heading)', color: 'var(--lp-bg)' }
-                            : { background: 'var(--lp-surface)', border: '1px solid var(--lp-border)', color: 'var(--lp-text-muted)' }
+                            ? { background: 'var(--db-heading)', color: 'var(--db-bg)' }
+                            : { background: 'var(--db-surface)', border: '1px solid var(--db-border)', color: 'var(--db-text-muted)' }
                         }>
                         <Upload size={14} /> Upload
                     </button>
@@ -161,12 +161,12 @@ export default function MediaPickerPopup({ projectId, onClose, onMediaSelected, 
                                 <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
                                     placeholder="Pretraži po nazivu..."
                                     className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-white/20"
-                                    style={{ background: 'var(--lp-surface)', border: '1px solid var(--lp-border)', color: 'var(--lp-heading)' }} />
+                                    style={{ background: 'var(--db-surface)', border: '1px solid var(--db-border)', color: 'var(--db-heading)' }} />
                             </div>
 
                             {loading ? (
                                 <div className="flex items-center justify-center py-16">
-                                    <Loader2 size={24} className="animate-spin" style={{ color: 'var(--lp-text-muted)' }} />
+                                    <Loader2 size={24} className="animate-spin" style={{ color: 'var(--db-text-muted)' }} />
                                 </div>
                             ) : filtered.length > 0 ? (
                                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
@@ -174,7 +174,7 @@ export default function MediaPickerPopup({ projectId, onClose, onMediaSelected, 
                                         <button key={item.id} type="button"
                                             onClick={() => { onMediaSelected(item); onClose(); }}
                                             className="group relative aspect-square rounded-xl overflow-hidden border-2 hover:border-emerald-500 transition-all focus:outline-none"
-                                            style={{ borderColor: 'var(--lp-border)' }}>
+                                            style={{ borderColor: 'var(--db-border)' }}>
                                             <img src={item.url} alt={item.filename} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-end">
                                                 <div className="w-full p-2 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
@@ -186,9 +186,9 @@ export default function MediaPickerPopup({ projectId, onClose, onMediaSelected, 
                                 </div>
                             ) : (
                                 <div className="text-center py-16">
-                                    <Image size={28} className="mx-auto mb-3" style={{ color: 'var(--lp-text-muted)' }} />
-                                    <p className="text-sm font-medium" style={{ color: 'var(--lp-text-muted)' }}>{searchQuery ? "Nema rezultata" : "Nema uploadanih slika"}</p>
-                                    <p className="text-xs mt-1" style={{ color: 'var(--lp-text-muted)' }}>{searchQuery ? "Pokušajte s drugim pojmom" : "Prebacite se na Upload tab"}</p>
+                                    <Image size={28} className="mx-auto mb-3" style={{ color: 'var(--db-text-muted)' }} />
+                                    <p className="text-sm font-medium" style={{ color: 'var(--db-text-muted)' }}>{searchQuery ? "Nema rezultata" : "Nema uploadanih slika"}</p>
+                                    <p className="text-xs mt-1" style={{ color: 'var(--db-text-muted)' }}>{searchQuery ? "Pokušajte s drugim pojmom" : "Prebacite se na Upload tab"}</p>
                                 </div>
                             )}
                         </>
@@ -202,22 +202,22 @@ export default function MediaPickerPopup({ projectId, onClose, onMediaSelected, 
 
                             {uploading ? (
                                 <div className="text-center">
-                                    <Loader2 size={32} className="animate-spin mx-auto mb-3" style={{ color: 'var(--lp-accent-green)' }} />
-                                    <p className="text-sm font-semibold" style={{ color: 'var(--lp-heading)' }}>Uploadam...</p>
+                                    <Loader2 size={32} className="animate-spin mx-auto mb-3" style={{ color: 'var(--db-accent-green)' }} />
+                                    <p className="text-sm font-semibold" style={{ color: 'var(--db-heading)' }}>Uploadam...</p>
                                 </div>
                             ) : (
                                 <>
                                     <div className="w-full max-w-sm rounded-2xl p-8 text-center cursor-pointer transition-all hover:scale-[1.02]"
-                                        style={{ border: '2px dashed var(--lp-border)', background: 'var(--lp-surface)' }}
+                                        style={{ border: '2px dashed var(--db-border)', background: 'var(--db-surface)' }}
                                         onClick={() => fileInputRef.current?.click()}>
-                                        <Upload size={32} className="mx-auto mb-3" style={{ color: 'var(--lp-text-muted)' }} />
-                                        <p className="text-sm font-semibold mb-1" style={{ color: 'var(--lp-heading)' }}>
+                                        <Upload size={32} className="mx-auto mb-3" style={{ color: 'var(--db-text-muted)' }} />
+                                        <p className="text-sm font-semibold mb-1" style={{ color: 'var(--db-heading)' }}>
                                             Klikni za upload
                                         </p>
-                                        <p className="text-xs" style={{ color: 'var(--lp-text-muted)' }}>
+                                        <p className="text-xs" style={{ color: 'var(--db-text-muted)' }}>
                                             ili povuci datoteku bilo gdje na ekran
                                         </p>
-                                        <p className="text-[10px] mt-3" style={{ color: 'var(--lp-text-muted)' }}>
+                                        <p className="text-[10px] mt-3" style={{ color: 'var(--db-text-muted)' }}>
                                             JPG, PNG, GIF, WebP • Max 10MB
                                         </p>
                                     </div>

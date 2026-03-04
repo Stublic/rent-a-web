@@ -31,7 +31,7 @@ function RegenerationOverlay({ seconds, styleName }) {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="rounded-3xl max-w-md w-full shadow-2xl overflow-hidden"
-                style={{ background: 'var(--lp-bg-alt)', border: '1px solid rgba(168,85,247,0.25)' }}
+                style={{ background: 'var(--db-bg-alt)', border: '1px solid rgba(168,85,247,0.25)' }}
             >
                 {/* Header */}
                 <div className="px-6 pt-6 pb-4 text-center">
@@ -39,16 +39,16 @@ function RegenerationOverlay({ seconds, styleName }) {
                         <div className="absolute inset-0 rounded-full animate-pulse" style={{ background: 'rgba(168,85,247,0.15)' }} />
                         <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#a855f7' }} />
                     </div>
-                    <h3 className="text-lg font-bold" style={{ color: 'var(--lp-heading)' }}>
+                    <h3 className="text-lg font-bold" style={{ color: 'var(--db-heading)' }}>
                         🎨 Regeneracija u stilu „{styleName}"
                     </h3>
-                    <p className="text-xs mt-1" style={{ color: 'var(--lp-text-muted)' }}>
+                    <p className="text-xs mt-1" style={{ color: 'var(--db-text-muted)' }}>
                         Generiranje traje u prosjeku 3–5 minuta.
                     </p>
                 </div>
 
                 {/* Timer */}
-                <div className="mx-6 mb-4 rounded-2xl px-5 py-3 flex items-center justify-between" style={{ background: 'var(--lp-surface)', border: '1px solid var(--lp-border)' }}>
+                <div className="mx-6 mb-4 rounded-2xl px-5 py-3 flex items-center justify-between" style={{ background: 'var(--db-surface)', border: '1px solid var(--db-border)' }}>
                     <div className="flex items-center gap-2.5">
                         <motion.span
                             key={phase.icon}
@@ -61,7 +61,7 @@ function RegenerationOverlay({ seconds, styleName }) {
                             initial={{ opacity: 0, x: 8 }}
                             animate={{ opacity: 1, x: 0 }}
                             className="text-xs font-medium"
-                            style={{ color: 'var(--lp-text-secondary)' }}
+                            style={{ color: 'var(--db-text-secondary)' }}
                         >{phase.label}</motion.p>
                     </div>
                     <div className="text-right flex-shrink-0 ml-3">
@@ -71,7 +71,7 @@ function RegenerationOverlay({ seconds, styleName }) {
 
                 {/* Progress bar */}
                 <div className="mx-6 mb-4">
-                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--lp-surface)' }}>
+                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--db-surface)' }}>
                         <motion.div
                             className="h-full rounded-full"
                             style={{ background: 'linear-gradient(90deg, #a855f7, #c084fc)' }}
@@ -81,8 +81,8 @@ function RegenerationOverlay({ seconds, styleName }) {
                         />
                     </div>
                     <div className="flex justify-between mt-1">
-                        <span className="text-[10px]" style={{ color: 'var(--lp-text-muted)' }}>Obrada u tijeku</span>
-                        <span className="text-[10px]" style={{ color: 'var(--lp-text-muted)' }}>{seconds > 180 ? 'Koristi se jači model...' : '~3-5 min prosječno'}</span>
+                        <span className="text-[10px]" style={{ color: 'var(--db-text-muted)' }}>Obrada u tijeku</span>
+                        <span className="text-[10px]" style={{ color: 'var(--db-text-muted)' }}>{seconds > 180 ? 'Koristi se jači model...' : '~3-5 min prosječno'}</span>
                     </div>
                 </div>
 
@@ -100,7 +100,7 @@ function RegenerationOverlay({ seconds, styleName }) {
                                 <span className="text-sm w-5 text-center flex-shrink-0">
                                     {isDone ? '✅' : isActive ? '⏳' : '○'}
                                 </span>
-                                <span className="text-xs" style={{ color: isActive ? 'var(--lp-heading)' : isDone ? 'var(--lp-text-secondary)' : 'var(--lp-text-muted)' }}>
+                                <span className="text-xs" style={{ color: isActive ? 'var(--db-heading)' : isDone ? 'var(--db-text-secondary)' : 'var(--db-text-muted)' }}>
                                     {p.label}
                                 </span>
                             </div>
@@ -188,11 +188,11 @@ export default function StyleChanger({ project, userTokens }) {
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
                 <div>
-                    <h3 className="font-bold text-sm flex items-center gap-2" style={{ color: 'var(--lp-heading)' }}>
+                    <h3 className="font-bold text-sm flex items-center gap-2" style={{ color: 'var(--db-heading)' }}>
                         <Palette size={16} className="text-purple-400" />
                         Promijeni vizualni stil
                     </h3>
-                    <p className="text-xs mt-0.5" style={{ color: 'var(--lp-text-muted)' }}>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--db-text-muted)' }}>
                         Generiraj cijelu novu stranicu s istim sadržajem u drugom stilu
                     </p>
                 </div>
@@ -253,9 +253,9 @@ export default function StyleChanger({ project, userTokens }) {
                                 onClick={() => setActiveCategory(cat)}
                                 className="px-2.5 py-1 rounded-full text-xs font-semibold transition-all"
                                 style={{
-                                    background: activeCategory === cat ? 'var(--lp-heading)' : 'var(--lp-surface)',
-                                    color: activeCategory === cat ? 'var(--lp-bg)' : 'var(--lp-text-muted)',
-                                    border: '1px solid var(--lp-border)',
+                                    background: activeCategory === cat ? 'var(--db-heading)' : 'var(--db-surface)',
+                                    color: activeCategory === cat ? 'var(--db-bg)' : 'var(--db-text-muted)',
+                                    border: '1px solid var(--db-border)',
                                 }}
                             >
                                 {cat}
@@ -271,11 +271,11 @@ export default function StyleChanger({ project, userTokens }) {
                                 onClick={() => handleStyleClick(null)}
                                 disabled={!hasEnoughTokens}
                                 className="flex flex-col gap-1 p-3 rounded-xl text-left transition-all disabled:opacity-40"
-                                style={{ border: '1px solid var(--lp-border)', background: 'var(--lp-surface)' }}
+                                style={{ border: '1px solid var(--db-border)', background: 'var(--db-surface)' }}
                             >
                                 <span className="text-lg">🤖</span>
-                                <span className="text-xs font-bold" style={{ color: 'var(--lp-heading)' }}>AI odabir</span>
-                                <span className="text-[10px]" style={{ color: 'var(--lp-text-muted)' }}>AI sam bira stil</span>
+                                <span className="text-xs font-bold" style={{ color: 'var(--db-heading)' }}>AI odabir</span>
+                                <span className="text-[10px]" style={{ color: 'var(--db-text-muted)' }}>AI sam bira stil</span>
                             </button>
                         )}
 
@@ -285,11 +285,11 @@ export default function StyleChanger({ project, userTokens }) {
                                 onClick={() => handleStyleClick(key)}
                                 disabled={!hasEnoughTokens}
                                 className="flex flex-col gap-1 p-3 rounded-xl text-left transition-all hover:bg-white/5 disabled:opacity-40"
-                                style={{ border: '1px solid var(--lp-border)', background: 'var(--lp-surface)' }}
+                                style={{ border: '1px solid var(--db-border)', background: 'var(--db-surface)' }}
                             >
                                 <span className="text-lg leading-none">{style.emoji}</span>
-                                <span className="text-xs font-bold leading-tight" style={{ color: 'var(--lp-heading)' }}>{style.label}</span>
-                                <span className="text-[10px] leading-tight" style={{ color: 'var(--lp-text-muted)' }}>{style.desc}</span>
+                                <span className="text-xs font-bold leading-tight" style={{ color: 'var(--db-heading)' }}>{style.label}</span>
+                                <span className="text-[10px] leading-tight" style={{ color: 'var(--db-text-muted)' }}>{style.desc}</span>
                             </button>
                         ))}
                     </div>
@@ -301,10 +301,10 @@ export default function StyleChanger({ project, userTokens }) {
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
                     style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}>
                     <div className="max-w-md w-full p-6 rounded-2xl db-fade-in relative"
-                        style={{ background: 'var(--lp-surface)', border: '1px solid var(--lp-border)' }}>
+                        style={{ background: 'var(--db-surface)', border: '1px solid var(--db-border)' }}>
                         {/* Close */}
                         <button onClick={() => { setShowConfirm(false); }}
-                            className="absolute top-4 right-4 p-1" style={{ color: 'var(--lp-text-muted)' }}>
+                            className="absolute top-4 right-4 p-1" style={{ color: 'var(--db-text-muted)' }}>
                             <X size={18} />
                         </button>
 
@@ -314,12 +314,12 @@ export default function StyleChanger({ project, userTokens }) {
                                 {selectedStyleInfo ? selectedStyleInfo.emoji : '🤖'}
                             </div>
 
-                            <h3 className="text-lg font-bold mb-2" style={{ color: 'var(--lp-heading)' }}>
+                            <h3 className="text-lg font-bold mb-2" style={{ color: 'var(--db-heading)' }}>
                                 Regeneriraj u stilu „{selectedStyleName}"?
                             </h3>
 
-                            <p className="text-sm mb-4" style={{ color: 'var(--lp-text-muted)' }}>
-                                Generirat će se <strong style={{ color: 'var(--lp-heading)' }}>potpuno nova stranica</strong> s istim sadržajem u novom vizualnom stilu.
+                            <p className="text-sm mb-4" style={{ color: 'var(--db-text-muted)' }}>
+                                Generirat će se <strong style={{ color: 'var(--db-heading)' }}>potpuno nova stranica</strong> s istim sadržajem u novom vizualnom stilu.
                                 Sve ručne izmjene bit će izgubljene.
                             </p>
 
@@ -328,7 +328,7 @@ export default function StyleChanger({ project, userTokens }) {
                                 style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.15)' }}>
                                 <Coins size={16} className="text-yellow-500" />
                                 <span className="text-sm font-bold text-yellow-500">{STYLE_COST} tokena</span>
-                                <span className="text-xs" style={{ color: 'var(--lp-text-muted)' }}>
+                                <span className="text-xs" style={{ color: 'var(--db-text-muted)' }}>
                                     (imat ćete {userTokens - STYLE_COST} tokena)
                                 </span>
                             </div>
@@ -339,7 +339,7 @@ export default function StyleChanger({ project, userTokens }) {
                                 <button
                                     onClick={() => { setShowConfirm(false); }}
                                     className="flex-1 py-2.5 rounded-xl font-bold text-sm transition-all"
-                                    style={{ background: 'var(--lp-bg)', color: 'var(--lp-text-secondary)', border: '1px solid var(--lp-border)' }}
+                                    style={{ background: 'var(--db-bg)', color: 'var(--db-text-secondary)', border: '1px solid var(--db-border)' }}
                                 >
                                     Odustani
                                 </button>

@@ -25,6 +25,197 @@ export async function POST(req) {
         const subscriptionId = session.subscription;
         const customerEmail = session.customer_email || session.customer_details?.email;
 
+        // ── Handle Google Ads Boost subscription ──
+        if (session.metadata?.type === 'google_ads_boost') {
+            const projectId = session.metadata?.projectId;
+            console.log(`🎯 Google Ads Boost subscription for project: ${projectId}`);
+
+            if (projectId) {
+                try {
+                    await prisma.googleAdsCampaign.upsert({
+                        where: { projectId },
+                        create: {
+                            projectId,
+                            status: 'PENDING',
+                            stripeSubscriptionId: subscriptionId,
+                        },
+                        update: {
+                            stripeSubscriptionId: subscriptionId,
+                        },
+                    });
+                    console.log(`✅ Google Ads campaign linked to subscription: ${subscriptionId}`);
+                } catch (err) {
+                    console.error('❌ Error linking Google Ads subscription:', err.message);
+                }
+            }
+            return Response.json({ received: true });
+        }
+
+        // ── Handle Website Buyout ──
+        if (session.metadata?.type === 'website_buyout') {
+            const projectId = session.metadata?.projectId;
+            const buyoutOption = session.metadata?.option; // 'maintain' or 'export'
+            const oldSubscriptionId = session.metadata?.oldSubscriptionId;
+
+            console.log(`🏠 Website Buyout: option=${buyoutOption}, project=${projectId}`);
+
+            if (projectId) {
+                try {
+                    // 1. Cancel the old monthly subscription
+                    if (oldSubscriptionId) {
+                        try {
+                            await stripe.subscriptions.cancel(oldSubscriptionId);
+                            console.log(`✅ Cancelled old monthly subscription: ${oldSubscriptionId}`);
+                        } catch (cancelErr) {
+                            // If already cancelled, that's fine
+                            if (cancelErr.code !== 'resource_missing' && cancelErr.statusCode !== 404) {
+                                console.error('⚠️ Error cancelling old subscription:', cancelErr.message);
+                            }
+                        }
+                    }
+
+                    if (buyoutOption === 'maintain') {
+                        // Option 1: Buyout + Yearly Maintenance
+                        // The new yearly subscription was created by Stripe Checkout
+                        await prisma.project.update({
+                            where: { id: projectId },
+                            data: {
+                                buyoutStatus: 'MAINTAINED',
+                                stripeSubscriptionId: subscriptionId || null,
+                                cancelledAt: null,
+                                deletionReminders: '',
+                            },
+                        });
+                        console.log(`✅ Project ${projectId} set to MAINTAINED with yearly sub: ${subscriptionId}`);
+                    } else if (buyoutOption === 'export') {
+                        // Option 2: Buyout & Code Export → Lock project
+                        const exportExpiry = new Date();
+                        exportExpiry.setDate(exportExpiry.getDate() + 90);
+
+                        await prisma.project.update({
+                            where: { id: projectId },
+                            data: {
+                                buyoutStatus: 'EXPORTED_LOCKED',
+                                exportExpiresAt: exportExpiry,
+                                stripeSubscriptionId: null,
+                                cancelledAt: null,
+                                deletionReminders: '',
+                            },
+                        });
+
+                        // Unpublish the site (remove from Vercel)
+                        try {
+                            const project = await prisma.project.findUnique({
+                                where: { id: projectId },
+                                select: { subdomain: true, customDomain: true },
+                            });
+
+                            if (project?.subdomain) {
+                                // Remove subdomain from Vercel
+                                const vercelHeaders = {
+                                    Authorization: `Bearer ${process.env.AUTH_VERCEL_TOKEN}`,
+                                    'Content-Type': 'application/json',
+                                };
+                                const teamParam = process.env.TEAM_ID_VERCEL ? `?teamId=${process.env.TEAM_ID_VERCEL}` : '';
+
+                                const fullDomain = `${project.subdomain}.${process.env.ROOT_DOMAIN || 'webica.hr'}`;
+                                await fetch(
+                                    `https://api.vercel.com/v9/projects/${process.env.PROJECT_ID_VERCEL}/domains/${fullDomain}${teamParam}`,
+                                    { method: 'DELETE', headers: vercelHeaders }
+                                ).catch(() => { });
+
+                                if (project.customDomain) {
+                                    await fetch(
+                                        `https://api.vercel.com/v9/projects/${process.env.PROJECT_ID_VERCEL}/domains/${project.customDomain}${teamParam}`,
+                                        { method: 'DELETE', headers: vercelHeaders }
+                                    ).catch(() => { });
+                                }
+                                console.log(`✅ Unpublished site for project ${projectId}`);
+                            }
+                        } catch (unpubErr) {
+                            console.error('⚠️ Error unpublishing site:', unpubErr.message);
+                        }
+
+                        // Clear publish state
+                        await prisma.project.update({
+                            where: { id: projectId },
+                            data: {
+                                publishedAt: null,
+                                subdomain: null,
+                                customDomain: null,
+                            },
+                        });
+
+                        console.log(`✅ Project ${projectId} set to EXPORTED_LOCKED, expires: ${exportExpiry.toISOString()}`);
+                    }
+
+                    // Create Solo fiscal receipt for buyout
+                    const buyoutAmount = session.amount_total / 100;
+                    const buyoutEmail = session.customer_email || session.customer_details?.email;
+                    try {
+                        const formattedAmount = buyoutAmount.toFixed(2).replace('.', ',');
+                        const formData = new URLSearchParams();
+                        formData.append('token', process.env.SOLO_API_TOKEN || '');
+                        formData.append('tip_usluge', '1');
+                        formData.append('tip_racuna', '1');
+                        formData.append('kupac_naziv', session.customer_details?.name || 'Kupac');
+                        formData.append('kupac_email', buyoutEmail || '');
+                        formData.append('usluga', '1');
+                        formData.append('opis_usluge_1', `Otkup web stranice${buyoutOption === 'maintain' ? ' + godišnje održavanje' : ''}`);
+                        formData.append('cijena_1', formattedAmount);
+                        formData.append('kolicina_1', '1');
+                        formData.append('popust_1', '0');
+                        formData.append('porez_stopa_1', '0');
+                        formData.append('nacin_placanja', '3');
+                        formData.append('valuta_racuna', '14');
+                        formData.append('napomene', `Otkup web stranice. Obveznik nije u sustavu PDV-a prema čl. 90. st. 1. i 2. Zakona o PDV-u.`);
+
+                        const soloResponse = await fetch('https://api.solo.com.hr/racun', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: formData.toString(),
+                        });
+                        const soloResult = await soloResponse.json();
+                        if (soloResult.status === 0) {
+                            console.log(`✅ Buyout fiscal receipt: ${soloResult.racun?.broj_racuna}`);
+
+                            // Find user for invoice record
+                            const buyoutUser = await prisma.user.findFirst({
+                                where: {
+                                    OR: [
+                                        { stripeCustomerId: session.customer },
+                                        ...(buyoutEmail ? [{ email: buyoutEmail }] : []),
+                                    ]
+                                },
+                                select: { id: true },
+                            });
+
+                            if (buyoutUser && soloResult.racun?.broj_racuna) {
+                                await prisma.invoice.create({
+                                    data: {
+                                        userId: buyoutUser.id,
+                                        projectId: projectId,
+                                        invoiceNumber: soloResult.racun.broj_racuna,
+                                        amount: buyoutAmount,
+                                        description: `Otkup web stranice${buyoutOption === 'maintain' ? ' + godišnje održavanje' : ''}`,
+                                        pdfUrl: soloResult.racun?.pdf || null,
+                                        stripeSessionId: session.id,
+                                        type: 'SUBSCRIPTION',
+                                        status: 'PAID',
+                                    },
+                                });
+                            }
+                        }
+                    } catch (soloErr) {
+                        console.error('⚠️ Buyout Solo invoice error:', soloErr.message);
+                    }
+                } catch (err) {
+                    console.error('❌ Error processing website buyout:', err.message);
+                }
+            }
+            return Response.json({ received: true });
+        }
+
         // Skip if this is a token purchase (no subscription)
         if (!subscriptionId) {
             console.log('⏭️ Skipping token purchase event (no subscription ID)');
@@ -251,44 +442,48 @@ export async function POST(req) {
                         });
 
                         const emailHtml = `
-                            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-                                <div style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-                                    <h1 style="color: white; margin: 0;">✅ Vaša narudžba je potvrđena!</h1>
+                            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+                                <div style="background: linear-gradient(135deg, #7c3aed, #6d28d9); padding: 40px 30px; text-align: center; border-radius: 12px 12px 0 0;">
+                                    <h1 style="color: white; margin: 0; font-size: 24px;">🎉 Dobrodošli!</h1>
+                                    <p style="color: rgba(255,255,255,0.85); margin: 8px 0 0; font-size: 14px;">Vaša web stranica je u pripremi</p>
                                 </div>
                                 
-                                <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
-                                    <p style="font-size: 16px;">Hvala na povjerenju! Vaša pretplata je aktivna.</p>
+                                <div style="background: #fafafa; border: 1px solid #e5e5e5; border-top: none; padding: 30px; border-radius: 0 0 12px 12px;">
+                                    <p style="font-size: 16px; margin-top: 0;">Pozdrav,</p>
+                                    <p style="font-size: 15px; line-height: 1.6;">Hvala vam na povjerenju! Vaša pretplata za paket <strong>${planName}</strong> je uspješno aktivirana i vaš je radni prostor spreman.</p>
                                     
-                                    <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #22c55e;">
-                                        <h2 style="margin-top: 0; color: #22c55e;">Detalji paketa:</h2>
-                                        <p style="font-size: 18px; font-weight: bold; margin: 10px 0;">${planName}</p>
-                                        ${invoiceNumber ? `
-                                        <p style="font-size: 14px; color: #666; margin: 5px 0;">Broj računa: <strong>${invoiceNumber}</strong></p>
-                                        <p style="font-size: 14px; color: #666; margin: 5px 0;">Iznos: <strong>€${(session.amount_total / 100).toFixed(2).replace('.', ',')}</strong></p>
-                                        ` : ''}
+                                    <div style="background: #faf5ff; border: 1px solid #e9d5ff; padding: 20px; border-radius: 8px; margin: 24px 0;">
+                                        <p style="margin: 0; color: #6b21a8; font-size: 15px;">
+                                            🎁 Kako bismo vam olakšali početak, na račun smo vam dodali <strong>500 AI tokena</strong> kao dobrodošlicu.
+                                        </p>
                                     </div>
 
-                                    <p style="font-size: 14px; color: #666;">
-                                        Sada se možete prijaviti na portal i nastaviti s radom.
-                                    </p>
+                                    <div style="background: white; border: 1px solid #e5e5e5; border-left: 4px solid #7c3aed; padding: 20px; border-radius: 8px; margin: 24px 0;">
+                                        <h2 style="margin-top: 0; color: #7c3aed; font-size: 16px;">💡 Brzi savjet za uređivanje</h2>
+                                        <p style="font-size: 14px; margin-bottom: 12px;">Rent a webica nudi dva sjajna načina za prilagodbu stranice:</p>
+                                        <ul style="margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6; color: #4b5563;">
+                                            <li><strong>Besplatni Vizualni Editor (Tab 'Sadržaj'):</strong> Savršen za trenutne izmjene tekstova, slika i kontakt podataka (ne troši tokene).</li>
+                                            <li><strong>Moćni AI Editor:</strong> Vaš osobni asistent za dodavanje novih sekcija, promjenu cjelokupnog stila i strukture (troši 50 tokena po izmjeni).</li>
+                                        </ul>
+                                    </div>
+
+                                    <p style="font-size: 15px;">Sada se možete prijaviti u svoj dashboard i oblikovati stranicu iz snova.</p>
 
                                     <div style="text-align: center; margin: 30px 0;">
                                         <a href="${process.env.NEXT_PUBLIC_APP_URL}/auth/login" 
-                                           style="background-color: #22c55e; color: white; padding: 14px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+                                           style="background: linear-gradient(135deg, #7c3aed, #6d28d9); color: white; padding: 14px 32px; text-decoration: none; border-radius: 10px; font-weight: 600; display: inline-block; box-shadow: 0 4px 6px -1px rgba(124, 58, 237, 0.2);">
                                             Prijavi se u Dashboard
                                         </a>
                                     </div>
 
                                     ${invoiceUrl ? `
-                                    <p style="font-size: 12px; color: #888; text-align: center; margin-top: 20px;">
-                                        <a href="${invoiceUrl}" style="color: #22c55e;">Preuzmite račun (PDF)</a>
+                                    <p style="font-size: 13px; color: #666; text-align: center; margin-top: 20px;">
+                                        <a href="${invoiceUrl}" style="color: #7c3aed; text-decoration: none; font-weight: 500;">Preuzmite račun (PDF) ↓</a>
                                     </p>
                                     ` : ''}
 
-                                    <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-                                    
-                                    <p style="font-size: 12px; color: #888;">
-                                        Račun možete uvijek preuzeti u dashboardu pod "Povijest računa".
+                                    <p style="color: #666; font-size: 13px; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
+                                        Dobrodošli u obitelj!<br><strong>Rent a webica tim</strong>
                                     </p>
                                 </div>
                             </div>
@@ -297,11 +492,11 @@ export async function POST(req) {
                         await transporter.sendMail({
                             from: process.env.SMTP_FROM || 'Rent a webica <noreply@rentaweb.hr>',
                             to: customerEmail,
-                            subject: `✅ Potvrda narudžbe - ${planName} - Račun ${invoiceNumber || ''}`,
+                            subject: `🎉 Dobrodošli! Vaša pretplata je aktivna${invoiceNumber ? ` - Račun ${invoiceNumber}` : ''}`,
                             html: emailHtml,
                             attachments: invoiceUrl ? [
                                 {
-                                    filename: `Racun-${invoiceNumber}.pdf`,
+                                    filename: `Racun - ${invoiceNumber}.pdf`,
                                     path: invoiceUrl
                                 }
                             ] : []
@@ -339,9 +534,9 @@ export async function POST(req) {
                         deletionReminders: project.deletionReminders || '',
                     }
                 });
-                console.log(`✅ Cleared subscription from project: ${project.name} (${project.id})`);
+                console.log(`✅ Cleared subscription from project: ${project.name}(${project.id})`);
             } else {
-                console.log(`⚠️ No project found for subscription: ${subscriptionId}`);
+                console.log(`⚠️ No project found for subscription: ${subscriptionId} `);
             }
         } catch (error) {
             console.error('❌ Error handling subscription deletion:', error.message);
@@ -354,7 +549,7 @@ export async function POST(req) {
         const subscriptionId = subscription.id;
 
         if (subscription.status === 'canceled' || subscription.cancel_at_period_end) {
-            console.log(`⚠️ Subscription canceled/canceling: ${subscriptionId}`);
+            console.log(`⚠️ Subscription canceled / canceling: ${subscriptionId} `);
 
             try {
                 const project = await prisma.project.findFirst({

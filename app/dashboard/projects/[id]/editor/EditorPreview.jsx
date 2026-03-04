@@ -200,7 +200,7 @@ import { VISUAL_EDITOR_SCRIPT } from "@/lib/visual-editor-injection";
 
 // ─── Component ──────────────────────────────────────────────────────
 
-export default function EditorPreview({ html, projectId, project, hasBlog = false, activePage = 'home' }) {
+export default function EditorPreview({ html, projectId, project, hasBlog = false, activePage = 'home', pages = [], setActivePage, subpageLabels = {} }) {
     const [refreshKey, setRefreshKey] = useState(0);
     const iframeRef = useRef(null);
     const router = useRouter();
@@ -382,18 +382,41 @@ export default function EditorPreview({ html, projectId, project, hasBlog = fals
     }, []);
 
     return (
-        <div className="h-full flex flex-col" style={{ background: 'var(--lp-bg)' }}>
-            {/* Header */}
-            <div className="px-4 py-2.5 flex items-center justify-between gap-2" style={{ background: 'var(--lp-bg-alt)', borderBottom: '1px solid var(--lp-border)' }}>
-                <h2 className="font-bold text-sm flex-shrink-0" style={{ color: 'var(--lp-heading)' }}>Live Preview</h2>
-                <div className="flex items-center gap-1.5 flex-wrap justify-end">
+        <div className="h-full flex flex-col" style={{ background: 'var(--db-bg)' }}>
+            {/* Header — single row with Live Preview, page tabs, and toolbar */}
+            <div className="px-3 py-2 flex items-center gap-2 min-h-[42px]" style={{ background: 'var(--db-bg-alt)', borderBottom: '1px solid var(--db-border)' }}>
+                <h2 className="font-bold text-sm flex-shrink-0 hidden sm:block" style={{ color: 'var(--db-heading)' }}>Live Preview</h2>
+
+                {/* Subpage tabs — inline, scrollable */}
+                {pages.length > 1 && (
+                    <div className="flex items-center gap-0.5 overflow-x-auto flex-shrink min-w-0 px-1" style={{ borderLeft: '1px solid var(--db-border)', marginLeft: '4px', paddingLeft: '8px' }}>
+                        {pages.map(page => (
+                            <button
+                                key={page}
+                                onClick={() => setActivePage(page)}
+                                className="px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-all flex-shrink-0"
+                                style={activePage === page
+                                    ? { background: 'var(--db-heading)', color: 'var(--db-bg)' }
+                                    : { color: 'var(--db-text-muted)', background: 'transparent' }
+                                }
+                            >
+                                {page === 'home' ? 'Početna' : (subpageLabels[page] || page)}
+                            </button>
+                        ))}
+                    </div>
+                )}
+
+                {/* Spacer */}
+                <div className="flex-1" />
+
+                <div className="flex items-center gap-1.5 flex-shrink-0">
                     {/* Visual Edit Toggle */}
                     <button
                         onClick={toggleVisualEdit}
                         className="px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all"
                         style={isVisualEditMode
                             ? { background: 'rgba(59,130,246,0.15)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.3)' }
-                            : { color: 'var(--lp-text-muted)', border: '1px solid var(--lp-border)' }
+                            : { color: 'var(--db-text-muted)', border: '1px solid var(--db-border)' }
                         }
                         title={isVisualEditMode ? 'Isključi vizualno uređivanje' : 'Uključi vizualno uređivanje'}
                     >
@@ -406,7 +429,7 @@ export default function EditorPreview({ html, projectId, project, hasBlog = fals
                     <button
                         onClick={() => setShowHelp(true)}
                         className="px-2 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1 transition-all hover:bg-white/5"
-                        style={{ color: 'var(--lp-text-muted)', border: '1px solid var(--lp-border)' }}
+                        style={{ color: 'var(--db-text-muted)', border: '1px solid var(--db-border)' }}
                         title="Kako koristiti vizualno uređivanje"
                     >
                         <HelpCircle size={13} /><span className="hidden sm:inline">Pomoć</span>
@@ -434,11 +457,11 @@ export default function EditorPreview({ html, projectId, project, hasBlog = fals
                     )}
 
                     {/* Refresh */}
-                    <button onClick={handleRefresh} className="px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all hover:bg-white/5" style={{ color: 'var(--lp-text-muted)', border: '1px solid var(--lp-border)' }} title="Osvježi preview">
+                    <button onClick={handleRefresh} className="px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all hover:bg-white/5" style={{ color: 'var(--db-text-muted)', border: '1px solid var(--db-border)' }} title="Osvježi preview">
                         <RefreshCw size={13} /><span className="hidden sm:inline">Osvježi</span>
                     </button>
                     {/* New Tab */}
-                    <button onClick={openInNewTab} className="px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all hover:bg-white/5" style={{ color: 'var(--lp-text-muted)', border: '1px solid var(--lp-border)' }} title="Otvori u novom tabu">
+                    <button onClick={openInNewTab} className="px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all hover:bg-white/5" style={{ color: 'var(--db-text-muted)', border: '1px solid var(--db-border)' }} title="Otvori u novom tabu">
                         <ExternalLink size={13} /><span className="hidden sm:inline">Novi Tab</span>
                     </button>
                 </div>
@@ -459,8 +482,8 @@ export default function EditorPreview({ html, projectId, project, hasBlog = fals
                 {injectedHtml ? (
                     <iframe ref={iframeRef} key={refreshKey} srcDoc={injectedHtml} className="w-full h-full border-0" sandbox="allow-same-origin allow-scripts allow-forms allow-popups" title="Website Preview" />
                 ) : (
-                    <div className="flex items-center justify-center h-full" style={{ background: 'var(--lp-bg)' }}>
-                        <p className="text-sm" style={{ color: 'var(--lp-text-muted)' }}>Nema generiranog HTML-a za prikaz</p>
+                    <div className="flex items-center justify-center h-full" style={{ background: 'var(--db-bg)' }}>
+                        <p className="text-sm" style={{ color: 'var(--db-text-muted)' }}>Nema generiranog HTML-a za prikaz</p>
                     </div>
                 )}
             </div>

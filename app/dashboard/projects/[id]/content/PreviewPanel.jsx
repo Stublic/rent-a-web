@@ -281,8 +281,8 @@ export default function PreviewPanel({ project, hasBlog = false }) {
                     onClick={() => setShowPreview(!showPreview)}
                     className="flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm transition-all hover:scale-105"
                     style={showPreview
-                        ? { background: 'var(--lp-surface)', color: 'var(--lp-text-secondary)', border: '1px solid var(--lp-border)' }
-                        : { background: 'var(--lp-heading)', color: 'var(--lp-bg)' }
+                        ? { background: 'var(--db-surface)', color: 'var(--db-text-secondary)', border: '1px solid var(--db-border)' }
+                        : { background: 'var(--db-heading)', color: 'var(--db-bg)' }
                     }
                 >
                     {showPreview ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -292,7 +292,7 @@ export default function PreviewPanel({ project, hasBlog = false }) {
                 <button
                     onClick={() => window.open(previewUrl, '_blank')}
                     className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:scale-105"
-                    style={{ background: 'var(--lp-surface)', color: 'var(--lp-text-secondary)', border: '1px solid var(--lp-border)' }}
+                    style={{ background: 'var(--db-surface)', color: 'var(--db-text-secondary)', border: '1px solid var(--db-border)' }}
                 >
                     <ExternalLink size={16} />
                     <span className="hidden sm:inline">Otvori u Novom Tabu</span>
@@ -302,7 +302,7 @@ export default function PreviewPanel({ project, hasBlog = false }) {
                 <button
                     onClick={() => setShowHtmlEditor(true)}
                     className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:scale-105"
-                    style={{ background: 'var(--lp-surface)', color: 'var(--lp-text-secondary)', border: '1px solid var(--lp-border)' }}
+                    style={{ background: 'var(--db-surface)', color: 'var(--db-text-secondary)', border: '1px solid var(--db-border)' }}
                 >
                     <Code2 size={16} />
                     <span className="hidden sm:inline">Uredi HTML</span>
@@ -312,7 +312,7 @@ export default function PreviewPanel({ project, hasBlog = false }) {
 
             {/* Page tabs for Advanced plans */}
             {showPreview && isAdvanced && (
-                <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: 'var(--lp-surface)', border: '1px solid var(--lp-border)' }}>
+                <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: 'var(--db-surface)', border: '1px solid var(--db-border)' }}>
                     {pages.map(slug => (
                         <button
                             key={slug}
@@ -320,7 +320,7 @@ export default function PreviewPanel({ project, hasBlog = false }) {
                             className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
                             style={activePage === slug
                                 ? { background: 'rgba(34,197,94,0.15)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.2)' }
-                                : { color: 'var(--lp-text-muted)', border: '1px solid transparent' }
+                                : { color: 'var(--db-text-muted)', border: '1px solid transparent' }
                             }
                         >
                             {pageLabels[slug] || slug}
@@ -331,13 +331,13 @@ export default function PreviewPanel({ project, hasBlog = false }) {
 
             {showPreview && (
                 <div className="rounded-2xl overflow-hidden db-fade-in" style={{ border: '2px solid rgba(34,197,94,0.2)', boxShadow: '0 0 40px rgba(34,197,94,0.05)' }}>
-                    <div className="px-4 py-2 flex items-center gap-2" style={{ background: 'var(--lp-bg-alt)', borderBottom: '1px solid var(--lp-border)' }}>
+                    <div className="px-4 py-2 flex items-center gap-2" style={{ background: 'var(--db-bg-alt)', borderBottom: '1px solid var(--db-border)' }}>
                         <div className="flex gap-1.5">
                             <div className="w-2.5 h-2.5 rounded-full bg-red-500/70"></div>
                             <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/70"></div>
                             <div className="w-2.5 h-2.5 rounded-full bg-green-500/70"></div>
                         </div>
-                        <span className="text-[11px] font-mono ml-2" style={{ color: 'var(--lp-text-muted)' }}>
+                        <span className="text-[11px] font-mono ml-2" style={{ color: 'var(--db-text-muted)' }}>
                             {activePage === 'home' ? 'index.html' : `${activePage}.html`}
                         </span>
                     </div>

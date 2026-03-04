@@ -61,8 +61,8 @@ export default function BlogTab({ projectId }) {
         return (
             <div className="flex items-center justify-center py-20">
                 <div className="flex items-center gap-3">
-                    <Loader2 className="animate-spin" size={20} style={{ color: 'var(--lp-text-muted)' }} />
-                    <span className="text-sm" style={{ color: 'var(--lp-text-muted)' }}>Učitavanje članaka...</span>
+                    <Loader2 className="animate-spin" size={20} style={{ color: 'var(--db-text-muted)' }} />
+                    <span className="text-sm" style={{ color: 'var(--db-text-muted)' }}>Učitavanje članaka...</span>
                 </div>
             </div>
         );
@@ -73,10 +73,10 @@ export default function BlogTab({ projectId }) {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                    <h1 className="text-xl font-bold flex items-center gap-2.5" style={{ color: 'var(--lp-heading)' }}>
+                    <h1 className="text-xl font-bold flex items-center gap-2.5" style={{ color: 'var(--db-heading)' }}>
                         <FileText className="text-emerald-400" size={22} /> Blog Članci
                     </h1>
-                    <p className="text-xs mt-0.5" style={{ color: 'var(--lp-text-muted)' }}>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--db-text-muted)' }}>
                         Webica AI generiranih: {usedThisMonth}/20 ovaj mjesec
                     </p>
                 </div>
@@ -88,12 +88,12 @@ export default function BlogTab({ projectId }) {
                     </button>
                     <a href={`/api/site/${projectId}/blog`} target="_blank" rel="noopener noreferrer"
                         className="px-3.5 py-2 rounded-xl font-medium flex items-center gap-2 transition-all text-xs hover:scale-105"
-                        style={{ color: 'var(--lp-text-secondary)', border: '1px solid var(--lp-border)' }}>
+                        style={{ color: 'var(--db-text-secondary)', border: '1px solid var(--db-border)' }}>
                         <ExternalLink size={14} /> <span className="hidden sm:inline">Pregledaj Blog</span><span className="sm:hidden">Blog</span>
                     </a>
                     <a href={`/dashboard/projects/${projectId}/blog/new`}
                         className="px-4 py-2 rounded-xl font-bold flex items-center gap-2 transition-all text-xs hover:scale-105"
-                        style={{ background: 'var(--lp-heading)', color: 'var(--lp-bg)' }}>
+                        style={{ background: 'var(--db-heading)', color: 'var(--db-bg)' }}>
                         <Plus size={15} /> Novi Članak
                     </a>
                 </div>
@@ -101,13 +101,13 @@ export default function BlogTab({ projectId }) {
 
             {/* Posts List */}
             {posts.length === 0 ? (
-                <div className="text-center py-16 rounded-2xl" style={{ border: '1px dashed var(--lp-border)' }}>
-                    <FileText size={36} className="mx-auto mb-3" style={{ color: 'var(--lp-text-muted)' }} />
-                    <h3 className="text-base font-bold mb-1.5" style={{ color: 'var(--lp-heading)' }}>Nemate blog članaka</h3>
-                    <p className="text-xs mb-5" style={{ color: 'var(--lp-text-muted)' }}>Napišite prvi članak ili neka Webica AI napiše za vas.</p>
+                <div className="text-center py-16 rounded-2xl" style={{ border: '1px dashed var(--db-border)' }}>
+                    <FileText size={36} className="mx-auto mb-3" style={{ color: 'var(--db-text-muted)' }} />
+                    <h3 className="text-base font-bold mb-1.5" style={{ color: 'var(--db-heading)' }}>Nemate blog članaka</h3>
+                    <p className="text-xs mb-5" style={{ color: 'var(--db-text-muted)' }}>Napišite prvi članak ili neka Webica AI napiše za vas.</p>
                     <a href={`/dashboard/projects/${projectId}/blog/new`}
                         className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all hover:scale-105"
-                        style={{ background: 'var(--lp-heading)', color: 'var(--lp-bg)' }}>
+                        style={{ background: 'var(--db-heading)', color: 'var(--db-bg)' }}>
                         <Sparkles size={16} /> Kreiraj prvi članak
                     </a>
                 </div>
@@ -123,17 +123,17 @@ export default function BlogTab({ projectId }) {
                             {/* Content */}
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-0.5">
-                                    <h3 className="font-bold text-sm truncate" style={{ color: 'var(--lp-heading)' }}>{post.title}</h3>
+                                    <h3 className="font-bold text-sm truncate" style={{ color: 'var(--db-heading)' }}>{post.title}</h3>
                                     <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full flex-shrink-0 ${
                                         post.status === 'PUBLISHED' 
                                             ? 'bg-emerald-500/15 text-emerald-400' 
-                                            : 'bg-zinc-500/15 text-zinc-400'
+                                            : 'bg-zinc-500/15 text-[color:var(--db-text-muted)]'
                                     }`}>
                                         {post.status === 'PUBLISHED' ? 'Objavljeno' : 'Nacrt'}
                                     </span>
                                 </div>
-                                {post.excerpt && <p className="text-xs truncate" style={{ color: 'var(--lp-text-muted)' }}>{post.excerpt}</p>}
-                                <div className="flex items-center gap-3 mt-1.5 text-[11px]" style={{ color: 'var(--lp-text-muted)' }}>
+                                {post.excerpt && <p className="text-xs truncate" style={{ color: 'var(--db-text-muted)' }}>{post.excerpt}</p>}
+                                <div className="flex items-center gap-3 mt-1.5 text-[11px]" style={{ color: 'var(--db-text-muted)' }}>
                                     <span className="flex items-center gap-1"><Calendar size={11} /> {new Date(post.createdAt).toLocaleDateString('hr-HR')}</span>
                                     <span>/{post.slug}</span>
                                     {post.category && <span className="flex items-center gap-1 text-emerald-500/70"><FolderOpen size={10} />{post.category.name}</span>}
@@ -151,16 +151,16 @@ export default function BlogTab({ projectId }) {
                             <div className="flex items-center gap-1.5 flex-shrink-0">
                                 <button onClick={() => togglePublish(post)}
                                     className={`text-[11px] px-2.5 py-1 rounded-lg font-medium transition-colors ${
-                                        post.status === 'PUBLISHED' ? 'text-zinc-400 hover:bg-white/5' : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
-                                    }`} style={{ border: '1px solid var(--lp-border)' }}>
+                                        post.status === 'PUBLISHED' ? 'text-[color:var(--db-text-muted)] hover:bg-white/5' : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
+                                    }`} style={{ border: '1px solid var(--db-border)' }}>
                                     {post.status === 'PUBLISHED' ? 'Sakrij' : 'Objavi'}
                                 </button>
                                 <a href={`/dashboard/projects/${projectId}/blog/${post.id}`}
-                                    className="p-1.5 rounded-lg transition-colors hover:bg-white/5" style={{ color: 'var(--lp-text-muted)' }}>
+                                    className="p-1.5 rounded-lg transition-colors hover:bg-white/5" style={{ color: 'var(--db-text-muted)' }}>
                                     <Edit3 size={14} />
                                 </a>
                                 <button onClick={() => handleDelete(post.id)} disabled={deleteId === post.id}
-                                    className="p-1.5 rounded-lg transition-colors hover:bg-red-500/10" style={{ color: 'var(--lp-text-muted)' }}>
+                                    className="p-1.5 rounded-lg transition-colors hover:bg-red-500/10" style={{ color: 'var(--db-text-muted)' }}>
                                     {deleteId === post.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                                 </button>
                             </div>
@@ -172,18 +172,18 @@ export default function BlogTab({ projectId }) {
             {/* Delete All Confirmation Modal */}
             {showDeleteAll && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => !deletingAll && setShowDeleteAll(false)}>
-                    <div className="rounded-2xl max-w-md w-full p-6 shadow-2xl" style={{ background: 'var(--lp-bg-alt)', border: '1px solid var(--lp-border)' }} onClick={e => e.stopPropagation()}>
+                    <div className="rounded-2xl max-w-md w-full p-6 shadow-2xl" style={{ background: 'var(--db-bg-alt)', border: '1px solid var(--db-border)' }} onClick={e => e.stopPropagation()}>
                         <div className="flex items-center gap-3 mb-4">
                             <div className="p-2.5 rounded-xl bg-red-500/10">
                                 <AlertTriangle size={22} className="text-red-400" />
                             </div>
                             <div>
-                                <h3 className="text-base font-bold" style={{ color: 'var(--lp-heading)' }}>Izbriši cijeli Blog?</h3>
-                                <p className="text-xs mt-0.5" style={{ color: 'var(--lp-text-muted)' }}>Ova radnja se ne može poništiti</p>
+                                <h3 className="text-base font-bold" style={{ color: 'var(--db-heading)' }}>Izbriši cijeli Blog?</h3>
+                                <p className="text-xs mt-0.5" style={{ color: 'var(--db-text-muted)' }}>Ova radnja se ne može poništiti</p>
                             </div>
                         </div>
                         <div className="rounded-xl p-3.5 mb-5" style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)' }}>
-                            <p className="text-xs leading-relaxed" style={{ color: 'var(--lp-text-secondary)' }}>
+                            <p className="text-xs leading-relaxed" style={{ color: 'var(--db-text-secondary)' }}>
                                 Ovo će trajno obrisati <strong style={{ color: '#ef4444' }}>sve blog članke</strong>, kategorije i ukloniti Blog link iz navigacije vaše stranice. 
                                 Blog možete ponovno pokrenuti kreiranjem novog članka.
                             </p>
@@ -191,7 +191,7 @@ export default function BlogTab({ projectId }) {
                         <div className="flex items-center gap-2.5 justify-end">
                             <button onClick={() => setShowDeleteAll(false)} disabled={deletingAll}
                                 className="px-4 py-2 rounded-xl text-xs font-medium transition-colors hover:bg-white/5"
-                                style={{ color: 'var(--lp-text-secondary)', border: '1px solid var(--lp-border)' }}>
+                                style={{ color: 'var(--db-text-secondary)', border: '1px solid var(--db-border)' }}>
                                 Odustani
                             </button>
                             <button onClick={handleDeleteAll} disabled={deletingAll}

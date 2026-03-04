@@ -34,7 +34,7 @@ export default function DashboardLoader({ message, inline = false, steps }) {
                 <div className="db-loader-ring">
                     <div className="db-loader-ring-inner" />
                 </div>
-                <p className="text-sm text-[var(--lp-text-muted)] animate-pulse">
+                <p className="text-sm text-[var(--db-text-muted)] animate-pulse">
                     {message || displaySteps[stepIndex]}
                 </p>
             </div>
@@ -54,12 +54,12 @@ export default function DashboardLoader({ message, inline = false, steps }) {
                 </div>
 
                 {/* Step text */}
-                <p className="text-sm font-medium text-[var(--lp-text-secondary)] text-center transition-all duration-300">
+                <p className="text-sm font-medium text-[var(--db-text-secondary)] text-center transition-all duration-300">
                     {message || displaySteps[stepIndex]}
                 </p>
 
                 {/* Progress bar */}
-                <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
+                <div className="w-full h-1 bg-[color:var(--db-surface)] rounded-full overflow-hidden">
                     <div
                         className="h-full bg-white/80 rounded-full transition-all duration-700 ease-out"
                         style={{ width: `${progress}%` }}
@@ -79,7 +79,7 @@ export function TabLoader({ message = "Učitavanje..." }) {
             <div className="db-loader-ring">
                 <div className="db-loader-ring-inner" />
             </div>
-            <p className="text-sm text-[var(--lp-text-muted)]">{message}</p>
+            <p className="text-sm text-[var(--db-text-muted)]">{message}</p>
         </div>
     );
 }

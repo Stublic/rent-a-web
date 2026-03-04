@@ -52,18 +52,18 @@ function LoadingIndicator({ startTime }) {
     return (
         <div className="flex justify-start">
             <div className="rounded-2xl px-4 py-3 flex items-center gap-2.5 max-w-[85%]"
-                style={{ background: 'var(--lp-surface)', border: '1px solid var(--lp-border)' }}>
+                style={{ background: 'var(--db-surface)', border: '1px solid var(--db-border)' }}>
                 <div className="relative">
-                    <Loader2 className="animate-spin" size={14} style={{ color: 'var(--lp-accent-green)' }} />
+                    <Loader2 className="animate-spin" size={14} style={{ color: 'var(--db-accent-green)' }} />
                 </div>
                 <div className="flex items-center gap-2">
-                    <Icon size={13} style={{ color: 'var(--lp-text-muted)' }} />
-                    <span className="text-xs font-medium" style={{ color: 'var(--lp-text-secondary)' }}>{step.text}</span>
+                    <Icon size={13} style={{ color: 'var(--db-text-muted)' }} />
+                    <span className="text-xs font-medium" style={{ color: 'var(--db-text-secondary)' }}>{step.text}</span>
                 </div>
                 <div className="flex gap-1 ml-1">
                     {LOADING_STEPS.map((_, i) => (
                         <div key={i} className="w-1.5 h-1.5 rounded-full transition-all duration-300"
-                            style={{ background: i <= stepIdx ? 'var(--lp-accent-green)' : 'var(--lp-border)' }} />
+                            style={{ background: i <= stepIdx ? 'var(--db-accent-green)' : 'var(--db-border)' }} />
                     ))}
                 </div>
             </div>
@@ -80,13 +80,13 @@ function AssistantMessage({ msg, onSuggestionClick }) {
                     style={
                         msg.isError ? { background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)' }
                         : msg.success ? { background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.12)' }
-                        : { background: 'var(--lp-surface)', border: '1px solid var(--lp-border)', color: 'var(--lp-text-secondary)' }
+                        : { background: 'var(--db-surface)', border: '1px solid var(--db-border)', color: 'var(--db-text-secondary)' }
                     }>
-                    <p style={{ color: msg.isError ? undefined : msg.success ? 'var(--lp-text-secondary)' : undefined }}>
+                    <p style={{ color: msg.isError ? undefined : msg.success ? 'var(--db-text-secondary)' : undefined }}>
                         {msg.content}
                     </p>
                     {msg.tokensInfo && (
-                        <p className="mt-1.5 text-[10px] font-medium" style={{ color: 'var(--lp-text-muted)' }}>
+                        <p className="mt-1.5 text-[10px] font-medium" style={{ color: 'var(--db-text-muted)' }}>
                             {msg.tokensInfo}
                         </p>
                     )}
@@ -95,7 +95,7 @@ function AssistantMessage({ msg, onSuggestionClick }) {
                             <p className="text-[10px] text-red-300/80 mb-2">Trebate više tokena za nastavak.</p>
                             <a href={`/dashboard/projects/${msg.projectId}/tokens`}
                                 className="w-full py-1.5 rounded-lg text-[11px] font-bold text-center transition-all flex items-center justify-center gap-1.5 hover:scale-105"
-                                style={{ background: 'var(--lp-heading)', color: 'var(--lp-bg)' }}>
+                                style={{ background: 'var(--db-heading)', color: 'var(--db-bg)' }}>
                                 <Coins size={12} /> Kupi Tokene
                             </a>
                         </div>
@@ -105,9 +105,9 @@ function AssistantMessage({ msg, onSuggestionClick }) {
                     <button onClick={() => onSuggestionClick(msg.suggestion)}
                         className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-[11px] font-medium transition-all hover:scale-[1.02] hover:shadow-sm w-fit"
                         style={{
-                            background: 'color-mix(in srgb, var(--lp-accent-green) 8%, var(--lp-surface))',
-                            border: '1px solid color-mix(in srgb, var(--lp-accent-green) 20%, var(--lp-border))',
-                            color: 'var(--lp-accent-green)',
+                            background: 'color-mix(in srgb, var(--db-accent-green) 8%, var(--db-surface))',
+                            border: '1px solid color-mix(in srgb, var(--db-accent-green) 20%, var(--db-border))',
+                            color: 'var(--db-accent-green)',
                         }}>
                         <ArrowRight size={12} /> {msg.suggestion}
                     </button>
@@ -268,33 +268,33 @@ export default function EditorChat({ project, userTokens = 0, activePage = 'home
     const tokenColor = tokens > 100 ? 'rgb(34,197,94)' : tokens > 50 ? 'rgb(234,179,8)' : 'rgb(239,68,68)';
 
     return (
-        <div className="flex flex-col h-full" style={{ background: 'var(--lp-bg-alt)', borderLeft: '1px solid var(--lp-border)' }}>
+        <div className="flex flex-col h-full" style={{ background: 'var(--db-bg-alt)', borderLeft: '1px solid var(--db-border)' }}>
             {/* Header */}
-            <div className="p-4" style={{ borderBottom: '1px solid var(--lp-border)' }}>
+            <div className="p-4" style={{ borderBottom: '1px solid var(--db-border)' }}>
                 <div className="flex items-center justify-between mb-2">
                     <div>
-                        <h2 className="font-bold text-sm flex items-center gap-2" style={{ color: 'var(--lp-heading)' }}>
+                        <h2 className="font-bold text-sm flex items-center gap-2" style={{ color: 'var(--db-heading)' }}>
                             <Sparkles size={16} className="text-emerald-400" /> Webica AI Editor
                             {activePage !== 'home' && (
-                                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ background: 'var(--lp-surface)', color: 'var(--lp-text-muted)', border: '1px solid var(--lp-border)' }}>
+                                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ background: 'var(--db-surface)', color: 'var(--db-text-muted)', border: '1px solid var(--db-border)' }}>
                                     {pageLabel}
                                 </span>
                             )}
                         </h2>
-                        <p className="text-[11px] mt-0.5" style={{ color: 'var(--lp-text-muted)' }}>
+                        <p className="text-[11px] mt-0.5" style={{ color: 'var(--db-text-muted)' }}>
                             {activePage === 'home' ? 'Razgovaraj s AI-em o promjenama' : `Uređuješ: ${pageLabel}`}
                         </p>
                     </div>
                     <button onClick={handleUndo} disabled={!hasEdits || undoing}
                         className="px-2.5 py-1.5 rounded-lg text-xs font-medium disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1.5 transition-all hover:bg-white/5"
-                        style={{ color: 'var(--lp-text-muted)', border: '1px solid var(--lp-border)' }}>
+                        style={{ color: 'var(--db-text-muted)', border: '1px solid var(--db-border)' }}>
                         <Undo2 size={13} /><span className="hidden sm:inline">Undo</span>
                     </button>
                 </div>
                 
                 {/* Token Display */}
-                <div className="flex items-center justify-between pt-2" style={{ borderTop: '1px solid var(--lp-border)' }}>
-                    <span className="text-[11px] flex items-center gap-1" style={{ color: 'var(--lp-text-muted)' }}>
+                <div className="flex items-center justify-between pt-2" style={{ borderTop: '1px solid var(--db-border)' }}>
+                    <span className="text-[11px] flex items-center gap-1" style={{ color: 'var(--db-text-muted)' }}>
                         Preostali tokeni:
                         <InfoTooltip text="Svaka AI izmjena troši tokene. Za besplatno uređivanje teksta i slika koristite 'Vizualno uređivanje' u Preview-u." side="bottom" />
                     </span>
@@ -304,7 +304,7 @@ export default function EditorChat({ project, userTokens = 0, activePage = 'home
                         {tokens === 0 && (
                             <a href={`/dashboard/projects/${projectId}/tokens`}
                                 className="ml-1 px-2 py-0.5 text-[10px] font-bold rounded-lg transition-all hover:scale-105 flex items-center gap-1"
-                                style={{ background: 'var(--lp-heading)', color: 'var(--lp-bg)' }}>
+                                style={{ background: 'var(--db-heading)', color: 'var(--db-bg)' }}>
                                 <Coins size={10} /> Kupi
                             </a>
                         )}
@@ -317,13 +317,13 @@ export default function EditorChat({ project, userTokens = 0, activePage = 'home
                 {messages.length === 0 && (
                     <div className="text-center mt-6 space-y-4">
                         <div className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-3"
-                            style={{ background: 'color-mix(in srgb, var(--lp-accent-green) 12%, transparent)' }}>
-                            <Sparkles size={18} style={{ color: 'var(--lp-accent-green)' }} />
+                            style={{ background: 'color-mix(in srgb, var(--db-accent-green) 12%, transparent)' }}>
+                            <Sparkles size={18} style={{ color: 'var(--db-accent-green)' }} />
                         </div>
-                        <p className="text-xs font-semibold" style={{ color: 'var(--lp-text-secondary)' }}>
+                        <p className="text-xs font-semibold" style={{ color: 'var(--db-text-secondary)' }}>
                             Zdravo! 👋 Ja sam tvoj AI asistent.
                         </p>
-                        <p className="text-[11px]" style={{ color: 'var(--lp-text-muted)' }}>
+                        <p className="text-[11px]" style={{ color: 'var(--db-text-muted)' }}>
                             {activePage === 'home'
                                 ? 'Reci mi što želiš promijeniti na stranici.'
                                 : `Reci mi što želiš promijeniti na stranici "${pageLabel}".`
@@ -338,7 +338,7 @@ export default function EditorChat({ project, userTokens = 0, activePage = 'home
                             ].map((eg, i) => (
                                 <button key={i} onClick={() => { setInput(eg); inputRef.current?.focus(); }}
                                     className="w-full rounded-lg p-2.5 text-xs text-left transition-all hover:scale-[1.02]"
-                                    style={{ background: 'var(--lp-surface)', border: '1px solid var(--lp-border)', color: 'var(--lp-text-muted)' }}>
+                                    style={{ background: 'var(--db-surface)', border: '1px solid var(--db-border)', color: 'var(--db-text-muted)' }}>
                                     &quot;{eg}&quot;
                                 </button>
                             ))}
@@ -350,7 +350,7 @@ export default function EditorChat({ project, userTokens = 0, activePage = 'home
                     msg.role === "user" ? (
                         <div key={idx} className="flex justify-end">
                             <div className="max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed"
-                                style={{ background: 'var(--lp-heading)', color: 'var(--lp-bg)' }}>
+                                style={{ background: 'var(--db-heading)', color: 'var(--db-bg)' }}>
                                 {msg.content}
                             </div>
                         </div>
@@ -381,7 +381,7 @@ export default function EditorChat({ project, userTokens = 0, activePage = 'home
             </div>
 
             {/* Input */}
-            <form onSubmit={handleSubmit} className="p-3" style={{ borderTop: '1px solid var(--lp-border)' }}>
+            <form onSubmit={handleSubmit} className="p-3" style={{ borderTop: '1px solid var(--db-border)' }}>
                 <div className="flex gap-2">
                     <button
                         type="button"
@@ -391,9 +391,9 @@ export default function EditorChat({ project, userTokens = 0, activePage = 'home
                         className="rounded-xl transition-all hover:bg-white/5"
                         style={{
                             padding: '0.65rem',
-                            border: '1px solid var(--lp-border)',
-                            background: 'var(--lp-surface)',
-                            color: 'var(--lp-text-muted)',
+                            border: '1px solid var(--db-border)',
+                            background: 'var(--db-surface)',
+                            color: 'var(--db-text-muted)',
                             cursor: 'pointer',
                             opacity: loading ? 0.5 : 1,
                             display: 'flex', alignItems: 'center',
@@ -404,11 +404,11 @@ export default function EditorChat({ project, userTokens = 0, activePage = 'home
                     <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)}
                         placeholder={tokens < 50 ? "Nemate dovoljno tokena..." : "Reci mi što želiš promijeniti..."}
                         className="flex-1 rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-white/20"
-                        style={{ background: 'var(--lp-surface)', border: '1px solid var(--lp-border)', color: 'var(--lp-heading)' }}
+                        style={{ background: 'var(--db-surface)', border: '1px solid var(--db-border)', color: 'var(--db-heading)' }}
                         disabled={loading || tokens < 50} />
                     <button type="submit" disabled={loading || !input.trim() || tokens < 50}
                         className="px-4 rounded-xl font-bold text-xs disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:scale-105"
-                        style={{ background: 'var(--lp-heading)', color: 'var(--lp-bg)' }}>
+                        style={{ background: 'var(--db-heading)', color: 'var(--db-bg)' }}>
                         Pošalji
                     </button>
                 </div>

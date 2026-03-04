@@ -105,11 +105,11 @@ export default function SupportChatPopup() {
             {!open && (
                 <button
                     onClick={() => setOpen(true)}
-                    className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all hover:scale-110 active:scale-95"
+                    className="fixed bottom-6 left-6 z-50 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all hover:scale-110 active:scale-95"
                     style={{
-                        background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                        background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
                         color: 'white',
-                        boxShadow: '0 8px 32px rgba(34, 197, 94, 0.3)',
+                        boxShadow: '0 8px 32px rgba(139, 92, 246, 0.3)',
                     }}
                     title="AI Podrška"
                 >
@@ -120,10 +120,10 @@ export default function SupportChatPopup() {
             {/* Chat Panel */}
             {open && (
                 <div
-                    className="fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-2rem)] rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+                    className="fixed bottom-6 left-6 z-50 w-[380px] max-w-[calc(100vw-2rem)] rounded-2xl shadow-2xl flex flex-col overflow-hidden"
                     style={{
-                        background: 'var(--lp-bg-alt, #0a0a0a)',
-                        border: '1px solid var(--lp-border, #222)',
+                        background: 'var(--db-bg-alt, #0a0a0a)',
+                        border: '1px solid var(--db-border, #222)',
                         height: 'min(560px, calc(100dvh - 6rem))',
                         animation: 'supportChatIn 0.2s ease-out',
                     }}
@@ -132,7 +132,7 @@ export default function SupportChatPopup() {
                     <div
                         className="px-5 py-4 flex items-center justify-between flex-shrink-0"
                         style={{
-                            background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                            background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
                         }}
                     >
                         <div className="flex items-center gap-3">
@@ -161,8 +161,8 @@ export default function SupportChatPopup() {
                                     <div
                                         className="max-w-[85%] rounded-2xl px-4 py-2.5 text-[13px] leading-relaxed"
                                         style={{
-                                            background: isUser ? '#22c55e' : 'rgba(255,255,255,0.06)',
-                                            color: isUser ? 'white' : 'var(--lp-text-secondary, #ccc)',
+                                            background: isUser ? '#8b5cf6' : 'rgba(255,255,255,0.06)',
+                                            color: isUser ? 'white' : 'var(--db-text-secondary, #ccc)',
                                             borderBottomRightRadius: isUser ? '4px' : undefined,
                                             borderBottomLeftRadius: !isUser ? '4px' : undefined,
                                         }}
@@ -186,8 +186,8 @@ export default function SupportChatPopup() {
                                     className="rounded-2xl px-4 py-3 flex items-center gap-2"
                                     style={{ background: 'rgba(255,255,255,0.06)' }}
                                 >
-                                    <Loader2 size={14} className="animate-spin" style={{ color: 'var(--lp-text-muted)' }} />
-                                    <span className="text-xs" style={{ color: 'var(--lp-text-muted)' }}>Razmišljam...</span>
+                                    <Loader2 size={14} className="animate-spin" style={{ color: 'var(--db-text-muted)' }} />
+                                    <span className="text-xs" style={{ color: 'var(--db-text-muted)' }}>Razmišljam...</span>
                                 </div>
                             </div>
                         )}
@@ -199,7 +199,7 @@ export default function SupportChatPopup() {
                     <form
                         onSubmit={sendMessage}
                         className="p-3 flex gap-2 flex-shrink-0"
-                        style={{ borderTop: '1px solid var(--lp-border, #222)' }}
+                        style={{ borderTop: '1px solid var(--db-border, #222)' }}
                     >
                         <input
                             ref={inputRef}
@@ -210,15 +210,15 @@ export default function SupportChatPopup() {
                             className="flex-1 px-4 py-2.5 rounded-xl text-sm outline-none transition-all disabled:opacity-50"
                             style={{
                                 background: 'rgba(255,255,255,0.05)',
-                                border: '1px solid var(--lp-border, #222)',
-                                color: 'var(--lp-heading, white)',
+                                border: '1px solid var(--db-border, #222)',
+                                color: 'var(--db-heading, white)',
                             }}
                         />
                         <button
                             type="submit"
                             disabled={loading || !input.trim()}
                             className="w-10 h-10 rounded-xl flex items-center justify-center transition-all disabled:opacity-30 hover:opacity-90"
-                            style={{ background: '#22c55e', color: 'white' }}
+                            style={{ background: '#8b5cf6', color: 'white' }}
                         >
                             <Send size={16} />
                         </button>

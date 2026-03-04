@@ -71,6 +71,9 @@ model Project {
   editorTokens         Int      @default(500)  // Remaining tokens for AI edits (500 initial)
   editorTokensUsed     Int      @default(0)    // Total tokens consumed
 
+  // Google Ads
+  googleAdsCampaign    GoogleAdsCampaign?
+
   // Blog
   blogPosts            BlogPost[]
   blogCategories       BlogCategory[]
@@ -81,6 +84,10 @@ model Project {
   // Cancellation / Grace Period
   cancelledAt          DateTime?
   deletionReminders    String   @default("") // Comma-separated reminder days sent, e.g. "30,60,83"
+
+  // Buyout
+  buyoutStatus         String   @default("NONE")  // NONE, MAINTAINED, EXPORTED_LOCKED
+  exportExpiresAt      DateTime?                   // Option 2: 90-day deletion deadline
 
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
@@ -293,4 +300,20 @@ model TicketMessage {
   createdAt DateTime @default(now())
 
   @@map("ticket_message")
+}
+
+model GoogleAdsCampaign {
+  id                     String   @id @default(cuid())
+  projectId              String   @unique
+  project                Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  status                 String   @default("PENDING") // PENDING, AWAITING_ADMIN, ACTIVE
+  stripeSubscriptionId   String?  @unique             // Google Ads Boost subscription
+  generatedHeadlines     Json?    // 15 short headlines (30 chars each)
+  generatedLongHeadlines Json?    // 4 long headlines (90 chars each)
+  generatedDescriptions  Json?    // 4 descriptions (90 chars each)
+  generatedKeywords      Json?    // 50 high-intent keywords
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@map("google_ads_campaign")
 }

@@ -83,7 +83,7 @@ export default function SuccessCelebration({ seconds, onDismiss, projectId }) {
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     transition={{ duration: 0.5, type: "spring", bounce: 0.3 }}
                     className="rounded-3xl max-w-sm w-full shadow-2xl overflow-hidden text-center"
-                    style={{ background: 'var(--lp-bg-alt)', border: '1px solid rgba(34,197,94,0.3)' }}
+                    style={{ background: 'var(--db-bg-alt)', border: '1px solid rgba(34,197,94,0.3)' }}
                 >
                     {/* Emoji + glow */}
                     <div className="pt-8 pb-2">
@@ -99,7 +99,7 @@ export default function SuccessCelebration({ seconds, onDismiss, projectId }) {
                     </div>
 
                     {/* Title */}
-                    <h2 className="text-xl font-bold px-6 mt-2" style={{ color: 'var(--lp-heading)' }}>
+                    <h2 className="text-xl font-bold px-6 mt-2" style={{ color: 'var(--db-heading)' }}>
                         Web stranica je spremna!
                     </h2>
 
@@ -117,7 +117,7 @@ export default function SuccessCelebration({ seconds, onDismiss, projectId }) {
                         </span>
                     </motion.div>
 
-                    <p className="text-xs mt-3 px-6" style={{ color: 'var(--lp-text-muted)' }}>
+                    <p className="text-xs mt-3 px-6" style={{ color: 'var(--db-text-muted)' }}>
                         Webica AI je upravo kreirala vašu web stranicu. Možete je pregledati, uređivati i objaviti.
                     </p>
 

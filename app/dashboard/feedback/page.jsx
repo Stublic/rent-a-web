@@ -91,13 +91,13 @@ function StarRating({ value, onChange }) {
                     <Star
                         size={28}
                         fill={(hover || value) >= star ? '#fbbf24' : 'transparent'}
-                        stroke={(hover || value) >= star ? '#fbbf24' : 'var(--lp-border)'}
+                        stroke={(hover || value) >= star ? '#fbbf24' : 'var(--db-border)'}
                         strokeWidth={1.5}
                     />
                 </button>
             ))}
             {value > 0 && (
-                <span className="text-xs self-center ml-2" style={{ color: 'var(--lp-text-muted)' }}>
+                <span className="text-xs self-center ml-2" style={{ color: 'var(--db-text-muted)' }}>
                     {value}/5
                 </span>
             )}
@@ -116,9 +116,9 @@ function NPSRating({ value, onChange }) {
                         onClick={() => onChange(n)}
                         className="w-9 h-9 rounded-lg text-xs font-semibold transition-all hover:scale-105"
                         style={{
-                            background: value === n ? (n <= 6 ? '#ef4444' : n <= 8 ? '#f59e0b' : '#22c55e') : 'var(--lp-surface)',
-                            color: value === n ? '#fff' : 'var(--lp-text-muted)',
-                            border: `1px solid ${value === n ? 'transparent' : 'var(--lp-border)'}`,
+                            background: value === n ? (n <= 6 ? '#ef4444' : n <= 8 ? '#f59e0b' : '#22c55e') : 'var(--db-surface)',
+                            color: value === n ? '#fff' : 'var(--db-text-muted)',
+                            border: `1px solid ${value === n ? 'transparent' : 'var(--db-border)'}`,
                         }}
                     >
                         {n}
@@ -126,8 +126,8 @@ function NPSRating({ value, onChange }) {
                 ))}
             </div>
             <div className="flex justify-between mt-1.5 px-1">
-                <span className="text-[10px]" style={{ color: 'var(--lp-text-muted)' }}>Nikako</span>
-                <span className="text-[10px]" style={{ color: 'var(--lp-text-muted)' }}>Sigurno</span>
+                <span className="text-[10px]" style={{ color: 'var(--db-text-muted)' }}>Nikako</span>
+                <span className="text-[10px]" style={{ color: 'var(--db-text-muted)' }}>Sigurno</span>
             </div>
         </div>
     );
@@ -146,9 +146,9 @@ function SelectWithOther({ options, value, customValue, onChange, onCustomChange
                         onClick={() => onChange(opt)}
                         className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-105"
                         style={{
-                            background: value === opt ? 'var(--lp-heading)' : 'var(--lp-surface)',
-                            color: value === opt ? 'var(--lp-bg)' : 'var(--lp-text-secondary)',
-                            border: `1px solid ${value === opt ? 'transparent' : 'var(--lp-border)'}`,
+                            background: value === opt ? 'var(--db-heading)' : 'var(--db-surface)',
+                            color: value === opt ? 'var(--db-bg)' : 'var(--db-text-secondary)',
+                            border: `1px solid ${value === opt ? 'transparent' : 'var(--db-border)'}`,
                         }}
                     >
                         {opt}
@@ -163,7 +163,7 @@ function SelectWithOther({ options, value, customValue, onChange, onCustomChange
                     placeholder="Upišite ovdje..."
                     autoFocus
                     className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-white/20 transition-all db-fade-in"
-                    style={{ background: 'var(--lp-bg)', border: '1px solid var(--lp-border)', color: 'var(--lp-heading)' }}
+                    style={{ background: 'var(--db-bg)', border: '1px solid var(--db-border)', color: 'var(--db-heading)' }}
                 />
             )}
         </div>
@@ -224,7 +224,7 @@ export default function FeedbackPage() {
 
     if (pageLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center" data-landing="true" style={{ background: 'var(--lp-bg)' }}>
+            <div className="min-h-screen flex items-center justify-center" data-dashboard="true" style={{ background: 'var(--db-bg)' }}>
                 <TabLoader message="Učitavanje feedback forme..." />
             </div>
         );
@@ -232,19 +232,19 @@ export default function FeedbackPage() {
 
     if (submitted) {
         return (
-            <div className="min-h-screen flex items-center justify-center p-4" data-landing="true" style={{ background: 'var(--lp-bg)' }}>
+            <div className="min-h-screen flex items-center justify-center p-4" data-dashboard="true" style={{ background: 'var(--db-bg)' }}>
                 <div className="text-center db-fade-in max-w-md">
                     <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-5">
                         <CheckCircle size={32} className="text-emerald-400" />
                     </div>
-                    <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--lp-heading)' }}>Hvala na feedbacku! 🎉</h2>
-                    <p className="mb-6" style={{ color: 'var(--lp-text-muted)' }}>
+                    <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--db-heading)' }}>Hvala na feedbacku! 🎉</h2>
+                    <p className="mb-6" style={{ color: 'var(--db-text-muted)' }}>
                         Vaše mišljenje nam je iznimno važno i koristit ćemo ga za poboljšanje platforme.
                     </p>
                     <Link
                         href="/dashboard"
                         className="font-semibold text-sm px-5 py-2.5 rounded-xl inline-flex items-center gap-2 transition-all hover:scale-105"
-                        style={{ background: 'var(--lp-heading)', color: 'var(--lp-bg)' }}
+                        style={{ background: 'var(--db-heading)', color: 'var(--db-bg)' }}
                     >
                         <ArrowLeft size={15} /> Natrag na Dashboard
                     </Link>
@@ -254,16 +254,16 @@ export default function FeedbackPage() {
     }
 
     return (
-        <div className="min-h-screen" data-landing="true" style={{ background: 'var(--lp-bg)' }}>
+        <div className="min-h-screen" data-dashboard="true" style={{ background: 'var(--db-bg)' }}>
             {/* Header */}
-            <div className="sticky top-0 z-30 px-4 py-3.5" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderBottom: '1px solid var(--lp-border)' }}>
+            <div className="sticky top-0 z-30 px-4 py-3.5" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderBottom: '1px solid var(--db-border)' }}>
                 <div className="max-w-2xl mx-auto flex items-center gap-3">
-                    <Link href="/dashboard" className="p-1.5 rounded-lg hover:bg-white/5 transition-colors" style={{ color: 'var(--lp-text-muted)' }}>
+                    <Link href="/dashboard" className="p-1.5 rounded-lg hover:bg-white/5 transition-colors" style={{ color: 'var(--db-text-muted)' }}>
                         <ArrowLeft size={18} />
                     </Link>
                     <div>
-                        <h1 className="text-sm font-bold" style={{ color: 'var(--lp-heading)' }}>Feedback</h1>
-                        <p className="text-xs" style={{ color: 'var(--lp-text-muted)' }}>Pomozite nam poboljšati Webica AI</p>
+                        <h1 className="text-sm font-bold" style={{ color: 'var(--db-heading)' }}>Feedback</h1>
+                        <p className="text-xs" style={{ color: 'var(--db-text-muted)' }}>Pomozite nam poboljšati Webica AI</p>
                     </div>
                 </div>
             </div>
@@ -273,10 +273,10 @@ export default function FeedbackPage() {
                 {/* Intro */}
                 <div className="text-center mb-8">
                     <div className="w-14 h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-4">
-                        <MessageSquare size={24} style={{ color: 'var(--lp-text-secondary)' }} />
+                        <MessageSquare size={24} style={{ color: 'var(--db-text-secondary)' }} />
                     </div>
-                    <h2 className="text-xl font-bold mb-1.5" style={{ color: 'var(--lp-heading)' }}>Vaše mišljenje nam je važno</h2>
-                    <p className="text-sm" style={{ color: 'var(--lp-text-muted)' }}>
+                    <h2 className="text-xl font-bold mb-1.5" style={{ color: 'var(--db-heading)' }}>Vaše mišljenje nam je važno</h2>
+                    <p className="text-sm" style={{ color: 'var(--db-text-muted)' }}>
                         Odgovorite na nekoliko pitanja kako bismo mogli poboljšati vašu Webica AI platformu. Traje oko 2 minute.
                     </p>
                 </div>
@@ -286,13 +286,13 @@ export default function FeedbackPage() {
                         <div
                             key={q.id}
                             className="rounded-2xl p-5"
-                            style={{ background: 'var(--lp-bg-alt)', border: '1px solid var(--lp-border)' }}
+                            style={{ background: 'var(--db-bg-alt)', border: '1px solid var(--db-border)' }}
                         >
                             <div className="flex items-start gap-3 mb-3">
-                                <span className="text-xs font-bold px-2 py-0.5 rounded-full shrink-0 mt-0.5" style={{ background: 'var(--lp-surface)', color: 'var(--lp-text-muted)' }}>
+                                <span className="text-xs font-bold px-2 py-0.5 rounded-full shrink-0 mt-0.5" style={{ background: 'var(--db-surface)', color: 'var(--db-text-muted)' }}>
                                     {idx + 1}
                                 </span>
-                                <label className="text-sm font-semibold leading-snug" style={{ color: 'var(--lp-heading)' }}>
+                                <label className="text-sm font-semibold leading-snug" style={{ color: 'var(--db-heading)' }}>
                                     {q.label}
                                 </label>
                             </div>
@@ -320,7 +320,7 @@ export default function FeedbackPage() {
                                         placeholder={q.placeholder}
                                         rows={4}
                                         className="w-full rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-white/20 transition-all"
-                                        style={{ background: 'var(--lp-bg)', border: '1px solid var(--lp-border)', color: 'var(--lp-heading)' }}
+                                        style={{ background: 'var(--db-bg)', border: '1px solid var(--db-border)', color: 'var(--db-heading)' }}
                                     />
                                 )}
                             </div>
@@ -328,15 +328,15 @@ export default function FeedbackPage() {
                     ))}
 
                     {/* Submit */}
-                    <div className="flex items-center justify-between pt-4" style={{ borderTop: '1px solid var(--lp-border)' }}>
-                        <Link href="/dashboard" className="text-sm font-medium hover:opacity-80 transition-opacity" style={{ color: 'var(--lp-text-muted)' }}>
+                    <div className="flex items-center justify-between pt-4" style={{ borderTop: '1px solid var(--db-border)' }}>
+                        <Link href="/dashboard" className="text-sm font-medium hover:opacity-80 transition-opacity" style={{ color: 'var(--db-text-muted)' }}>
                             Preskoči
                         </Link>
                         <button
                             type="submit"
                             disabled={submitting}
                             className="font-semibold text-sm px-6 py-3 rounded-xl transition-all disabled:opacity-50 hover:scale-105 flex items-center gap-2"
-                            style={{ background: 'var(--lp-heading)', color: 'var(--lp-bg)' }}
+                            style={{ background: 'var(--db-heading)', color: 'var(--db-bg)' }}
                         >
                             {submitting ? (
                                 <><ButtonLoader size={14} /> Šaljem...</>

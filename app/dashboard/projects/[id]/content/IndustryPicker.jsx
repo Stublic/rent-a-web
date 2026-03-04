@@ -63,9 +63,9 @@ export default function IndustryPicker({ value, onChange }) {
                 onClick={() => setOpen(!open)}
                 className="w-full rounded-xl px-4 py-2.5 text-sm text-left flex items-center justify-between gap-2 focus:outline-none focus:ring-1 focus:ring-white/20 transition-colors"
                 style={{
-                    background: 'var(--lp-surface)',
-                    border: '1px solid var(--lp-border)',
-                    color: currentOption ? 'var(--lp-heading)' : 'var(--lp-text-muted)',
+                    background: 'var(--db-surface)',
+                    border: '1px solid var(--db-border)',
+                    color: currentOption ? 'var(--db-heading)' : 'var(--db-text-muted)',
                 }}
             >
                 <span className="truncate">
@@ -75,7 +75,7 @@ export default function IndustryPicker({ value, onChange }) {
                     size={16}
                     className="shrink-0 transition-transform"
                     style={{
-                        color: 'var(--lp-text-muted)',
+                        color: 'var(--db-text-muted)',
                         transform: open ? 'rotate(180deg)' : 'none',
                     }}
                 />
@@ -86,15 +86,15 @@ export default function IndustryPicker({ value, onChange }) {
                 <div
                     className="absolute z-50 mt-1 w-full rounded-xl overflow-hidden shadow-2xl"
                     style={{
-                        background: 'var(--lp-bg-alt)',
-                        border: '1px solid var(--lp-border)',
+                        background: 'var(--db-bg-alt)',
+                        border: '1px solid var(--db-border)',
                         maxHeight: '320px',
                     }}
                 >
                     {/* Search input */}
-                    <div className="px-3 py-2 border-b" style={{ borderColor: 'var(--lp-border)' }}>
+                    <div className="px-3 py-2 border-b" style={{ borderColor: 'var(--db-border)' }}>
                         <div className="relative">
-                            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--lp-text-muted)' }} />
+                            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--db-text-muted)' }} />
                             <input
                                 ref={inputRef}
                                 type="text"
@@ -103,9 +103,9 @@ export default function IndustryPicker({ value, onChange }) {
                                 placeholder="Pretražite industriju..."
                                 className="w-full pl-8 pr-8 py-2 text-sm rounded-lg focus:outline-none"
                                 style={{
-                                    background: 'var(--lp-surface)',
-                                    border: '1px solid var(--lp-border)',
-                                    color: 'var(--lp-heading)',
+                                    background: 'var(--db-surface)',
+                                    border: '1px solid var(--db-border)',
+                                    color: 'var(--db-heading)',
                                 }}
                             />
                             {search && (
@@ -114,7 +114,7 @@ export default function IndustryPicker({ value, onChange }) {
                                     onClick={() => setSearch("")}
                                     className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-white/5"
                                 >
-                                    <X size={12} style={{ color: 'var(--lp-text-muted)' }} />
+                                    <X size={12} style={{ color: 'var(--db-text-muted)' }} />
                                 </button>
                             )}
                         </div>
@@ -138,10 +138,10 @@ export default function IndustryPicker({ value, onChange }) {
                                         className="w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between"
                                         style={{
                                             background: isSelected ? 'rgba(139,92,246,0.1)' : 'transparent',
-                                            color: isSelected ? '#a78bfa' : 'var(--lp-heading)',
+                                            color: isSelected ? '#a78bfa' : 'var(--db-heading)',
                                         }}
                                         onMouseEnter={e => {
-                                            if (!isSelected) e.currentTarget.style.background = 'var(--lp-surface)';
+                                            if (!isSelected) e.currentTarget.style.background = 'var(--db-surface)';
                                         }}
                                         onMouseLeave={e => {
                                             if (!isSelected) e.currentTarget.style.background = 'transparent';
@@ -150,7 +150,7 @@ export default function IndustryPicker({ value, onChange }) {
                                         <div className="min-w-0">
                                             <div className="truncate">{opt.label}</div>
                                             {matchingKeywords.length > 0 && (
-                                                <div className="text-[11px] mt-0.5 truncate" style={{ color: 'var(--lp-text-muted)' }}>
+                                                <div className="text-[11px] mt-0.5 truncate" style={{ color: 'var(--db-text-muted)' }}>
                                                     {matchingKeywords.join(', ')}
                                                 </div>
                                             )}
@@ -162,7 +162,7 @@ export default function IndustryPicker({ value, onChange }) {
                                 );
                             })
                         ) : (
-                            <div className="px-4 py-6 text-center text-sm" style={{ color: 'var(--lp-text-muted)' }}>
+                            <div className="px-4 py-6 text-center text-sm" style={{ color: 'var(--db-text-muted)' }}>
                                 Nema rezultata za "{search}"
                             </div>
                         )}

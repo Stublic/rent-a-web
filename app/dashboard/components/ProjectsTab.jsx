@@ -74,8 +74,8 @@ function ProjectCard({ project, colorScheme, onRenew, renewingProjectId }) {
 
     const cardStyle = isCancelled
         ? {
-            background: urgency === 'critical' ? 'rgba(239,68,68,0.03)' : urgency === 'high' ? 'rgba(245,158,11,0.03)' : 'var(--lp-bg-alt)',
-            border: `1px solid ${urgency === 'critical' ? 'rgba(239,68,68,0.2)' : urgency === 'high' ? 'rgba(245,158,11,0.2)' : 'var(--lp-border)'}`,
+            background: urgency === 'critical' ? 'rgba(239,68,68,0.03)' : urgency === 'high' ? 'rgba(245,158,11,0.03)' : 'var(--db-bg-alt)',
+            border: `1px solid ${urgency === 'critical' ? 'rgba(239,68,68,0.2)' : urgency === 'high' ? 'rgba(245,158,11,0.2)' : 'var(--db-border)'}`,
             borderRadius: '16px',
             opacity: 0.7,
         }
@@ -98,9 +98,9 @@ function ProjectCard({ project, colorScheme, onRenew, renewingProjectId }) {
                 <div
                     className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm"
                     style={{
-                        background: isCancelled ? 'var(--lp-surface)' : colors.avatarBg,
-                        color: isCancelled ? 'var(--lp-text-muted)' : colors.avatarColor,
-                        border: `1px solid ${isCancelled ? 'var(--lp-border)' : colors.avatarBorder}`,
+                        background: isCancelled ? 'var(--db-surface)' : colors.avatarBg,
+                        color: isCancelled ? 'var(--db-text-muted)' : colors.avatarColor,
+                        border: `1px solid ${isCancelled ? 'var(--db-border)' : colors.avatarBorder}`,
                     }}
                 >
                     {project.name?.charAt(0) || '?'}
@@ -117,14 +117,14 @@ function ProjectCard({ project, colorScheme, onRenew, renewingProjectId }) {
             </div>
 
             {/* Name */}
-            <h4 className="font-semibold text-sm truncate mb-0.5" style={{ color: isCancelled ? 'var(--lp-text-secondary)' : 'var(--lp-heading)' }}>
+            <h4 className="font-semibold text-sm truncate mb-0.5" style={{ color: isCancelled ? 'var(--db-text-secondary)' : 'var(--db-heading)' }}>
                 {project.name}
             </h4>
 
             {/* Domain with link */}
             {domain ? (
                 <div className="flex items-center gap-1.5 mb-3">
-                    <p className="text-[11px] truncate" style={{ color: colors?.accentColor || 'var(--lp-text-muted)' }}>
+                    <p className="text-[11px] truncate" style={{ color: colors?.accentColor || 'var(--db-text-muted)' }}>
                         {domain}
                     </p>
                     {url && (
@@ -135,12 +135,12 @@ function ProjectCard({ project, colorScheme, onRenew, renewingProjectId }) {
                             className="shrink-0 p-0.5 rounded hover:opacity-70 transition-opacity"
                             title="Otvori stranicu"
                         >
-                            <ExternalLink size={11} style={{ color: colors?.accentColor || 'var(--lp-text-muted)' }} />
+                            <ExternalLink size={11} style={{ color: colors?.accentColor || 'var(--db-text-muted)' }} />
                         </a>
                     )}
                 </div>
             ) : (
-                <p className="text-[11px] mb-3" style={{ color: 'var(--lp-text-muted)' }}>
+                <p className="text-[11px] mb-3" style={{ color: 'var(--db-text-muted)' }}>
                     {project.hasGenerated ? 'Još nije objavljena' : 'Čeka sadržaj'}
                 </p>
             )}
@@ -148,7 +148,7 @@ function ProjectCard({ project, colorScheme, onRenew, renewingProjectId }) {
             {/* Cancelled: grace period bar */}
             {isCancelled && (
                 <div className="mb-3">
-                    <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: 'var(--lp-border)' }}>
+                    <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: 'var(--db-border)' }}>
                         <div
                             className={`h-full rounded-full ${urgency === 'critical' ? 'bg-red-500' : urgency === 'high' ? 'bg-amber-500' : 'bg-white/20'}`}
                             style={{ width: `${Math.max(2, (daysLeft / GRACE_PERIOD_DAYS) * 100)}%` }}
@@ -164,7 +164,7 @@ function ProjectCard({ project, colorScheme, onRenew, renewingProjectId }) {
                         onClick={() => onRenew(project.id)}
                         disabled={renewingProjectId === project.id}
                         className="flex-1 text-xs font-semibold py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 hover:scale-[1.02]"
-                        style={{ background: 'var(--lp-heading)', color: 'var(--lp-bg)' }}
+                        style={{ background: 'var(--db-heading)', color: 'var(--db-bg)' }}
                     >
                         {renewingProjectId === project.id ? (
                             <><ButtonLoader size={12} /> Obnavljam...</>
@@ -178,9 +178,9 @@ function ProjectCard({ project, colorScheme, onRenew, renewingProjectId }) {
                             href={linkHref}
                             className="flex-1 text-xs font-semibold py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 hover:scale-[1.02]"
                             style={{
-                                background: !project.hasGenerated ? colors.accentColor : 'var(--lp-surface)',
-                                color: !project.hasGenerated ? '#fff' : 'var(--lp-text-secondary)',
-                                border: project.hasGenerated ? '1px solid var(--lp-border)' : 'none',
+                                background: !project.hasGenerated ? colors.accentColor : 'var(--db-surface)',
+                                color: !project.hasGenerated ? '#fff' : 'var(--db-text-secondary)',
+                                border: project.hasGenerated ? '1px solid var(--db-border)' : 'none',
                             }}
                         >
                             {!project.hasGenerated ? (
@@ -195,7 +195,7 @@ function ProjectCard({ project, colorScheme, onRenew, renewingProjectId }) {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-xs font-semibold py-2 px-3 rounded-xl transition-all flex items-center gap-1.5 hover:scale-[1.02]"
-                                style={{ background: 'var(--lp-surface)', color: 'var(--lp-text-secondary)', border: '1px solid var(--lp-border)' }}
+                                style={{ background: 'var(--db-surface)', color: 'var(--db-text-secondary)', border: '1px solid var(--db-border)' }}
                             >
                                 <ExternalLink size={12} />
                             </a>
@@ -209,13 +209,13 @@ function ProjectCard({ project, colorScheme, onRenew, renewingProjectId }) {
 
 function ColumnHeader({ icon: Icon, title, count, color }) {
     return (
-        <div className="flex items-center gap-2.5 mb-3 pb-3" style={{ borderBottom: '1px solid var(--lp-border)' }}>
+        <div className="flex items-center gap-2.5 mb-3 pb-3" style={{ borderBottom: '1px solid var(--db-border)' }}>
             <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: color }}>
                 <Icon size={14} className="text-white" />
             </div>
             <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold" style={{ color: 'var(--lp-heading)' }}>{title}</h3>
-                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: 'var(--lp-surface)', color: 'var(--lp-text-muted)' }}>
+                <h3 className="text-sm font-bold" style={{ color: 'var(--db-heading)' }}>{title}</h3>
+                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: 'var(--db-surface)', color: 'var(--db-text-muted)' }}>
                     {count}
                 </span>
             </div>
@@ -279,8 +279,8 @@ export default function ProjectsTab() {
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h2 className="text-xl font-bold" style={{ color: 'var(--lp-heading)' }}>Moji Projekti</h2>
-                    <p className="text-sm mt-0.5" style={{ color: 'var(--lp-text-muted)' }}>
+                    <h2 className="text-xl font-bold" style={{ color: 'var(--db-heading)' }}>Moji Projekti</h2>
+                    <p className="text-sm mt-0.5" style={{ color: 'var(--db-text-muted)' }}>
                         {totalActive} {totalActive === 1 ? 'projekt' : 'projekata'} • {published.length} objavljeno
                     </p>
                 </div>
@@ -288,7 +288,7 @@ export default function ProjectsTab() {
                     id="tour-new-project"
                     href="/dashboard/new-project"
                     className="px-4 py-2.5 rounded-xl font-semibold flex items-center gap-2 transition-all text-sm hover:scale-105 active:scale-95"
-                    style={{ background: 'var(--lp-heading)', color: 'var(--lp-bg)' }}
+                    style={{ background: 'var(--db-heading)', color: 'var(--db-bg)' }}
                 >
                     <Plus size={16} />
                     <span className="hidden sm:inline">Novi projekt</span>
@@ -296,18 +296,18 @@ export default function ProjectsTab() {
             </div>
 
             {totalActive === 0 && cancelledProjects.length === 0 ? (
-                <div className="text-center py-20 rounded-2xl" style={{ background: 'var(--lp-bg-alt)', border: '1px dashed var(--lp-border)' }}>
-                    <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: 'var(--lp-surface)' }}>
-                        <LayoutDashboard size={28} style={{ color: 'var(--lp-text-muted)' }} />
+                <div className="text-center py-20 rounded-2xl" style={{ background: 'var(--db-bg-alt)', border: '1px dashed var(--db-border)' }}>
+                    <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: 'var(--db-surface)' }}>
+                        <LayoutDashboard size={28} style={{ color: 'var(--db-text-muted)' }} />
                     </div>
-                    <h3 className="text-lg font-bold mb-2" style={{ color: 'var(--lp-heading)' }}>Nemate aktivnih projekata</h3>
-                    <p className="text-sm mb-6 max-w-sm mx-auto" style={{ color: 'var(--lp-text-muted)' }}>
+                    <h3 className="text-lg font-bold mb-2" style={{ color: 'var(--db-heading)' }}>Nemate aktivnih projekata</h3>
+                    <p className="text-sm mb-6 max-w-sm mx-auto" style={{ color: 'var(--db-text-muted)' }}>
                         Započnite svoje putovanje odabirom paketa i kreiranjem prve web stranice.
                     </p>
                     <Link
                         href="/dashboard/new-project"
                         className="font-semibold text-sm px-5 py-2.5 rounded-xl transition-all inline-flex items-center gap-2 hover:scale-105"
-                        style={{ background: 'var(--lp-heading)', color: 'var(--lp-bg)' }}
+                        style={{ background: 'var(--db-heading)', color: 'var(--db-bg)' }}
                     >
                         <Zap size={15} /> Kreiraj prvi projekt
                     </Link>
@@ -326,9 +326,9 @@ export default function ProjectsTab() {
                                     ))}
                                 </div>
                             ) : (
-                                <div className="rounded-xl p-6 text-center" style={{ border: '1px dashed var(--lp-border)' }}>
-                                    <Globe size={20} className="mx-auto mb-2" style={{ color: 'var(--lp-text-muted)' }} />
-                                    <p className="text-xs" style={{ color: 'var(--lp-text-muted)' }}>Nema objavljenih stranica</p>
+                                <div className="rounded-xl p-6 text-center" style={{ border: '1px dashed var(--db-border)' }}>
+                                    <Globe size={20} className="mx-auto mb-2" style={{ color: 'var(--db-text-muted)' }} />
+                                    <p className="text-xs" style={{ color: 'var(--db-text-muted)' }}>Nema objavljenih stranica</p>
                                 </div>
                             )}
                         </div>
@@ -343,9 +343,9 @@ export default function ProjectsTab() {
                                     ))}
                                 </div>
                             ) : (
-                                <div className="rounded-xl p-6 text-center" style={{ border: '1px dashed var(--lp-border)' }}>
-                                    <Pencil size={20} className="mx-auto mb-2" style={{ color: 'var(--lp-text-muted)' }} />
-                                    <p className="text-xs" style={{ color: 'var(--lp-text-muted)' }}>Nema stranica u izradi</p>
+                                <div className="rounded-xl p-6 text-center" style={{ border: '1px dashed var(--db-border)' }}>
+                                    <Pencil size={20} className="mx-auto mb-2" style={{ color: 'var(--db-text-muted)' }} />
+                                    <p className="text-xs" style={{ color: 'var(--db-text-muted)' }}>Nema stranica u izradi</p>
                                 </div>
                             )}
                         </div>
@@ -360,9 +360,9 @@ export default function ProjectsTab() {
                                     ))}
                                 </div>
                             ) : (
-                                <div className="rounded-xl p-6 text-center" style={{ border: '1px dashed var(--lp-border)' }}>
-                                    <Sparkles size={20} className="mx-auto mb-2" style={{ color: 'var(--lp-text-muted)' }} />
-                                    <p className="text-xs" style={{ color: 'var(--lp-text-muted)' }}>Sve stranice su generirane</p>
+                                <div className="rounded-xl p-6 text-center" style={{ border: '1px dashed var(--db-border)' }}>
+                                    <Sparkles size={20} className="mx-auto mb-2" style={{ color: 'var(--db-text-muted)' }} />
+                                    <p className="text-xs" style={{ color: 'var(--db-text-muted)' }}>Sve stranice su generirane</p>
                                 </div>
                             )}
                         </div>
@@ -371,10 +371,10 @@ export default function ProjectsTab() {
                     {/* Cancelled */}
                     {cancelledProjects.length > 0 && (
                         <div className="mt-8">
-                            <h3 className="text-sm font-bold mb-3 flex items-center gap-2" style={{ color: 'var(--lp-heading)' }}>
+                            <h3 className="text-sm font-bold mb-3 flex items-center gap-2" style={{ color: 'var(--db-heading)' }}>
                                 <Clock size={15} className="text-amber-400" />
                                 Otkazani projekti
-                                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: 'var(--lp-surface)', color: 'var(--lp-text-muted)' }}>
+                                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: 'var(--db-surface)', color: 'var(--db-text-muted)' }}>
                                     {cancelledProjects.length}
                                 </span>
                             </h3>

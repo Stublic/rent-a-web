@@ -26,10 +26,10 @@ function CollapsibleSection({ title, icon: Icon, count, defaultOpen = false, chi
                 className="w-full flex items-center justify-between p-4 transition-colors hover:bg-white/[0.02]"
             >
                 <div className="flex items-center gap-2.5">
-                    <Icon size={17} style={{ color: 'var(--lp-text-muted)' }} />
-                    <span className="text-sm font-semibold" style={{ color: 'var(--lp-heading)' }}>{title}</span>
+                    <Icon size={17} style={{ color: 'var(--db-text-muted)' }} />
+                    <span className="text-sm font-semibold" style={{ color: 'var(--db-heading)' }}>{title}</span>
                     {count !== undefined && (
-                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--lp-text-muted)' }}>
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--db-text-muted)' }}>
                             {count}
                         </span>
                     )}
@@ -37,11 +37,11 @@ function CollapsibleSection({ title, icon: Icon, count, defaultOpen = false, chi
                 <ChevronDown
                     size={16}
                     className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
-                    style={{ color: 'var(--lp-text-muted)' }}
+                    style={{ color: 'var(--db-text-muted)' }}
                 />
             </button>
             {open && (
-                <div className="px-4 pb-4 db-fade-in" style={{ borderTop: '1px solid var(--lp-border)' }}>
+                <div className="px-4 pb-4 db-fade-in" style={{ borderTop: '1px solid var(--db-border)' }}>
                     <div className="pt-3">
                         {children}
                     </div>
@@ -56,8 +56,8 @@ function CancelModal({ project, onClose, onConfirm, cancelling }) {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative rounded-2xl p-6 max-w-md w-full shadow-2xl db-fade-in" style={{ background: 'var(--lp-surface)', border: '1px solid var(--lp-border)' }}>
-                <button onClick={onClose} className="absolute top-4 right-4 transition-colors" style={{ color: 'var(--lp-text-muted)' }}>
+            <div className="relative rounded-2xl p-6 max-w-md w-full shadow-2xl db-fade-in" style={{ background: 'var(--db-surface)', border: '1px solid var(--db-border)' }}>
+                <button onClick={onClose} className="absolute top-4 right-4 transition-colors" style={{ color: 'var(--db-text-muted)' }}>
                     <X size={20} />
                 </button>
 
@@ -65,15 +65,15 @@ function CancelModal({ project, onClose, onConfirm, cancelling }) {
                     <AlertTriangle size={28} className="text-red-500" />
                 </div>
 
-                <h3 className="text-xl font-bold text-center mb-2" style={{ color: 'var(--lp-heading)' }}>Otkazivanje pretplate</h3>
-                <p className="text-center text-sm mb-5" style={{ color: 'var(--lp-text-secondary)' }}>Jeste li sigurni da želite otkazati pretplatu za:</p>
+                <h3 className="text-xl font-bold text-center mb-2" style={{ color: 'var(--db-heading)' }}>Otkazivanje pretplate</h3>
+                <p className="text-center text-sm mb-5" style={{ color: 'var(--db-text-secondary)' }}>Jeste li sigurni da želite otkazati pretplatu za:</p>
 
-                <div className="rounded-xl p-4 mb-4" style={{ background: 'var(--lp-bg)', border: '1px solid var(--lp-border)' }}>
+                <div className="rounded-xl p-4 mb-4" style={{ background: 'var(--db-bg)', border: '1px solid var(--db-border)' }}>
                     <div className="flex items-center gap-3">
-                        <Globe size={18} className="shrink-0" style={{ color: 'var(--lp-text-muted)' }} />
+                        <Globe size={18} className="shrink-0" style={{ color: 'var(--db-text-muted)' }} />
                         <div className="min-w-0">
-                            <h4 className="font-bold truncate" style={{ color: 'var(--lp-heading)' }}>{project.name}</h4>
-                            <p className="text-sm" style={{ color: 'var(--lp-text-muted)' }}>{project.planName}</p>
+                            <h4 className="font-bold truncate" style={{ color: 'var(--db-heading)' }}>{project.name}</h4>
+                            <p className="text-sm" style={{ color: 'var(--db-text-muted)' }}>{project.planName}</p>
                         </div>
                     </div>
                 </div>
@@ -91,7 +91,7 @@ function CancelModal({ project, onClose, onConfirm, cancelling }) {
                 </div>
 
                 <div className="flex gap-3">
-                    <button onClick={onClose} disabled={cancelling} className="flex-1 font-medium py-3 rounded-xl transition-colors" style={{ background: 'var(--lp-bg)', border: '1px solid var(--lp-border)', color: 'var(--lp-heading)' }}>
+                    <button onClick={onClose} disabled={cancelling} className="flex-1 font-medium py-3 rounded-xl transition-colors" style={{ background: 'var(--db-bg)', border: '1px solid var(--db-border)', color: 'var(--db-heading)' }}>
                         Odustani
                     </button>
                     <button onClick={onConfirm} disabled={cancelling} className="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
@@ -177,7 +177,7 @@ export default function SubscriptionTab({ user, onPortal }) {
             return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">Briše se za {daysLeft}d</span>;
         }
         if (project.stripeSubscriptionId) return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Aktivan</span>;
-        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold" style={{ background: 'var(--lp-surface)', color: 'var(--lp-text-muted)' }}>Bez pretplate</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold" style={{ background: 'var(--db-surface)', color: 'var(--db-text-muted)' }}>Bez pretplate</span>;
     };
 
     if (loading) return <TabLoader message="Učitavanje pretplata..." />;
@@ -191,8 +191,8 @@ export default function SubscriptionTab({ user, onPortal }) {
             {/* Header */}
             <div className="flex items-center justify-between mb-2">
                 <div>
-                    <h3 className="text-lg font-bold" style={{ color: 'var(--lp-heading)' }}>Pregled</h3>
-                    <p className="text-sm mt-0.5" style={{ color: 'var(--lp-text-muted)' }}>
+                    <h3 className="text-lg font-bold" style={{ color: 'var(--db-heading)' }}>Pregled</h3>
+                    <p className="text-sm mt-0.5" style={{ color: 'var(--db-text-muted)' }}>
                         {activeProjects.length} {activeProjects.length === 1 ? 'aktivan projekt' : 'aktivnih projekata'}
                     </p>
                 </div>
@@ -205,7 +205,7 @@ export default function SubscriptionTab({ user, onPortal }) {
                     <Link
                         href="/dashboard/new-project"
                         className="text-sm font-semibold px-4 py-2.5 rounded-xl transition-all inline-flex items-center gap-2 hover:scale-105 active:scale-95"
-                        style={{ background: 'var(--lp-heading)', color: 'var(--lp-bg)' }}
+                        style={{ background: 'var(--db-heading)', color: 'var(--db-bg)' }}
                     >
                         <Zap size={15} /> Novi paket
                     </Link>
@@ -217,14 +217,14 @@ export default function SubscriptionTab({ user, onPortal }) {
                 {activeProjects.length > 0 ? (
                     <div className="space-y-2.5">
                         {activeProjects.map((project) => (
-                            <div key={project.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl hover:bg-white/[0.02] transition-colors" style={{ border: '1px solid var(--lp-border)' }}>
+                            <div key={project.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl hover:bg-white/[0.02] transition-colors" style={{ border: '1px solid var(--db-border)' }}>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2.5 mb-1">
-                                        <h4 className="font-semibold text-sm truncate" style={{ color: 'var(--lp-heading)' }}>{project.name}</h4>
+                                        <h4 className="font-semibold text-sm truncate" style={{ color: 'var(--db-heading)' }}>{project.name}</h4>
                                         {getStatusBadge(project)}
                                     </div>
-                                    <div className="flex items-center gap-2.5 text-xs flex-wrap" style={{ color: 'var(--lp-text-muted)' }}>
-                                        <span className="font-medium" style={{ color: 'var(--lp-text-secondary)' }}>{project.planName}</span>
+                                    <div className="flex items-center gap-2.5 text-xs flex-wrap" style={{ color: 'var(--db-text-muted)' }}>
+                                        <span className="font-medium" style={{ color: 'var(--db-text-secondary)' }}>{project.planName}</span>
                                         <span>•</span>
                                         <span>{project.hasGenerated ? "Generiran" : "Čeka generiranje"}</span>
                                     </div>
@@ -238,7 +238,7 @@ export default function SubscriptionTab({ user, onPortal }) {
                                     <Link
                                         href={`/dashboard/projects/${project.id}/${project.hasGenerated ? 'editor' : 'content'}`}
                                         className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-all hover:scale-105"
-                                        style={{ background: 'var(--lp-heading)', color: 'var(--lp-bg)' }}
+                                        style={{ background: 'var(--db-heading)', color: 'var(--db-bg)' }}
                                     >
                                         Otvori →
                                     </Link>
@@ -247,10 +247,10 @@ export default function SubscriptionTab({ user, onPortal }) {
                         ))}
                     </div>
                 ) : (
-                    <div className="text-center py-6 rounded-xl" style={{ border: '1px dashed var(--lp-border)' }}>
-                        <Globe size={24} className="mx-auto mb-2" style={{ color: 'var(--lp-text-muted)' }} />
-                        <p className="text-sm" style={{ color: 'var(--lp-text-muted)' }}>Nemate aktivnih pretplata.</p>
-                        <Link href="/dashboard/new-project" className="text-sm font-semibold mt-2 inline-block" style={{ color: 'var(--lp-heading)' }}>
+                    <div className="text-center py-6 rounded-xl" style={{ border: '1px dashed var(--db-border)' }}>
+                        <Globe size={24} className="mx-auto mb-2" style={{ color: 'var(--db-text-muted)' }} />
+                        <p className="text-sm" style={{ color: 'var(--db-text-muted)' }}>Nemate aktivnih pretplata.</p>
+                        <Link href="/dashboard/new-project" className="text-sm font-semibold mt-2 inline-block" style={{ color: 'var(--db-heading)' }}>
                             Odaberi paket →
                         </Link>
                     </div>
@@ -265,20 +265,20 @@ export default function SubscriptionTab({ user, onPortal }) {
                             const daysLeft = getDaysLeft(project.cancelledAt);
                             const urgency = daysLeft <= 7 ? 'critical' : daysLeft <= 30 ? 'high' : 'normal';
                             return (
-                                <div key={project.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl" style={{ border: `1px solid ${urgency === 'critical' ? 'rgba(239,68,68,0.2)' : urgency === 'high' ? 'rgba(245,158,11,0.2)' : 'var(--lp-border)'}`, background: urgency === 'critical' ? 'rgba(239,68,68,0.03)' : urgency === 'high' ? 'rgba(245,158,11,0.03)' : 'transparent' }}>
+                                <div key={project.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl" style={{ border: `1px solid ${urgency === 'critical' ? 'rgba(239,68,68,0.2)' : urgency === 'high' ? 'rgba(245,158,11,0.2)' : 'var(--db-border)'}`, background: urgency === 'critical' ? 'rgba(239,68,68,0.03)' : urgency === 'high' ? 'rgba(245,158,11,0.03)' : 'transparent' }}>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2.5 mb-1">
-                                            <h4 className="font-semibold text-sm truncate" style={{ color: 'var(--lp-text-secondary)' }}>{project.name}</h4>
+                                            <h4 className="font-semibold text-sm truncate" style={{ color: 'var(--db-text-secondary)' }}>{project.name}</h4>
                                             {getStatusBadge(project)}
                                         </div>
-                                        <div className="flex items-center gap-2.5 text-xs" style={{ color: 'var(--lp-text-muted)' }}>
+                                        <div className="flex items-center gap-2.5 text-xs" style={{ color: 'var(--db-text-muted)' }}>
                                             <span>{project.planName}</span>
                                             <span>•</span>
                                             <span>Otkazano {new Date(project.cancelledAt).toLocaleDateString('hr-HR')}</span>
                                         </div>
                                         {/* Grace progress */}
                                         <div className="mt-2 w-full max-w-[200px]">
-                                            <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: 'var(--lp-border)' }}>
+                                            <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: 'var(--db-border)' }}>
                                                 <div className={`h-full rounded-full ${urgency === 'critical' ? 'bg-red-500' : urgency === 'high' ? 'bg-amber-500' : 'bg-white/20'}`}
                                                     style={{ width: `${Math.max(2, (daysLeft / GRACE_PERIOD_DAYS) * 100)}%` }} />
                                             </div>
@@ -288,7 +288,7 @@ export default function SubscriptionTab({ user, onPortal }) {
                                         onClick={() => handleRenew(project.id)}
                                         disabled={renewingProjectId === project.id}
                                         className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 disabled:opacity-50 hover:scale-105"
-                                        style={{ background: 'var(--lp-heading)', color: 'var(--lp-bg)' }}
+                                        style={{ background: 'var(--db-heading)', color: 'var(--db-bg)' }}
                                     >
                                         {renewingProjectId === project.id ? <><ButtonLoader size={12} /> Obnavljam...</> : <><RefreshCw size={12} /> Obnovi</>}
                                     </button>
@@ -304,22 +304,22 @@ export default function SubscriptionTab({ user, onPortal }) {
                 {invoices.length > 0 ? (
                     <div className="space-y-2">
                         {invoices.map((inv) => (
-                            <div key={inv.id} className="flex items-center justify-between p-3 rounded-xl transition-colors hover:bg-white/[0.02]" style={{ border: '1px solid var(--lp-border)' }}>
+                            <div key={inv.id} className="flex items-center justify-between p-3 rounded-xl transition-colors hover:bg-white/[0.02]" style={{ border: '1px solid var(--db-border)' }}>
                                 <div className="min-w-0 flex-1">
-                                    <div className="font-semibold text-xs" style={{ color: 'var(--lp-heading)' }}>{inv.date}</div>
-                                    <div className="text-[11px]" style={{ color: 'var(--lp-text-muted)' }}>{inv.description || inv.status}</div>
+                                    <div className="font-semibold text-xs" style={{ color: 'var(--db-heading)' }}>{inv.date}</div>
+                                    <div className="text-[11px]" style={{ color: 'var(--db-text-muted)' }}>{inv.description || inv.status}</div>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <span className="font-mono text-xs" style={{ color: 'var(--lp-text-secondary)' }}>{inv.amount} {inv.currency}</span>
+                                    <span className="font-mono text-xs" style={{ color: 'var(--db-text-secondary)' }}>{inv.amount} {inv.currency}</span>
                                     {inv.pdfUrl && (
-                                        <a href={inv.pdfUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-xs hover:opacity-80" style={{ color: 'var(--lp-heading)' }}>PDF ↗</a>
+                                        <a href={inv.pdfUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-xs hover:opacity-80" style={{ color: 'var(--db-heading)' }}>PDF ↗</a>
                                     )}
                                 </div>
                             </div>
                         ))}
                     </div>
                 ) : (
-                    <div className="text-center py-4 text-xs rounded-xl" style={{ color: 'var(--lp-text-muted)', border: '1px dashed var(--lp-border)' }}>
+                    <div className="text-center py-4 text-xs rounded-xl" style={{ color: 'var(--db-text-muted)', border: '1px dashed var(--db-border)' }}>
                         Nema dostupnih računa.
                     </div>
                 )}
@@ -328,23 +328,23 @@ export default function SubscriptionTab({ user, onPortal }) {
             {/* ── Quick Actions ── */}
             <div className="grid sm:grid-cols-2 gap-4 pt-2">
                 <div className="db-card p-5 group cursor-pointer">
-                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform" style={{ color: 'var(--lp-text-secondary)' }}>
+                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform" style={{ color: 'var(--db-text-secondary)' }}>
                         <Zap size={20} />
                     </div>
-                    <h4 className="font-bold mb-1.5" style={{ color: 'var(--lp-heading)' }}>Poboljšajte svoj web</h4>
-                    <p className="text-sm mb-3" style={{ color: 'var(--lp-text-muted)' }}>Dodajte nove funkcionalnosti, SEO članke ili Google Ads vođenje.</p>
-                    <span className="text-sm font-semibold flex items-center gap-1" style={{ color: 'var(--lp-text-secondary)' }}>
+                    <h4 className="font-bold mb-1.5" style={{ color: 'var(--db-heading)' }}>Poboljšajte svoj web</h4>
+                    <p className="text-sm mb-3" style={{ color: 'var(--db-text-muted)' }}>Dodajte nove funkcionalnosti, SEO članke ili Google Ads vođenje.</p>
+                    <span className="text-sm font-semibold flex items-center gap-1" style={{ color: 'var(--db-text-secondary)' }}>
                         Prikaži opcije <ChevronRight size={14} />
                     </span>
                 </div>
 
                 <Link href="/dashboard/feedback" className="db-card p-5 group block">
-                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform" style={{ color: 'var(--lp-text-secondary)' }}>
+                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform" style={{ color: 'var(--db-text-secondary)' }}>
                         <MessageSquare size={20} />
                     </div>
-                    <h4 className="font-bold mb-1.5" style={{ color: 'var(--lp-heading)' }}>Ostavi feedback</h4>
-                    <p className="text-sm mb-3" style={{ color: 'var(--lp-text-muted)' }}>Vaše mišljenje nam pomaže poboljšati uslugu. Recite nam što mislite!</p>
-                    <span className="text-sm font-semibold flex items-center gap-1" style={{ color: 'var(--lp-text-secondary)' }}>
+                    <h4 className="font-bold mb-1.5" style={{ color: 'var(--db-heading)' }}>Ostavi feedback</h4>
+                    <p className="text-sm mb-3" style={{ color: 'var(--db-text-muted)' }}>Vaše mišljenje nam pomaže poboljšati uslugu. Recite nam što mislite!</p>
+                    <span className="text-sm font-semibold flex items-center gap-1" style={{ color: 'var(--db-text-secondary)' }}>
                         Ostavi feedback <ChevronRight size={14} />
                     </span>
                 </Link>
