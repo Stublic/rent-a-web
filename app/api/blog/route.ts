@@ -197,11 +197,53 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ post: updated });
 }
 
-// DELETE /api/blog?id=xxx
+// DELETE /api/blog?id=xxx  OR  /api/blog?projectId=xxx&deleteAll=true
 export async function DELETE(req: NextRequest) {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const deleteAll = req.nextUrl.searchParams.get('deleteAll') === 'true';
+    const projectId = req.nextUrl.searchParams.get('projectId');
+
+    // ── Delete entire blog ─────────────────────────────────────────────
+    if (deleteAll && projectId) {
+        const project = await prisma.project.findFirst({
+            where: { id: projectId, userId: session.user.id }
+        });
+        if (!project) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+        // Delete all posts, then all categories
+        await prisma.blogPost.deleteMany({ where: { projectId } });
+        await prisma.blogCategory.deleteMany({ where: { projectId } });
+
+        // Remove blog nav link from generated HTML
+        if (project.generatedHtml) {
+            let html = project.generatedHtml;
+            const blogUrl = `/api/site/${projectId}/blog`;
+            // Remove <a> tags linking to the blog (any format)
+            html = html.replace(new RegExp(`<a\\s[^>]*href=["']${blogUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}["'][^>]*>[\\s\\S]*?</a>\\s*`, 'gi'), '');
+            html = html.replace(new RegExp(`<a\\s[^>]*href=["']/blog["'][^>]*>[\\s\\S]*?</a>\\s*`, 'gi'), '');
+            // Remove <li> containing blog links (footer nav)
+            html = html.replace(new RegExp(`<li>\\s*<a\\s[^>]*href=["'](?:${blogUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}|/blog)["'][^>]*>[\\s\\S]*?</a>\\s*</li>\\s*`, 'gi'), '');
+
+            if (html !== project.generatedHtml) {
+                await prisma.project.update({
+                    where: { id: projectId },
+                    data: { generatedHtml: html }
+                });
+            }
+        }
+
+        // Reset blog posts counter
+        await prisma.project.update({
+            where: { id: projectId },
+            data: { blogPostsUsedThisMonth: 0 }
+        });
+
+        return NextResponse.json({ success: true });
+    }
+
+    // ── Delete single post ─────────────────────────────────────────────
     const id = req.nextUrl.searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 

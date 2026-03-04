@@ -53,53 +53,52 @@ function injectNavLinksClient(html, project) {
     // Strip old blog links
     html = html.replace(/<a\s[^>]*href=["']\/api\/site\/[^"']*\/blog["'][^>]*>[\s\S]*?<\/a>\s*/gi, '');
 
-    const missingSlugs = allSlugs.filter(slug =>
-        !html.includes(`href="/${slug}"`) && !html.includes(`href='/${slug}'`)
-    );
-    if (missingSlugs.length === 0) return html;
-
     const linkClass = extractNavLinkClass(html);
     const buildLink = (slug) => {
         const cls = linkClass ? ` class="${linkClass}"` : '';
         return `<a href="/${slug}"${cls}>${labels[slug]}</a>`;
     };
 
+    // Check which slugs are missing FROM THE NAV LINKS AREA (not CTA buttons)
+    const navMatch = html.match(/<nav[\s\S]*?<\/nav>/i);
+    const desktopLinksDiv = navMatch?.[0]?.match(/<div[^>]*class="[^"]*hidden\s+md:flex[^"]*"[^>]*>[\s\S]*?<\/div>/i);
+    const navLinksArea = desktopLinksDiv?.[0] || '';
+
+    const missingSlugs = allSlugs.filter(slug =>
+        !navLinksArea.includes(`href="/${slug}"`) && !navLinksArea.includes(`href='/${slug}'`)
+    );
+
     const navLinksHtml = missingSlugs.map(buildLink).join('\n                    ');
 
     // Desktop nav
     if (html.includes('<!-- NAV_LINKS -->')) {
         html = html.replace(/<!-- NAV_LINKS -->/g, navLinksHtml);
-    } else {
-        const navMatch = html.match(/<nav[\s\S]*?<\/nav>/i);
-        if (navMatch) {
-            const pocetnaLink = navMatch[0].match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i);
-            if (pocetnaLink) {
-                const updated = navMatch[0].replace(pocetnaLink[0], pocetnaLink[0] + '\n                    ' + navLinksHtml);
-                html = html.replace(navMatch[0], updated);
-            }
+    } else if (missingSlugs.length > 0 && navMatch) {
+        const pocetnaLink = navMatch[0].match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i);
+        if (pocetnaLink) {
+            const updated = navMatch[0].replace(pocetnaLink[0], pocetnaLink[0] + '\n                    ' + navLinksHtml);
+            html = html.replace(navMatch[0], updated);
         }
     }
 
     // Mobile menu
-    if (html.includes('<!-- NAV_LINKS_MOBILE -->')) {
-        const mmMatch = html.match(/<div[^>]*id=["']mobile-menu["'][^>]*>[\s\S]*?<\/div>/i);
-        let mobileCls = '';
-        if (mmMatch) {
-            const mp = mmMatch[0].match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i);
-            if (mp) { const c = mp[0].match(/class="([^"]*)"/); if (c) mobileCls = c[1].replace(/\bborder-b[-\w]*/g,'').replace(/\bborder-primary\b/g,'').replace(/\s{2,}/g,' ').trim(); }
-        }
-        const mobileLinks = missingSlugs.map(s => `<a href="/${s}"${mobileCls ? ` class="${mobileCls}"` : ''}>${labels[s]}</a>`).join('\n            ');
-        html = html.replace(/<!-- NAV_LINKS_MOBILE -->/g, mobileLinks);
-    } else {
-        const mmMatch = html.match(/<div[^>]*id=["']mobile-menu["'][^>]*>[\s\S]*?<\/div>/i);
-        if (mmMatch) {
-            const mobileHtml = mmMatch[0];
+    const mmMatch = html.match(/<div[^>]*id=["']mobile-menu["'][^>]*>[\s\S]*?<\/div>/i);
+    if (mmMatch && missingSlugs.length > 0) {
+        const mobileHtml = mmMatch[0];
+        const mobileMissing = missingSlugs.filter(slug =>
+            !mobileHtml.match(new RegExp(`<a\\\\s[^>]*href=["']\\\\/${slug}["'][^>]*>\\\\s*${labels[slug]}\\\\s*<\\\\/a>`, 'i'))
+        );
+        if (mobileMissing.length > 0) {
+            let mobileCls = '';
             const mobilePocetna = mobileHtml.match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i);
-            if (mobilePocetna && !mobileHtml.includes(`href="/${missingSlugs[0]}"`)) {
-                let mobileCls = '';
+            if (mobilePocetna) {
                 const c = mobilePocetna[0].match(/class="([^"]*)"/);
-                if (c) mobileCls = c[1].replace(/\bborder-b[-\w]*/g,'').replace(/\bborder-primary\b/g,'').replace(/\s{2,}/g,' ').trim();
-                const mobileLinks = missingSlugs.map(s => `<a href="/${s}"${mobileCls ? ` class="${mobileCls}"` : ''}>${labels[s]}</a>`).join('\n            ');
+                if (c) mobileCls = c[1].replace(/\bborder-b[-\w]*/g, '').replace(/\bborder-primary\b/g, '').replace(/\s{2,}/g, ' ').trim();
+            }
+            const mobileLinks = mobileMissing.map(s => `<a href="/${s}"${mobileCls ? ` class="${mobileCls}"` : ''}>${labels[s]}</a>`).join('\n            ');
+            if (html.includes('<!-- NAV_LINKS_MOBILE -->')) {
+                html = html.replace(/<!-- NAV_LINKS_MOBILE -->/g, mobileLinks);
+            } else if (mobilePocetna) {
                 const updatedMobile = mobileHtml.replace(mobilePocetna[0], mobilePocetna[0] + '\n            ' + mobileLinks);
                 html = html.replace(mmMatch[0], updatedMobile);
             }
@@ -107,17 +106,19 @@ function injectNavLinksClient(html, project) {
     }
 
     // Footer
-    if (html.includes('<!-- FOOTER_NAV_LINKS -->')) {
-        const footerLinks = missingSlugs.map(s => `<a href="/${s}">${labels[s]}</a>`).join('\n');
-        html = html.replace(/<!-- FOOTER_NAV_LINKS -->/g, footerLinks);
-    } else {
-        const footerMatch = html.match(/<footer[\s\S]*?<\/footer>/i);
-        if (footerMatch) {
-            const footerHomeLi = footerMatch[0].match(/<li>\s*<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>\s*<\/li>/i);
-            if (footerHomeLi && !footerMatch[0].includes(`href="/${missingSlugs[0]}"`)) {
-                const footerLiLinks = missingSlugs.map(s => `<li><a href="/${s}" class="hover:text-white transition-colors">${labels[s]}</a></li>`).join('\n                        ');
-                const updatedFooter = footerMatch[0].replace(footerHomeLi[0], footerHomeLi[0] + '\n                        ' + footerLiLinks);
-                html = html.replace(footerMatch[0], updatedFooter);
+    if (missingSlugs.length > 0) {
+        if (html.includes('<!-- FOOTER_NAV_LINKS -->')) {
+            const footerLinks = missingSlugs.map(s => `<li><a href="/${s}" class="text-textMuted hover:text-white transition-colors">${labels[s]}</a></li>`).join('\n                        ');
+            html = html.replace(/<!-- FOOTER_NAV_LINKS -->/g, footerLinks);
+        } else {
+            const footerMatch = html.match(/<footer[\s\S]*?<\/footer>/i);
+            if (footerMatch) {
+                const footerHomeLi = footerMatch[0].match(/<li>\s*<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>\s*<\/li>/i);
+                if (footerHomeLi && !footerMatch[0].includes(`href="/${missingSlugs[0]}"`)) {
+                    const footerLiLinks = missingSlugs.map(s => `<li><a href="/${s}" class="hover:text-white transition-colors">${labels[s]}</a></li>`).join('\n                        ');
+                    const updatedFooter = footerMatch[0].replace(footerHomeLi[0], footerHomeLi[0] + '\n                        ' + footerLiLinks);
+                    html = html.replace(footerMatch[0], updatedFooter);
+                }
             }
         }
     }
@@ -128,6 +129,56 @@ function injectNavLinksClient(html, project) {
     html = html.replace(/<!-- FOOTER_NAV_LINKS -->/g, '');
 
     return html;
+}
+
+/**
+ * Replace a subpage's <header>/<nav> and <footer> with the homepage's canonical versions.
+ */
+function replaceNavAndFooterClient(subpageHtml, homepageHtml) {
+    if (!subpageHtml || !homepageHtml) return subpageHtml;
+
+    // Replace <header> (or <nav> if no header)
+    const homeHeader = homepageHtml.match(/<header[\s\S]*?<\/header>/i);
+    const subHeader = subpageHtml.match(/<header[\s\S]*?<\/header>/i);
+    if (homeHeader && subHeader) {
+        subpageHtml = subpageHtml.replace(subHeader[0], homeHeader[0]);
+    } else {
+        const homeNav = homepageHtml.match(/<nav[\s\S]*?<\/nav>/i);
+        const subNav = subpageHtml.match(/<nav[\s\S]*?<\/nav>/i);
+        if (homeNav && subNav) {
+            subpageHtml = subpageHtml.replace(subNav[0], homeNav[0]);
+        }
+    }
+
+    // Replace <footer>
+    const homeFooter = homepageHtml.match(/<footer[\s\S]*?<\/footer>/i);
+    const subFooter = subpageHtml.match(/<footer[\s\S]*?<\/footer>/i);
+    if (homeFooter && subFooter) {
+        subpageHtml = subpageHtml.replace(subFooter[0], homeFooter[0]);
+    }
+
+    return subpageHtml;
+}
+
+/**
+ * Normalize mobile nav so Početna matches other links' styling.
+ */
+function normalizeMobileNavClient(html) {
+    if (!html) return html;
+    const mobileMenuMatch = html.match(/<div[^>]*id=["']mobile-menu["'][^>]*>[\s\S]*?<\/div>/i);
+    if (!mobileMenuMatch) return html;
+    const mobileHtml = mobileMenuMatch[0];
+    const otherLinks = mobileHtml.match(/<a\s[^>]*href=["']\/[a-z][a-z-]*["'][^>]*>[^<]*<\/a>/gi);
+    if (!otherLinks || otherLinks.length === 0) return html;
+    const standardCls = otherLinks[0].match(/class="([^"]*)"/);
+    if (!standardCls) return html;
+    const pocetnaMatch = mobileHtml.match(/<a\s([^>]*)href=["']\/["']([^>]*)>\s*Početna\s*<\/a>/i);
+    if (!pocetnaMatch) return html;
+    const fullPocetna = pocetnaMatch[0];
+    const pocetnaCls = fullPocetna.match(/class="([^"]*)"/);
+    if (!pocetnaCls || pocetnaCls[1] === standardCls[1]) return html;
+    const updatedPocetna = fullPocetna.replace(`class="${pocetnaCls[1]}"`, `class="${standardCls[1]}"`);
+    return html.replace(mobileMenuMatch[0], mobileHtml.replace(fullPocetna, updatedPocetna));
 }
 
 /**
@@ -164,13 +215,27 @@ function injectBlogNavLinkClient(html) {
     // Mobile menu
     const mmMatch = html.match(/<div[^>]*id=["']mobile-menu["'][^>]*>[\s\S]*?<\/div>/i);
     if (mmMatch && !mmMatch[0].includes('href="/blog"')) {
-        const ctaButton = mmMatch[0].match(/<a\s[^>]*class="[^"]*bg-primary[^"]*"[^>]*>[\s\S]*?<\/a>/i);
-        if (ctaButton) {
-            const mobilePocetna = mmMatch[0].match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i);
-            let mobileCls = '';
+        const mobileHtml = mmMatch[0];
+        const ctaButton = mobileHtml.match(/<a\s[^>]*class="[^"]*(?:bg-(?:primary|brand)[^"]*|inline-flex[^"]*rounded-full)"[^>]*>[\s\S]*?<\/a>/i);
+        const mobileNavLinks = mobileHtml.match(/<a\s[^>]*href=["']\/[a-z][a-z-]*["'][^>]*>[^<]*<\/a>/gi);
+        let mobileCls = '';
+        if (mobileNavLinks && mobileNavLinks.length > 0) {
+            const c = mobileNavLinks[0].match(/class="([^"]*)"/);
+            if (c) mobileCls = c[1];
+        }
+        if (!mobileCls) {
+            const mobilePocetna = mobileHtml.match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i);
             if (mobilePocetna) { const c = mobilePocetna[0].match(/class="([^"]*)"/); if (c) mobileCls = c[1].replace(/\bborder-b[-\w]*/g,'').replace(/\bborder-primary\b/g,'').replace(/\s{2,}/g,' ').trim(); }
-            const mobileBlogLink = `<a href="/blog"${mobileCls ? ` class="${mobileCls}"` : ''}>Blog</a>`;
-            html = html.replace(mmMatch[0], mmMatch[0].replace(ctaButton[0], mobileBlogLink + '\n            ' + ctaButton[0]));
+        }
+        const mobileBlogLink = `<a href="/blog"${mobileCls ? ` class="${mobileCls}"` : ''}>Blog</a>`;
+        if (ctaButton) {
+            html = html.replace(mmMatch[0], mobileHtml.replace(ctaButton[0], mobileBlogLink + '\n            ' + ctaButton[0]));
+        } else {
+            const allLinks = mobileHtml.match(/<a\s[^>]*href=["']\/[a-z-]*["'][^>]*>[^<]*<\/a>/gi);
+            if (allLinks && allLinks.length > 0) {
+                const lastLink = allLinks[allLinks.length - 1];
+                html = html.replace(mmMatch[0], mobileHtml.replace(lastLink, lastLink + '\n            ' + mobileBlogLink));
+            }
         }
     }
 
@@ -188,15 +253,20 @@ export default function PreviewPanel({ project, hasBlog = false }) {
     const pages = ['home', ...Object.keys(reactFiles).filter(k => pageLabels[k])];
     const isAdvanced = pages.length > 1;
 
-    // Apply nav injection for preview (subpages + blog)
-    const rawHtml = activePage === 'home'
-        ? project.generatedHtml
-        : reactFiles[activePage] || '';
-    const activeHtml = useMemo(() => {
-        let html = injectNavLinksClient(rawHtml, project);
+    // Build canonical homepage HTML with all nav links first
+    const canonicalHomeHtml = useMemo(() => {
+        let html = injectNavLinksClient(project.generatedHtml || '', project);
         if (hasBlog) html = injectBlogNavLinkClient(html);
+        html = normalizeMobileNavClient(html);
         return html;
-    }, [rawHtml, project, hasBlog]);
+    }, [project.generatedHtml, project, hasBlog]);
+
+    // For subpages, replace their nav/footer with homepage's canonical versions
+    const activeHtml = useMemo(() => {
+        if (activePage === 'home') return canonicalHomeHtml;
+        const subpageHtml = reactFiles[activePage] || '';
+        return replaceNavAndFooterClient(subpageHtml, canonicalHomeHtml);
+    }, [activePage, canonicalHomeHtml, reactFiles]);
 
     useEffect(() => { setIframeKey(prev => prev + 1); }, [activeHtml]);
 

@@ -36,6 +36,7 @@ model User {
   invoices         Invoice[]
   media            Media[]
   feedbacks        Feedback[]
+  tickets          Ticket[]
 
   @@map("user")
 }
@@ -266,4 +267,30 @@ model SystemConfig {
   updatedAt DateTime @updatedAt
 
   @@map("system_config")
+}
+
+model Ticket {
+  id        String          @id @default(cuid())
+  userId    String
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId String?
+  subject   String
+  status    String          @default("OPEN")      // OPEN, RESOLVED, ESCALATED
+  type      String          @default("TECHNICAL")  // TECHNICAL, BILLING
+  messages  TicketMessage[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@map("ticket")
+}
+
+model TicketMessage {
+  id        String   @id @default(cuid())
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  role      String   // USER, AI, ADMIN
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@map("ticket_message")
 }

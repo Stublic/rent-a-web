@@ -23,7 +23,7 @@ const REGEN_PHASES = [
 // ─── Regeneration Overlay (multi-step progress) ────────────────────────────
 function RegenerationOverlay({ seconds, styleName }) {
     const phase = [...REGEN_PHASES].reverse().find(p => seconds >= p.from) || REGEN_PHASES[0];
-    const progress = Math.min(97, 80 * (1 - Math.exp(-seconds / 55)));
+    const progress = Math.min(97, 80 * (1 - Math.exp(-seconds / 160)));
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.93)', backdropFilter: 'blur(12px)' }}>
@@ -43,7 +43,7 @@ function RegenerationOverlay({ seconds, styleName }) {
                         🎨 Regeneracija u stilu „{styleName}"
                     </h3>
                     <p className="text-xs mt-1" style={{ color: 'var(--lp-text-muted)' }}>
-                        Nova stranica se generira s istim sadržajem
+                        Generiranje traje u prosjeku 3–5 minuta.
                     </p>
                 </div>
 
@@ -82,7 +82,7 @@ function RegenerationOverlay({ seconds, styleName }) {
                     </div>
                     <div className="flex justify-between mt-1">
                         <span className="text-[10px]" style={{ color: 'var(--lp-text-muted)' }}>Obrada u tijeku</span>
-                        <span className="text-[10px]" style={{ color: 'var(--lp-text-muted)' }}>{seconds > 90 ? 'Koristi se jači model...' : '~60-90s prosječno'}</span>
+                        <span className="text-[10px]" style={{ color: 'var(--lp-text-muted)' }}>{seconds > 180 ? 'Koristi se jači model...' : '~3-5 min prosječno'}</span>
                     </div>
                 </div>
 

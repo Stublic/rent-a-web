@@ -19,6 +19,8 @@ import { ExtendedWaitBanner } from "@/app/dashboard/components/ExtendedWaitMessa
 import SuccessCelebration from "@/app/dashboard/components/SuccessCelebration";
 import IndustryPicker from "./IndustryPicker";
 import InfoTooltip from "@/components/InfoTooltip";
+import ColorPaletteSection from "./ColorPaletteSection";
+import TypographySection from "./TypographySection";
 
 import {
     Section, SectionHint, CtaSelector,
@@ -56,7 +58,14 @@ function ServicesSection({ control, register, watch, setValue, setMediaPickerFie
                                     const file = e.target.files[0];
                                     if (!file) return;
                                     const fd = new FormData(); fd.append("file", file);
-                                    try { const url = await uploadImageAction(fd); setValue(field, url); } catch {}
+                                    try {
+                                        const url = await uploadImageAction(fd);
+                                        setValue(field, url);
+                                        // Auto-save to media library
+                                        const mfd = new FormData(); mfd.append('file', file);
+                                        if (project?.id) mfd.append('projectId', project.id);
+                                        fetch('/api/media', { method: 'POST', body: mfd }).catch(() => {});
+                                    } catch {}
                                 }} className="hidden" accept="image/*" />
                             </label>
                             <button type="button" onClick={() => setMediaPickerField(field)}
@@ -181,7 +190,7 @@ function UpdatingOverlay({ seconds }) {
                     </div>
                     <div className="flex justify-between mt-1">
                         <span className="text-[10px]" style={{ color: 'var(--lp-text-muted)' }}>Obrada u tijeku</span>
-                        <span className="text-[10px]" style={{ color: 'var(--lp-text-muted)' }}>{seconds > 70 ? 'Koristi se jači model...' : '~60s prosječno'}</span>
+                        <span className="text-[10px]" style={{ color: 'var(--lp-text-muted)' }}>{seconds > 180 ? 'Koristi se jači model...' : '~3-5 min prosječno'}</span>
                     </div>
                 </div>
 
@@ -234,7 +243,7 @@ const GENERATION_PHASES = [
 function GeneratingOverlay({ seconds, isAdvanced }) {
     const phases = GENERATION_PHASES;
     const phase = [...phases].reverse().find(p => seconds >= p.from) || phases[0];
-    const avgTime = isAdvanced ? 90 : 45;
+    const avgTime = 240; // 4 min average
     // Slow logarithmic progress: adapts to longer waits
     const progress = Math.min(97, 80 * (1 - Math.exp(-seconds / (avgTime * 0.6))));
 
@@ -253,7 +262,7 @@ function GeneratingOverlay({ seconds, isAdvanced }) {
                         <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#4ade80' }} />
                     </div>
                     <h3 className="text-lg font-bold" style={{ color: 'var(--lp-heading)' }}>✨ Webica AI stvara web stranicu</h3>
-                    <p className="text-xs mt-1" style={{ color: 'var(--lp-text-muted)' }}>{isAdvanced ? 'Generiranje naslovne stranice' : 'Generiranje kompletne stranice'}</p>
+                    <p className="text-xs mt-1" style={{ color: 'var(--lp-text-muted)' }}>Generiranje traje u prosjeku 3–5 minuta.</p>
                 </div>
 
                 {/* Timer */}
@@ -274,7 +283,7 @@ function GeneratingOverlay({ seconds, isAdvanced }) {
                     </div>
                     <div className="flex justify-between mt-1">
                         <span className="text-[10px]" style={{ color: 'var(--lp-text-muted)' }}>Generiranje u tijeku</span>
-                        <span className="text-[10px]" style={{ color: 'var(--lp-text-muted)' }}>{seconds > avgTime ? 'Koristi se jači model...' : `~${avgTime}s prosječno`}</span>
+                        <span className="text-[10px]" style={{ color: 'var(--lp-text-muted)' }}>{seconds > 180 ? 'Koristi se jači model...' : '~3-5 min prosječno'}</span>
                     </div>
                 </div>
 
@@ -328,7 +337,7 @@ export default function ContentForm({ project }) {
 
     const defaults = project.contentData || {
         businessName: "", industry: "", description: "",
-        autoColors: true,
+        autoColors: true, fontPair: "",
         primaryColor: "", secondaryColor: "", backgroundColor: "", textColor: "",
         heroCta: null,
         logoUrl: "", heroImageUrl: "", aboutImageUrl: "", featuresImageUrl: "", servicesBackgroundUrl: "",
@@ -359,18 +368,31 @@ export default function ContentForm({ project }) {
         { key: 'pricing', label: 'Cjenik / Paketi', icon: <DollarSign size={18} />, color: '#f97316', description: 'Paketi usluga s cijenama', checkFn: (d) => d.pricing?.length > 0 },
     ];
 
-    // Track which optional sections are visible
-    const getInitialSections = () => {
+    // Track which optional sections are visible + their order
+    const [initialState] = useState(() => {
         const d = defaults;
         const active = new Set(['designRef']);
-        OPTIONAL_SECTIONS.forEach(s => { if (s.checkFn(d)) active.add(s.key); });
-        return active;
-    };
-    const [activeSections, setActiveSections] = useState(() => getInitialSections());
+        const order = ['designRef'];
+        OPTIONAL_SECTIONS.forEach(s => {
+            if (s.checkFn(d) && !active.has(s.key)) {
+                active.add(s.key);
+                order.push(s.key);
+            }
+        });
+        return { active, order };
+    });
+    const [activeSections, setActiveSections] = useState(() => initialState.active);
+    const [sectionOrder, setSectionOrder] = useState(() => initialState.order);
     const toggleSection = (key) => {
         setActiveSections(prev => {
             const next = new Set(prev);
-            if (next.has(key)) next.delete(key); else next.add(key);
+            if (next.has(key)) {
+                next.delete(key);
+                setSectionOrder(o => o.filter(k => k !== key));
+            } else {
+                next.add(key);
+                setSectionOrder(o => o.includes(key) ? o : [...o, key]);
+            }
             return next;
         });
     };
@@ -406,7 +428,14 @@ export default function ContentForm({ project }) {
         if (!file) return;
         setUploading(true); setUploadError("");
         const formData = new FormData(); formData.append("file", file);
-        try { const url = await uploadImageAction(formData); setValue(field, url); }
+        try {
+            const url = await uploadImageAction(formData);
+            setValue(field, url);
+            // Auto-save to media library (fire-and-forget)
+            const mfd = new FormData(); mfd.append('file', file);
+            if (project?.id) mfd.append('projectId', project.id);
+            fetch('/api/media', { method: 'POST', body: mfd }).catch(() => {});
+        }
         catch { setUploadError("Upload slike nije uspio. Molimo pokušajte ponovno."); }
         finally { setUploading(false); }
     };
@@ -452,8 +481,8 @@ export default function ContentForm({ project }) {
         generatingTimerRef.current = setInterval(() => setGeneratingSeconds(s => s + 1), 1000);
         try {
             const result = isAdvanced
-                ? await generateAdvancedWebsiteAction(project.id, { ...data, autoColors: true })
-                : await generateWebsiteAction(project.id, { ...data, autoColors: true });
+                ? await generateAdvancedWebsiteAction(project.id, data)
+                : await generateWebsiteAction(project.id, data);
             clearInterval(generatingTimerRef.current);
             if (result.error) {
                 setErrorMessage(typeof result.error === 'string' ? result.error : "Greška pri generiranju.");
@@ -495,8 +524,8 @@ export default function ContentForm({ project }) {
         setErrorMessage("");
         try {
             const result = isUpdate
-                ? await updateContentAction(project.id, { ...data, autoColors: true })
-                : await saveContentAction(project.id, { ...data, autoColors: true });
+                ? await updateContentAction(project.id, data)
+                : await saveContentAction(project.id, data);
             if (result.error) {
                 setErrorMessage(result.error);
                 setSaving(false); setUpdating(false); clearInterval(updatingTimerRef.current);
@@ -700,6 +729,22 @@ export default function ContentForm({ project }) {
                     </Section>
                 </motion.div>
 
+                {/* ── Color Palette ── */}
+                <motion.div variants={{ hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0 } }}>
+                    <Section icon="🎨" title="Paleta Boja" accentColor="#8B5CF6"
+                        hint="Odaberite paletu boja za vašu stranicu ili prepustite AI-u da odabere idealne boje.">
+                        <ColorPaletteSection watch={watch} setValue={setValue} />
+                    </Section>
+                </motion.div>
+
+                {/* ── Typography ── */}
+                <motion.div variants={{ hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0 } }}>
+                    <Section icon="📝" title="Tipografija" accentColor="#3B82F6"
+                        hint="Odaberite kombinaciju fontova za naslove i tekst vaše stranice.">
+                        <TypographySection watch={watch} setValue={setValue} />
+                    </Section>
+                </motion.div>
+
                 {/* ── Design Reference URL ── */}
                 <AnimatePresence>
                 {activeSections.has('designRef') && (
@@ -709,7 +754,7 @@ export default function ContentForm({ project }) {
                         hint="AI će koristiti ovu stranicu kao vizualnu inspiraciju pri generiranju vaše stranice.">
                         <div className="space-y-1.5">
                             <label className="text-sm font-medium" style={{ color: 'var(--lp-text-secondary)' }}>URL Stranice</label>
-                            <input {...register("designReferenceUrl")} type="url" className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-white/20"
+                            <input {...register("designReferenceUrl")} type="text" className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-white/20"
                                 style={{ background: 'var(--lp-surface)', border: '1px solid var(--lp-border)', color: 'var(--lp-heading)' }}
                                 placeholder="https://example.com" />
                             <p className="text-[11px]" style={{ color: 'var(--lp-text-muted)' }}>
@@ -802,15 +847,21 @@ export default function ContentForm({ project }) {
                     </Section>
                 </motion.div>
 
-                {/* ── Dynamic optional sections ── */}
+                {/* ── Dynamic optional sections (rendered in insertion order) ── */}
                 <div className="space-y-4">
                     <AnimatePresence>
-                    {activeSections.has('workingHours') && <motion.div key="workingHours" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }}><WorkingHoursSection {...formProps} onRemove={() => toggleSection('workingHours')} /></motion.div>}
-                    {activeSections.has('socialLinks') && <motion.div key="socialLinks" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }}><SocialLinksSection register={register} onRemove={() => toggleSection('socialLinks')} /></motion.div>}
-                    {activeSections.has('testimonials') && <motion.div key="testimonials" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }}><TestimonialsSection {...formProps} onRemove={() => toggleSection('testimonials')} /></motion.div>}
-                    {activeSections.has('faq') && <motion.div key="faq" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }}><FaqSection control={control} register={register} onRemove={() => toggleSection('faq')} /></motion.div>}
-                    {activeSections.has('gallery') && <motion.div key="gallery" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }}><GallerySection {...formProps} setMediaPickerField={setMediaPickerField} mediaPickerField={mediaPickerField} MediaPickerModal={MediaPickerModal} onRemove={() => toggleSection('gallery')} /></motion.div>}
-                    {activeSections.has('pricing') && <motion.div key="pricing" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }}><PricingSection {...formProps} onRemove={() => toggleSection('pricing')} /></motion.div>}
+                    {sectionOrder.filter(k => activeSections.has(k) && ['workingHours','socialLinks','testimonials','faq','gallery','pricing'].includes(k)).map(key => {
+                        const motionProps = { initial: { opacity: 0, y: 14 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -10 }, transition: { duration: 0.25 } };
+                        switch (key) {
+                            case 'workingHours': return <motion.div key={key} {...motionProps}><WorkingHoursSection {...formProps} onRemove={() => toggleSection('workingHours')} /></motion.div>;
+                            case 'socialLinks': return <motion.div key={key} {...motionProps}><SocialLinksSection register={register} onRemove={() => toggleSection('socialLinks')} /></motion.div>;
+                            case 'testimonials': return <motion.div key={key} {...motionProps}><TestimonialsSection {...formProps} onRemove={() => toggleSection('testimonials')} /></motion.div>;
+                            case 'faq': return <motion.div key={key} {...motionProps}><FaqSection control={control} register={register} onRemove={() => toggleSection('faq')} /></motion.div>;
+                            case 'gallery': return <motion.div key={key} {...motionProps}><GallerySection {...formProps} setMediaPickerField={setMediaPickerField} mediaPickerField={mediaPickerField} MediaPickerModal={MediaPickerModal} onRemove={() => toggleSection('gallery')} /></motion.div>;
+                            case 'pricing': return <motion.div key={key} {...motionProps}><PricingSection {...formProps} onRemove={() => toggleSection('pricing')} /></motion.div>;
+                            default: return null;
+                        }
+                    })}
                     </AnimatePresence>
                 </div>
 
@@ -875,7 +926,7 @@ export default function ContentForm({ project }) {
                                     style={{ background: 'var(--lp-heading)', color: 'var(--lp-bg)' }}>
                                     {generating ? <><Loader2 className="animate-spin" size={18} /><span className="hidden sm:inline">Generiranje...</span></> : <><Sparkles size={18} /><span className="hidden sm:inline">Generiraj Web Stranicu</span><span className="sm:hidden">Generiraj</span></>}
                                 </button>
-                                <span className="hidden sm:inline"><InfoTooltip text="AI koristi sve unesene podatke da izradi kompletnu, profesionalnu web stranicu. Proces traje oko 45-90 sekundi." side="top" /></span>
+                                <span className="hidden sm:inline"><InfoTooltip text="AI koristi sve unesene podatke da izradi kompletnu, profesionalnu web stranicu. Proces traje u prosjeku 3-5 minuta." side="top" /></span>
                             </div>
                         )}
                     </div>

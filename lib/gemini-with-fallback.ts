@@ -1,4 +1,5 @@
 // Gemini model with automatic fallback and DB-configurable model names
+// Uses streaming to avoid false timeouts on large generations.
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { prisma } from '@/lib/prisma';
@@ -36,7 +37,6 @@ async function getConfiguredModels(): Promise<{ primary: string; fallback: strin
             fallback: map.aiFallbackModel || DEFAULT_FALLBACK,
         };
     } catch {
-        // DB unreachable — use defaults
         cachedModels = { primary: DEFAULT_PRIMARY, fallback: DEFAULT_FALLBACK };
     }
 
@@ -44,24 +44,88 @@ async function getConfiguredModels(): Promise<{ primary: string; fallback: strin
     return cachedModels;
 }
 
+// ─── Streaming helper ────────────────────────────────────────────────
+
 /**
- * Try generating content with the primary model, fall back to a secondary model
- * on 503 Service Unavailable, quota errors, or timeout.
+ * Consume a Gemini stream with an inactivity timeout.
+ * If no new chunk arrives within `inactivityMs`, rejects with 'AI timeout'.
+ * This prevents killing a model that IS actively generating — only times out
+ * when the model goes completely silent.
+ */
+async function consumeStreamWithTimeout(
+    stream: AsyncIterable<any>,
+    inactivityMs: number
+): Promise<string> {
+    const chunks: string[] = [];
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const resetTimer = (reject: (e: Error) => void) => {
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => reject(new Error('AI timeout')), inactivityMs);
+    };
+
+    return new Promise<string>((resolve, reject) => {
+        resetTimer(reject);
+
+        (async () => {
+            try {
+                for await (const chunk of stream) {
+                    const text = chunk.text?.() || '';
+                    if (text) {
+                        chunks.push(text);
+                        resetTimer(reject); // Model is alive — reset the clock
+                    }
+                }
+                if (timer) clearTimeout(timer);
+
+                if (chunks.length === 0) {
+                    reject(new Error('AI returned empty response'));
+                } else {
+                    resolve(chunks.join(''));
+                }
+            } catch (err) {
+                if (timer) clearTimeout(timer);
+                reject(err);
+            }
+        })();
+    });
+}
+
+// ─── Main generation function ────────────────────────────────────────
+
+/**
+ * Generate content with streaming + automatic fallback.
+ *
+ * - Uses `generateContentStream` instead of `generateContent`
+ * - `inactivityMs` (default 120s) = max silence before timeout
+ *   → Model actively generating will NEVER be killed
+ *   → Only truly stuck/dead models get timed out
+ * - Falls back to secondary model on 503, quota, or timeout
  */
 export async function generateWithFallback(
     prompt: string | any[],
     options: {
+        /** @deprecated Use inactivityMs instead. Kept for backwards compat — mapped to inactivityMs. */
         timeoutMs?: number;
+        /** @deprecated Use fallbackInactivityMs instead. */
         fallbackTimeoutMs?: number;
+        /** Max seconds of silence before timeout (default 120s). */
+        inactivityMs?: number;
+        /** Inactivity timeout for fallback model. */
+        fallbackInactivityMs?: number;
         systemInstruction?: string;
     } = {}
-): Promise<{ response: any; modelUsed: string }> {
+): Promise<{ response: any; modelUsed: string; text: string }> {
     if (!GOOGLE_API_KEY) throw new Error('GOOGLE_API_KEY not configured');
 
     const genAI = new GoogleGenerativeAI(GOOGLE_API_KEY);
-    const { timeoutMs = 120000, fallbackTimeoutMs, systemInstruction } = options;
-    const timeouts = [timeoutMs, fallbackTimeoutMs ?? timeoutMs];
 
+    // Support both old timeoutMs and new inactivityMs
+    const primaryInactivity = options.inactivityMs ?? options.timeoutMs ?? 120_000;
+    const fallbackInactivity = options.fallbackInactivityMs ?? options.fallbackTimeoutMs ?? primaryInactivity;
+    const inactivityTimeouts = [primaryInactivity, fallbackInactivity];
+
+    const { systemInstruction } = options;
     const modelOptions: any = {};
     if (systemInstruction) modelOptions.systemInstruction = systemInstruction;
 
@@ -71,21 +135,25 @@ export async function generateWithFallback(
     for (let i = 0; i < models.length; i++) {
         const modelName = models[i];
         const model = genAI.getGenerativeModel({ model: modelName, ...modelOptions });
+        const inactivityMs = inactivityTimeouts[i];
 
-        const currentTimeout = timeouts[i];
         try {
-            const result = await Promise.race([
-                model.generateContent(prompt),
-                new Promise<never>((_, reject) =>
-                    setTimeout(() => reject(new Error('AI timeout')), currentTimeout)
-                )
-            ]);
+            console.log(`🤖 Trying model: ${modelName} (inactivity timeout: ${Math.round(inactivityMs / 1000)}s)`);
 
-            const response = await (result as any).response;
+            const streamResult = await model.generateContentStream(prompt);
+            const text = await consumeStreamWithTimeout(streamResult.stream, inactivityMs);
+
             if (i > 0) {
                 console.log(`⚠️ Used fallback model: ${modelName} (primary was unavailable)`);
             }
-            return { response, modelUsed: modelName };
+            console.log(`✅ Model ${modelName} generated ${text.length} chars`);
+
+            // Build a response-like object for backward compatibility
+            return {
+                response: { text: () => text },
+                modelUsed: modelName,
+                text,
+            };
 
         } catch (error: any) {
             const msg = error.message || '';
@@ -97,19 +165,18 @@ export async function generateWithFallback(
                 msg.includes('quota') ||
                 msg.includes('rate limit') ||
                 msg.includes('RESOURCE_EXHAUSTED') ||
-                msg === 'AI timeout';
+                msg === 'AI timeout' ||
+                msg === 'AI returned empty response';
 
             if (isRetryable && i < models.length - 1) {
-                console.warn(`⚠️ Model ${modelName} failed (${msg.substring(0, 80)}), trying fallback...`);
+                console.warn(`⚠️ Model ${modelName} failed (${msg.substring(0, 100)}), trying fallback...`);
                 continue;
             }
 
-            // Last model or non-retryable error — rethrow
             throw error;
         }
     }
 
-    // Should not reach here
     throw new Error('All models failed');
 }
 

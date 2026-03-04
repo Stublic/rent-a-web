@@ -49,7 +49,7 @@ export default async function ContentPage({ params }) {
     const getStatusMessage = (status) => {
         switch (status) {
             case 'DRAFT': return 'Ispunite formu ispod i kliknite "Generiraj Web Stranicu" da Webica AI kreira vašu stranicu.';
-            case 'PROCESSING': return 'AI trenutno generira vašu web stranicu. Ovo može potrajati 15-20 sekundi.';
+            case 'PROCESSING': return 'AI trenutno generira vašu web stranicu. Generiranje traje u prosjeku 3–5 minuta.';
             case 'PUBLISHED': return 'Vaša web stranica je objavljena i dostupna na internetu.';
             case 'GENERATED': return isPublished
                 ? 'Vaša web stranica je objavljena i dostupna na internetu.'
@@ -125,7 +125,7 @@ export default async function ContentPage({ params }) {
                         <div className="flex-1">
                             <h3 className="font-bold text-blue-400 text-sm mb-1">Generiranje u tijeku</h3>
                             <p className="text-blue-300/80 text-xs leading-relaxed">
-                                Webica AI trenutno stvara vašu web stranicu. Proces može potrajati 15-20 sekundi. Stranica će se osvježiti automatski.
+                                Webica AI trenutno stvara vašu web stranicu. Generiranje traje u prosjeku 3–5 minuta. Stranica će se osvježiti automatski.
                             </p>
                             <p className="text-blue-400/50 text-[11px] mt-2 italic">
                                 Možete zatvoriti stranicu i vratiti se kasnije.

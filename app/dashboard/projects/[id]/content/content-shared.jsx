@@ -33,6 +33,9 @@ export function MediaPickerModal({ onSelect, onClose }) {
     const [media, setMedia] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
+    const [dragOver, setDragOver] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const fileInputRef = { current: null };
 
     useEffect(() => {
         const fetchMedia = async () => {
@@ -46,6 +49,49 @@ export function MediaPickerModal({ onSelect, onClose }) {
         fetchMedia();
     }, []);
 
+    const handleFileUpload = async (files) => {
+        if (!files || files.length === 0) return;
+        setUploading(true);
+        for (const file of Array.from(files)) {
+            if (!file.type.startsWith('image/')) continue;
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                const res = await fetch('/api/media', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.media) {
+                    // If single file, select it immediately
+                    if (files.length === 1) {
+                        setUploading(false);
+                        onSelect(data.media.url);
+                        return;
+                    }
+                    setMedia(prev => [data.media, ...prev]);
+                }
+            } catch (err) { console.error("Upload failed:", err); }
+        }
+        setUploading(false);
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragOver(false);
+        handleFileUpload(e.dataTransfer.files);
+    };
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragOver(true);
+    };
+
+    const handleDragLeave = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragOver(false);
+    };
+
     const filtered = search ? media.filter(m => m.filename.toLowerCase().includes(search.toLowerCase())) : media;
 
     return (
@@ -54,16 +100,52 @@ export function MediaPickerModal({ onSelect, onClose }) {
                 <div className="flex items-center justify-between p-5" style={{ borderBottom: '1px solid var(--lp-border)' }}>
                     <div>
                         <h3 className="text-base font-bold" style={{ color: 'var(--lp-heading)' }}>Media Knjižnica</h3>
-                        <p className="text-[11px] mt-0.5" style={{ color: 'var(--lp-text-muted)' }}>Odaberite sliku iz vaše knjižnice</p>
+                        <p className="text-[11px] mt-0.5" style={{ color: 'var(--lp-text-muted)' }}>Odaberite sliku ili povucite novu datoteku</p>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-lg transition-colors"><X size={18} style={{ color: 'var(--lp-text-muted)' }} /></button>
+                    <div className="flex items-center gap-2">
+                        <label className="cursor-pointer px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1.5 transition-colors hover:bg-white/5"
+                            style={{ color: 'var(--lp-text-secondary)', border: '1px solid var(--lp-border)' }}>
+                            <Upload size={12} />Upload
+                            <input
+                                type="file"
+                                multiple
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => handleFileUpload(e.target.files)}
+                            />
+                        </label>
+                        <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-lg transition-colors"><X size={18} style={{ color: 'var(--lp-text-muted)' }} /></button>
+                    </div>
                 </div>
                 <div className="px-5 py-3" style={{ borderBottom: '1px solid var(--lp-border)' }}>
                     <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Pretraži po nazivu..."
                         className="w-full rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-white/20 transition-colors"
                         style={{ background: 'var(--lp-surface)', border: '1px solid var(--lp-border)', color: 'var(--lp-heading)' }} />
                 </div>
-                <div className="flex-1 overflow-y-auto p-5">
+                <div
+                    className="flex-1 overflow-y-auto p-5 relative"
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                >
+                    {/* Drag overlay */}
+                    {dragOver && (
+                        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center rounded-b-2xl"
+                            style={{ border: '3px dashed rgba(34,197,94,0.5)' }}>
+                            <Upload size={32} className="text-emerald-400 mb-2" />
+                            <p className="text-sm font-semibold text-emerald-400">Ispustite sliku ovdje</p>
+                            <p className="text-xs mt-1" style={{ color: 'var(--lp-text-muted)' }}>Automatski će se uploadati i odabrati</p>
+                        </div>
+                    )}
+
+                    {/* Upload progress */}
+                    {uploading && (
+                        <div className="flex items-center gap-2.5 mb-4 p-3 rounded-xl" style={{ background: 'rgba(34,197,94,0.05)', border: '1px solid rgba(34,197,94,0.15)' }}>
+                            <Loader2 size={16} className="animate-spin text-emerald-400" />
+                            <span className="text-xs font-medium text-emerald-400">Uploading...</span>
+                        </div>
+                    )}
+
                     {loading ? (
                         <div className="flex items-center justify-center py-16"><Loader2 size={24} className="animate-spin" style={{ color: 'var(--lp-text-muted)' }} /></div>
                     ) : filtered.length > 0 ? (
@@ -85,7 +167,7 @@ export function MediaPickerModal({ onSelect, onClose }) {
                         <div className="text-center py-16">
                             <Image size={28} className="mx-auto mb-3" style={{ color: 'var(--lp-text-muted)' }} />
                             <p className="text-sm font-medium" style={{ color: 'var(--lp-text-muted)' }}>{search ? "Nema rezultata" : "Nema uploadanih slika"}</p>
-                            <p className="text-xs mt-1" style={{ color: 'var(--lp-text-muted)' }}>{search ? "Pokušajte s drugim pojmom" : "Idite na Media tab da uploadate slike"}</p>
+                            <p className="text-xs mt-1" style={{ color: 'var(--lp-text-muted)' }}>{search ? "Pokušajte s drugim pojmom" : "Povucite sliku ovdje ili kliknite Upload"}</p>
                         </div>
                     )}
                 </div>

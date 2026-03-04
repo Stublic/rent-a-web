@@ -21,19 +21,56 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ proj
         return new NextResponse('Stranica nije pronađena', { status: 404 });
     }
 
-    let html = pageSlug === 'home'
-        ? project.generatedHtml
-        : (project.reactFiles as Record<string, string>)?.[pageSlug] || project.generatedHtml;
-
-    // Strip old blog links, inject subpage nav, inject blog nav
-    html = stripOldBlogLinks(html);
-    html = injectSubpageNavLinks(html, project);
+    // 1. Process the HOMEPAGE first to get canonical nav/footer
+    let homeHtml = project.generatedHtml;
+    homeHtml = stripOldBlogLinks(homeHtml);
+    homeHtml = injectSubpageNavLinks(homeHtml, project);
     const hasBlog = project.blogPosts && project.blogPosts.length > 0;
-    if (hasBlog) html = injectBlogNavLink(html);
+    if (hasBlog) homeHtml = injectBlogNavLink(homeHtml);
+    homeHtml = normalizeMobileNav(homeHtml);
+
+    if (pageSlug === 'home') {
+        return new NextResponse(homeHtml, {
+            headers: { 'Content-Type': 'text/html; charset=utf-8' }
+        });
+    }
+
+    // 2. For subpages, use the subpage HTML but replace nav/footer with homepage's
+    let html = (project.reactFiles as Record<string, string>)?.[pageSlug] || project.generatedHtml;
+    html = replaceNavAndFooter(html, homeHtml);
 
     return new NextResponse(html, {
         headers: { 'Content-Type': 'text/html; charset=utf-8' }
     });
+}
+
+/**
+ * Replace the subpage's <header>/<nav> and <footer> with the homepage's canonical versions.
+ * This ensures consistent navigation and footer across all pages.
+ */
+function replaceNavAndFooter(subpageHtml: string, homepageHtml: string): string {
+    // Extract and replace <header> (or <nav> if no header)
+    const homeHeader = homepageHtml.match(/<header[\s\S]*?<\/header>/i);
+    const subHeader = subpageHtml.match(/<header[\s\S]*?<\/header>/i);
+    if (homeHeader && subHeader) {
+        subpageHtml = subpageHtml.replace(subHeader[0], homeHeader[0]);
+    } else {
+        // Try <nav> if no <header>
+        const homeNav = homepageHtml.match(/<nav[\s\S]*?<\/nav>/i);
+        const subNav = subpageHtml.match(/<nav[\s\S]*?<\/nav>/i);
+        if (homeNav && subNav) {
+            subpageHtml = subpageHtml.replace(subNav[0], homeNav[0]);
+        }
+    }
+
+    // Extract and replace <footer>
+    const homeFooter = homepageHtml.match(/<footer[\s\S]*?<\/footer>/i);
+    const subFooter = subpageHtml.match(/<footer[\s\S]*?<\/footer>/i);
+    if (homeFooter && subFooter) {
+        subpageHtml = subpageHtml.replace(subFooter[0], homeFooter[0]);
+    }
+
+    return subpageHtml;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────
@@ -78,24 +115,30 @@ function injectSubpageNavLinks(html: string, project: any): string {
     const allSlugs = Object.keys(reactFiles).filter(k => labels[k]);
     if (allSlugs.length === 0) return html;
 
-    const missingSlugs = allSlugs.filter(slug =>
-        !html.includes(`href="/${slug}"`) && !html.includes(`href='/${slug}'`)
-    );
-    if (missingSlugs.length === 0) return html;
-
     const linkClass = extractNavLinkClass(html);
     const buildLink = (slug: string) => {
         const cls = linkClass ? ` class="${linkClass}"` : '';
         return `<a href="/${slug}"${cls}>${labels[slug]}</a>`;
     };
 
+    // Check which slugs are missing FROM THE NAV LINKS AREA (not CTA buttons)
+    // Extract the desktop nav links container to check only there
+    const navMatch = html.match(/<nav[\s\S]*?<\/nav>/i);
+    const desktopLinksDiv = navMatch?.[0]?.match(/<div[^>]*class="[^"]*hidden\s+md:flex[^"]*"[^>]*>[\s\S]*?<\/div>/i);
+    const navLinksArea = desktopLinksDiv?.[0] || '';
+
+    const missingSlugs = allSlugs.filter(slug => {
+        // Check if slug exists as a regular nav link (not a CTA button)
+        return !navLinksArea.includes(`href="/${slug}"`) && !navLinksArea.includes(`href='/${slug}'`);
+    });
+
+    // Always replace marker placeholders even if missingSlugs is empty (markers should be cleaned)
     const navLinksHtml = missingSlugs.map(buildLink).join('\n                    ');
 
-    // Desktop nav
+    // Desktop nav — replace marker or inject after Početna
     if (html.includes('<!-- NAV_LINKS -->')) {
         html = html.replace(/<!-- NAV_LINKS -->/g, navLinksHtml);
-    } else {
-        const navMatch = html.match(/<nav[\s\S]*?<\/nav>/i);
+    } else if (missingSlugs.length > 0) {
         if (navMatch) {
             const pocetnaLink = navMatch[0].match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i);
             if (pocetnaLink) {
@@ -105,26 +148,28 @@ function injectSubpageNavLinks(html: string, project: any): string {
         }
     }
 
-    // Mobile menu
-    if (html.includes('<!-- NAV_LINKS_MOBILE -->')) {
-        const mobileMenuMatch = html.match(/<div[^>]*id=["']mobile-menu["'][^>]*>[\s\S]*?<\/div>/i);
-        let mobileCls = '';
-        if (mobileMenuMatch) {
-            const mp = mobileMenuMatch[0].match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i);
-            if (mp) { const c = mp[0].match(/class="([^"]*)"/); if (c) mobileCls = c[1].replace(/\bborder-b[-\w]*/g, '').replace(/\bborder-primary\b/g, '').replace(/\s{2,}/g, ' ').trim(); }
-        }
-        const mobileLinks = missingSlugs.map(s => `<a href="/${s}"${mobileCls ? ` class="${mobileCls}"` : ''}>${labels[s]}</a>`).join('\n            ');
-        html = html.replace(/<!-- NAV_LINKS_MOBILE -->/g, mobileLinks);
-    } else {
-        const mobileMenuMatch = html.match(/<div[^>]*id=["']mobile-menu["'][^>]*>[\s\S]*?<\/div>/i);
-        if (mobileMenuMatch) {
-            const mobileHtml = mobileMenuMatch[0];
+    // Mobile menu — replace marker or inject after Početna (before CTA)
+    const mobileMenuMatch = html.match(/<div[^>]*id=["']mobile-menu["'][^>]*>[\s\S]*?<\/div>/i);
+    if (mobileMenuMatch && missingSlugs.length > 0) {
+        const mobileHtml = mobileMenuMatch[0];
+        // Check which slugs are missing from mobile menu as regular nav links (not CTA)
+        const mobileMissing = missingSlugs.filter(slug =>
+            !mobileHtml.match(new RegExp(`<a\\s[^>]*href=["']\\/${slug}["'][^>]*>\\s*${labels[slug]}\\s*<\\/a>`, 'i'))
+        );
+
+        if (mobileMissing.length > 0) {
+            let mobileCls = '';
             const mobilePocetna = mobileHtml.match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i);
-            if (mobilePocetna && !mobileHtml.includes(`href="/${missingSlugs[0]}"`)) {
-                let mobileCls = '';
+            if (mobilePocetna) {
                 const c = mobilePocetna[0].match(/class="([^"]*)"/);
                 if (c) mobileCls = c[1].replace(/\bborder-b[-\w]*/g, '').replace(/\bborder-primary\b/g, '').replace(/\s{2,}/g, ' ').trim();
-                const mobileLinks = missingSlugs.map(s => `<a href="/${s}"${mobileCls ? ` class="${mobileCls}"` : ''}>${labels[s]}</a>`).join('\n            ');
+            }
+            // Also update Početna to match injected links if its class has text-base (normalize all to same style)
+            const mobileLinks = mobileMissing.map(s => `<a href="/${s}"${mobileCls ? ` class="${mobileCls}"` : ''}>${labels[s]}</a>`).join('\n            ');
+
+            if (html.includes('<!-- NAV_LINKS_MOBILE -->')) {
+                html = html.replace(/<!-- NAV_LINKS_MOBILE -->/g, mobileLinks);
+            } else if (mobilePocetna) {
                 const updatedMobile = mobileHtml.replace(mobilePocetna[0], mobilePocetna[0] + '\n            ' + mobileLinks);
                 html = html.replace(mobileMenuMatch[0], updatedMobile);
             }
@@ -132,22 +177,24 @@ function injectSubpageNavLinks(html: string, project: any): string {
     }
 
     // Footer
-    if (html.includes('<!-- FOOTER_NAV_LINKS -->')) {
-        const footerLinks = missingSlugs.map(s => `<a href="/${s}">${labels[s]}</a>`).join('\n');
-        html = html.replace(/<!-- FOOTER_NAV_LINKS -->/g, footerLinks);
-    } else {
-        const footerMatch = html.match(/<footer[\s\S]*?<\/footer>/i);
-        if (footerMatch) {
-            const footerHomeLi = footerMatch[0].match(/<li>\s*<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>\s*<\/li>/i);
-            if (footerHomeLi && !footerMatch[0].includes(`href="/${missingSlugs[0]}"`)) {
-                const footerLiLinks = missingSlugs.map(s => `<li><a href="/${s}" class="hover:text-white transition-colors">${labels[s]}</a></li>`).join('\n                        ');
-                const updatedFooter = footerMatch[0].replace(footerHomeLi[0], footerHomeLi[0] + '\n                        ' + footerLiLinks);
-                html = html.replace(footerMatch[0], updatedFooter);
+    if (missingSlugs.length > 0) {
+        if (html.includes('<!-- FOOTER_NAV_LINKS -->')) {
+            const footerLinks = missingSlugs.map(s => `<li><a href="/${s}" class="text-textMuted hover:text-white transition-colors">${labels[s]}</a></li>`).join('\n                        ');
+            html = html.replace(/<!-- FOOTER_NAV_LINKS -->/g, footerLinks);
+        } else {
+            const footerMatch = html.match(/<footer[\s\S]*?<\/footer>/i);
+            if (footerMatch) {
+                const footerHomeLi = footerMatch[0].match(/<li>\s*<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>\s*<\/li>/i);
+                if (footerHomeLi && !footerMatch[0].includes(`href="/${missingSlugs[0]}"`)) {
+                    const footerLiLinks = missingSlugs.map(s => `<li><a href="/${s}" class="hover:text-white transition-colors">${labels[s]}</a></li>`).join('\n                        ');
+                    const updatedFooter = footerMatch[0].replace(footerHomeLi[0], footerHomeLi[0] + '\n                        ' + footerLiLinks);
+                    html = html.replace(footerMatch[0], updatedFooter);
+                }
             }
         }
     }
 
-    // Clean markers
+    // Clean remaining markers
     html = html.replace(/<!-- NAV_LINKS -->/g, '');
     html = html.replace(/<!-- NAV_LINKS_MOBILE -->/g, '');
     html = html.replace(/<!-- FOOTER_NAV_LINKS -->/g, '');
@@ -187,14 +234,32 @@ function injectBlogNavLink(html: string): string {
     // Mobile menu
     const mobileMenuMatch = html.match(/<div[^>]*id=["']mobile-menu["'][^>]*>[\s\S]*?<\/div>/i);
     if (mobileMenuMatch && !mobileMenuMatch[0].includes('href="/blog"')) {
-        const ctaButton = mobileMenuMatch[0].match(/<a\s[^>]*class="[^"]*bg-primary[^"]*"[^>]*>[\s\S]*?<\/a>/i);
-        if (ctaButton) {
-            const mobilePocetna = mobileMenuMatch[0].match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i);
-            let mobileCls = '';
+        const mobileHtml = mobileMenuMatch[0];
+        // Find CTA button (matches bg-primary, bg-brand-*, inline-flex rounded-full)
+        const ctaButton = mobileHtml.match(/<a\s[^>]*class="[^"]*(?:bg-(?:primary|brand)[^"]*|inline-flex[^"]*rounded-full)"[^>]*>[\s\S]*?<\/a>/i);
+        // Get mobile link class from a non-Početna nav link (to match existing styling)
+        const mobileNavLinks = mobileHtml.match(/<a\s[^>]*href=["']\/[a-z][a-z-]*["'][^>]*>[^<]*<\/a>/gi);
+        let mobileCls = '';
+        if (mobileNavLinks && mobileNavLinks.length > 0) {
+            const c = mobileNavLinks[0].match(/class="([^"]*)"/);
+            if (c) mobileCls = c[1];
+        }
+        if (!mobileCls) {
+            const mobilePocetna = mobileHtml.match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i);
             if (mobilePocetna) { const c = mobilePocetna[0].match(/class="([^"]*)"/); if (c) mobileCls = c[1].replace(/\bborder-b[-\w]*/g, '').replace(/\bborder-primary\b/g, '').replace(/\s{2,}/g, ' ').trim(); }
-            const mobileBlogLink = `<a href="/blog"${mobileCls ? ` class="${mobileCls}"` : ''}>Blog</a>`;
-            const updatedMobile = mobileMenuMatch[0].replace(ctaButton[0], mobileBlogLink + '\n            ' + ctaButton[0]);
+        }
+        const mobileBlogLink = `<a href="/blog"${mobileCls ? ` class="${mobileCls}"` : ''}>Blog</a>`;
+        if (ctaButton) {
+            const updatedMobile = mobileHtml.replace(ctaButton[0], mobileBlogLink + '\n            ' + ctaButton[0]);
             html = html.replace(mobileMenuMatch[0], updatedMobile);
+        } else {
+            // No CTA found, inject after last nav link
+            const allLinks = mobileHtml.match(/<a\s[^>]*href=["']\/[a-z-]*["'][^>]*>[^<]*<\/a>/gi);
+            if (allLinks && allLinks.length > 0) {
+                const lastLink = allLinks[allLinks.length - 1];
+                const updatedMobile = mobileHtml.replace(lastLink, lastLink + '\n            ' + mobileBlogLink);
+                html = html.replace(mobileMenuMatch[0], updatedMobile);
+            }
         }
     }
 
@@ -211,4 +276,33 @@ function injectBlogNavLink(html: string): string {
     }
 
     return html;
+}
+
+/**
+ * Normalize mobile nav so ALL links (including Početna) share the same class.
+ * The AI often generates Početna with text-base/p-2 while other links use text-sm.
+ */
+function normalizeMobileNav(html: string): string {
+    const mobileMenuMatch = html.match(/<div[^>]*id=["']mobile-menu["'][^>]*>[\s\S]*?<\/div>/i);
+    if (!mobileMenuMatch) return html;
+
+    const mobileHtml = mobileMenuMatch[0];
+    // Find non-CTA, non-Početna nav links to determine the "standard" class
+    const otherLinks = mobileHtml.match(/<a\s[^>]*href=["']\/[a-z][a-z-]*["'][^>]*>[^<]*<\/a>/gi);
+    if (!otherLinks || otherLinks.length === 0) return html;
+
+    const standardCls = otherLinks[0].match(/class="([^"]*)"/);
+    if (!standardCls) return html;
+
+    // Find Početna link
+    const pocetnaMatch = mobileHtml.match(/<a\s([^>]*)href=["']\/["']([^>]*)>\s*Početna\s*<\/a>/i);
+    if (!pocetnaMatch) return html;
+
+    const fullPocetna = pocetnaMatch[0];
+    const pocetnaCls = fullPocetna.match(/class="([^"]*)"/);
+    if (!pocetnaCls || pocetnaCls[1] === standardCls[1]) return html; // Already matching
+
+    const updatedPocetna = fullPocetna.replace(`class="${pocetnaCls[1]}"`, `class="${standardCls[1]}"`);
+    const updatedMobile = mobileHtml.replace(fullPocetna, updatedPocetna);
+    return html.replace(mobileMenuMatch[0], updatedMobile);
 }

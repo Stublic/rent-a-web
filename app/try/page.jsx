@@ -277,7 +277,7 @@ export default function TryPage() {
                         </div>
 
                         <p className="text-center text-xs text-zinc-600 mt-4">
-                            Generiranje traje 15–30 sekundi
+                            Generiranje traje u prosjeku 3–5 minuta
                         </p>
                     </div>
                 </div>

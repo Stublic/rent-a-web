@@ -1,13 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FileText, Plus, Trash2, Edit3, Loader2, Sparkles, Calendar, ExternalLink, FolderOpen } from "lucide-react";
+import { FileText, Plus, Trash2, Edit3, Loader2, Sparkles, Calendar, ExternalLink, FolderOpen, AlertTriangle } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function BlogTab({ projectId }) {
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [usedThisMonth, setUsedThisMonth] = useState(0);
     const [deleteId, setDeleteId] = useState(null);
+    const [showDeleteAll, setShowDeleteAll] = useState(false);
+    const [deletingAll, setDeletingAll] = useState(false);
+    const router = useRouter();
 
     const fetchPosts = async () => {
         try {
@@ -29,6 +33,20 @@ export default function BlogTab({ projectId }) {
             setPosts(posts.filter(p => p.id !== id));
         } catch (err) { console.error("Delete failed", err); }
         finally { setDeleteId(null); }
+    };
+
+    const handleDeleteAll = async () => {
+        setDeletingAll(true);
+        try {
+            const res = await fetch(`/api/blog?projectId=${projectId}&deleteAll=true`, { method: 'DELETE' });
+            if (res.ok) {
+                setPosts([]);
+                setUsedThisMonth(0);
+                setShowDeleteAll(false);
+                router.refresh();
+            }
+        } catch (err) { console.error("Delete all failed", err); }
+        finally { setDeletingAll(false); }
     };
 
     const togglePublish = async (post) => {
@@ -63,6 +81,11 @@ export default function BlogTab({ projectId }) {
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
+                    <button onClick={() => setShowDeleteAll(true)}
+                        className="px-3.5 py-2 rounded-xl font-medium flex items-center gap-2 transition-all text-xs hover:scale-105 hover:bg-red-500/10"
+                        style={{ color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }}>
+                        <Trash2 size={14} /> <span className="hidden sm:inline">Izbriši Blog</span>
+                    </button>
                     <a href={`/api/site/${projectId}/blog`} target="_blank" rel="noopener noreferrer"
                         className="px-3.5 py-2 rounded-xl font-medium flex items-center gap-2 transition-all text-xs hover:scale-105"
                         style={{ color: 'var(--lp-text-secondary)', border: '1px solid var(--lp-border)' }}>
@@ -143,6 +166,42 @@ export default function BlogTab({ projectId }) {
                             </div>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* Delete All Confirmation Modal */}
+            {showDeleteAll && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => !deletingAll && setShowDeleteAll(false)}>
+                    <div className="rounded-2xl max-w-md w-full p-6 shadow-2xl" style={{ background: 'var(--lp-bg-alt)', border: '1px solid var(--lp-border)' }} onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2.5 rounded-xl bg-red-500/10">
+                                <AlertTriangle size={22} className="text-red-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-base font-bold" style={{ color: 'var(--lp-heading)' }}>Izbriši cijeli Blog?</h3>
+                                <p className="text-xs mt-0.5" style={{ color: 'var(--lp-text-muted)' }}>Ova radnja se ne može poništiti</p>
+                            </div>
+                        </div>
+                        <div className="rounded-xl p-3.5 mb-5" style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)' }}>
+                            <p className="text-xs leading-relaxed" style={{ color: 'var(--lp-text-secondary)' }}>
+                                Ovo će trajno obrisati <strong style={{ color: '#ef4444' }}>sve blog članke</strong>, kategorije i ukloniti Blog link iz navigacije vaše stranice. 
+                                Blog možete ponovno pokrenuti kreiranjem novog članka.
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2.5 justify-end">
+                            <button onClick={() => setShowDeleteAll(false)} disabled={deletingAll}
+                                className="px-4 py-2 rounded-xl text-xs font-medium transition-colors hover:bg-white/5"
+                                style={{ color: 'var(--lp-text-secondary)', border: '1px solid var(--lp-border)' }}>
+                                Odustani
+                            </button>
+                            <button onClick={handleDeleteAll} disabled={deletingAll}
+                                className="px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all hover:scale-105"
+                                style={{ background: '#ef4444', color: 'white' }}>
+                                {deletingAll ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                                {deletingAll ? 'Brisanje...' : 'Da, izbriši sve'}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

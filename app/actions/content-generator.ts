@@ -13,6 +13,7 @@ import { logGeminiUsage } from '@/lib/gemini-usage';
 import { generateWithFallback } from '@/lib/gemini-with-fallback';
 
 import { contentSchema, formatValidationErrors } from '@/lib/schemas';
+import { buildFontInstruction } from '@/lib/font-pairs';
 
 // Validate environment variables at startup
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
@@ -184,6 +185,9 @@ export async function generateWebsiteAction(projectId: string, formData: any) {
             if (data.textColor) colorInstruction += ` Main text color: ${data.textColor}.`;
         }
 
+        // Font instruction
+        const fontInstruction = buildFontInstruction((data as any).fontPair);
+
         const prompt = `
 You are a Senior Frontend Engineer and UI/UX Designer.
 Your task: Generate a SINGLE, self-contained HTML file for a landing page based on the client's data.
@@ -193,7 +197,8 @@ Your task: Generate a SINGLE, self-contained HTML file for a landing page based 
 2.  **Framework:** Use Tailwind CSS via CDN.
     - <script src="https://cdn.tailwindcss.com"></script>
     - Configure Tailwind theme in a <script> tag. ${colorInstruction}
-3.  **Animations:** Use GSAP + ScrollTrigger via CDN.
+3.  **Typography:** ${fontInstruction}
+4.  **Animations:** Use GSAP + ScrollTrigger via CDN.
     - <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     - <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     - Apply smooth scroll-triggered animations (fade-in, slide-up) to sections.

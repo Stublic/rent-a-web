@@ -12,6 +12,7 @@ import { injectContactFormScript } from '@/lib/contact-form-script';
 import { logGeminiUsage } from '@/lib/gemini-usage';
 import { extractDesignTokens } from '@/lib/extract-design-tokens';
 import { buildReferenceImageParts, imageUrlToBase64 } from '@/lib/design-references';
+import { buildFontInstruction } from '@/lib/font-pairs';
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
@@ -299,6 +300,9 @@ export async function generateAdvancedWebsiteAction(projectId: string, formData:
             .map((section, i) => `${i + 1}. ${section}`)
             .join('\n');
 
+        // Font instruction
+        const fontInstruction = buildFontInstruction((data as any).fontPair);
+
         const prompt = `You are an elite frontend engineer and UI/UX designer.
 Your task: Generate the HOMEPAGE of a multi-page business website as a single, complete HTML file.
 
@@ -309,12 +313,13 @@ Return ONLY the raw HTML starting with <!DOCTYPE html>. No markdown code blocks.
 1. Complete, self-contained HTML file starting with <!DOCTYPE html>
 2. Use Tailwind CSS via CDN: <script src="https://cdn.tailwindcss.com"></script>
    Configure Tailwind theme in a <script> tag. ${colorInstruction}
-3. Use GSAP + ScrollTrigger via CDN for smooth scroll-triggered animations:
+3. ${fontInstruction}
+4. Use GSAP + ScrollTrigger via CDN for smooth scroll-triggered animations:
    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-4. Generate SEO meta title and description
-5. Include Open Graph tags
-6. All text in CROATIAN language
+5. Generate SEO meta title and description
+6. Include Open Graph tags
+7. All text in CROATIAN language
 
 ## NAVIGATION (very important!)
 - Logo: ${data.logoUrl ? `<img src="${data.logoUrl}" alt="${data.businessName}">` : `"${data.businessName}" as text logo`}

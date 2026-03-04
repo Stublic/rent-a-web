@@ -44,48 +44,50 @@ function injectNavLinks(html, project, hasBlog) {
     const reactFiles = project.reactFiles || {};
     const labels = getLabels(project);
     const allSlugs = Object.keys(reactFiles).filter(k => labels[k]);
-    const missingSlugs = allSlugs.filter(s => !html.includes(`href="/${s}"`) && !html.includes(`href='/${s}'`));
+
+    const linkClass = extractNavLinkClass(html);
+
+    // Check which slugs are missing FROM THE NAV LINKS AREA (not CTA buttons)
+    const navMatch = html.match(/<nav[\s\S]*?<\/nav>/i);
+    const desktopLinksDiv = navMatch?.[0]?.match(/<div[^>]*class="[^"]*hidden\s+md:flex[^"]*"[^>]*>[\s\S]*?<\/div>/i);
+    const navLinksArea = desktopLinksDiv?.[0] || '';
+
+    const missingSlugs = allSlugs.filter(s => !navLinksArea.includes(`href="/${s}"`) && !navLinksArea.includes(`href='/${s}'`));
 
     if (missingSlugs.length > 0) {
-        const linkClass = extractNavLinkClass(html);
         const navLinksHtml = missingSlugs.map(s => `<a href="/${s}"${linkClass ? ` class="${linkClass}"` : ''}>${labels[s]}</a>`).join('\n                    ');
 
         // Desktop nav
         if (html.includes('<!-- NAV_LINKS -->')) {
             html = html.replace(/<!-- NAV_LINKS -->/g, navLinksHtml);
-        } else {
-            const navMatch = html.match(/<nav[\s\S]*?<\/nav>/i);
-            if (navMatch) {
-                const poc = navMatch[0].match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i);
-                if (poc) html = html.replace(navMatch[0], navMatch[0].replace(poc[0], poc[0] + '\n                    ' + navLinksHtml));
-            }
+        } else if (navMatch) {
+            const poc = navMatch[0].match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i);
+            if (poc) html = html.replace(navMatch[0], navMatch[0].replace(poc[0], poc[0] + '\n                    ' + navLinksHtml));
         }
 
         // Mobile menu
-        if (html.includes('<!-- NAV_LINKS_MOBILE -->')) {
-            const mm = html.match(/<div[^>]*id=["']mobile-menu["'][^>]*>[\s\S]*?<\/div>/i);
-            let mc = '';
-            if (mm) {
-                const mp = mm[0].match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i);
+        const mm = html.match(/<div[^>]*id=["']mobile-menu["'][^>]*>[\s\S]*?<\/div>/i);
+        if (mm) {
+            const mobileHtml = mm[0];
+            const mobileMissing = missingSlugs.filter(slug =>
+                !mobileHtml.match(new RegExp(`<a\\\\s[^>]*href=["']\\\\/${slug}["'][^>]*>\\\\s*${labels[slug]}\\\\s*<\\\\/a>`, 'i'))
+            );
+            if (mobileMissing.length > 0) {
+                let mc = '';
+                const mp = mobileHtml.match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i);
                 if (mp) { const c = mp[0].match(/class="([^"]*)"/); if (c) mc = c[1].replace(/\bborder-b[-\w]*/g,'').replace(/\bborder-primary\b/g,'').replace(/\s{2,}/g,' ').trim(); }
-            }
-            const ml = missingSlugs.map(s => `<a href="/${s}"${mc ? ` class="${mc}"` : ''}>${labels[s]}</a>`).join('\n            ');
-            html = html.replace(/<!-- NAV_LINKS_MOBILE -->/g, ml);
-        } else {
-            const mm = html.match(/<div[^>]*id=["']mobile-menu["'][^>]*>[\s\S]*?<\/div>/i);
-            if (mm) {
-                const mp = mm[0].match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i);
-                if (mp && !mm[0].includes(`href="/${missingSlugs[0]}"`)) {
-                    let mc = ''; const c = mp[0].match(/class="([^"]*)"/); if (c) mc = c[1].replace(/\bborder-b[-\w]*/g,'').replace(/\bborder-primary\b/g,'').replace(/\s{2,}/g,' ').trim();
-                    const ml = missingSlugs.map(s => `<a href="/${s}"${mc ? ` class="${mc}"` : ''}>${labels[s]}</a>`).join('\n            ');
-                    html = html.replace(mm[0], mm[0].replace(mp[0], mp[0] + '\n            ' + ml));
+                const ml = mobileMissing.map(s => `<a href="/${s}"${mc ? ` class="${mc}"` : ''}>${labels[s]}</a>`).join('\n            ');
+                if (html.includes('<!-- NAV_LINKS_MOBILE -->')) {
+                    html = html.replace(/<!-- NAV_LINKS_MOBILE -->/g, ml);
+                } else if (mp) {
+                    html = html.replace(mm[0], mobileHtml.replace(mp[0], mp[0] + '\n            ' + ml));
                 }
             }
         }
 
         // Footer
         if (html.includes('<!-- FOOTER_NAV_LINKS -->')) {
-            html = html.replace(/<!-- FOOTER_NAV_LINKS -->/g, missingSlugs.map(s => `<a href="/${s}">${labels[s]}</a>`).join('\n'));
+            html = html.replace(/<!-- FOOTER_NAV_LINKS -->/g, missingSlugs.map(s => `<li><a href="/${s}" class="text-textMuted hover:text-white transition-colors">${labels[s]}</a></li>`).join('\n                        '));
         } else {
             const fm = html.match(/<footer[\s\S]*?<\/footer>/i);
             if (fm) {
@@ -119,17 +121,77 @@ function injectNavLinks(html, project, hasBlog) {
         // Mobile blog
         const mm = html.match(/<div[^>]*id=["']mobile-menu["'][^>]*>[\s\S]*?<\/div>/i);
         if (mm && !mm[0].includes('href="/blog"')) {
-            const cta = mm[0].match(/<a\s[^>]*class="[^"]*bg-primary[^"]*"[^>]*>[\s\S]*?<\/a>/i);
+            const mobileHtml = mm[0];
+            const cta = mobileHtml.match(/<a\s[^>]*class="[^"]*(?:bg-(?:primary|brand)[^"]*|inline-flex[^"]*rounded-full)"[^>]*>[\s\S]*?<\/a>/i);
+            const mobileNavLinks = mobileHtml.match(/<a\s[^>]*href=["']\/[a-z][a-z-]*["'][^>]*>[^<]*<\/a>/gi);
+            let mc = '';
+            if (mobileNavLinks && mobileNavLinks.length > 0) {
+                const c = mobileNavLinks[0].match(/class="([^"]*)"/);
+                if (c) mc = c[1];
+            }
+            if (!mc) {
+                const mp = mobileHtml.match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i);
+                if (mp) { const c = mp[0].match(/class="([^"]*)"/); if (c) mc = c[1].replace(/\bborder-b[-\w]*/g,'').replace(/\bborder-primary\b/g,'').replace(/\s{2,}/g,' ').trim(); }
+            }
+            const mbl = `<a href="/blog"${mc ? ` class="${mc}"` : ''}>Blog</a>`;
             if (cta) {
-                const mp = mm[0].match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i);
-                let mc = ''; if (mp) { const c = mp[0].match(/class="([^"]*)"/); if (c) mc = c[1].replace(/\bborder-b[-\w]*/g,'').replace(/\bborder-primary\b/g,'').replace(/\s{2,}/g,' ').trim(); }
-                const mbl = `<a href="/blog"${mc ? ` class="${mc}"` : ''}>Blog</a>`;
-                html = html.replace(mm[0], mm[0].replace(cta[0], mbl + '\n            ' + cta[0]));
+                html = html.replace(mm[0], mobileHtml.replace(cta[0], mbl + '\n            ' + cta[0]));
+            } else {
+                const allLinks = mobileHtml.match(/<a\s[^>]*href=["']\/[a-z-]*["'][^>]*>[^<]*<\/a>/gi);
+                if (allLinks && allLinks.length > 0) {
+                    const last = allLinks[allLinks.length - 1];
+                    html = html.replace(mm[0], mobileHtml.replace(last, last + '\n            ' + mbl));
+                }
             }
         }
     }
 
     return html;
+}
+
+/**
+ * Replace a subpage's <header>/<nav> and <footer> with the homepage's canonical versions.
+ */
+function replaceNavAndFooterEditor(subpageHtml, homepageHtml) {
+    if (!subpageHtml || !homepageHtml) return subpageHtml;
+
+    const homeHeader = homepageHtml.match(/<header[\s\S]*?<\/header>/i);
+    const subHeader = subpageHtml.match(/<header[\s\S]*?<\/header>/i);
+    if (homeHeader && subHeader) {
+        subpageHtml = subpageHtml.replace(subHeader[0], homeHeader[0]);
+    } else {
+        const homeNav = homepageHtml.match(/<nav[\s\S]*?<\/nav>/i);
+        const subNav = subpageHtml.match(/<nav[\s\S]*?<\/nav>/i);
+        if (homeNav && subNav) {
+            subpageHtml = subpageHtml.replace(subNav[0], homeNav[0]);
+        }
+    }
+
+    const homeFooter = homepageHtml.match(/<footer[\s\S]*?<\/footer>/i);
+    const subFooter = subpageHtml.match(/<footer[\s\S]*?<\/footer>/i);
+    if (homeFooter && subFooter) {
+        subpageHtml = subpageHtml.replace(subFooter[0], homeFooter[0]);
+    }
+
+    return subpageHtml;
+}
+
+function normalizeMobileNavEditor(html) {
+    if (!html) return html;
+    const mobileMenuMatch = html.match(/<div[^>]*id=["']mobile-menu["'][^>]*>[\s\S]*?<\/div>/i);
+    if (!mobileMenuMatch) return html;
+    const mobileHtml = mobileMenuMatch[0];
+    const otherLinks = mobileHtml.match(/<a\s[^>]*href=["']\/[a-z][a-z-]*["'][^>]*>[^<]*<\/a>/gi);
+    if (!otherLinks || otherLinks.length === 0) return html;
+    const standardCls = otherLinks[0].match(/class="([^"]*)"/);
+    if (!standardCls) return html;
+    const pocetnaMatch = mobileHtml.match(/<a\s([^>]*)href=["']\/["']([^>]*)>\s*Početna\s*<\/a>/i);
+    if (!pocetnaMatch) return html;
+    const fullPocetna = pocetnaMatch[0];
+    const pocetnaCls = fullPocetna.match(/class="([^"]*)"/);
+    if (!pocetnaCls || pocetnaCls[1] === standardCls[1]) return html;
+    const updatedPocetna = fullPocetna.replace(`class="${pocetnaCls[1]}"`, `class="${standardCls[1]}"`);
+    return html.replace(mobileMenuMatch[0], mobileHtml.replace(fullPocetna, updatedPocetna));
 }
 
 // ─── Visual Editor Injection Script (inlined) ───────────────────────
@@ -158,10 +220,17 @@ export default function EditorPreview({ html, projectId, project, hasBlog = fals
         setRefreshKey(prev => prev + 1);
     };
 
-    const injectedHtml = useMemo(
-        () => injectNavLinks(html, project, hasBlog),
-        [html, project, hasBlog]
-    );
+    // Build canonical homepage HTML with all nav links first
+    const canonicalHomeHtml = useMemo(() => {
+        let h = injectNavLinks(project?.generatedHtml || '', project, hasBlog);
+        return normalizeMobileNavEditor(h);
+    }, [project?.generatedHtml, project, hasBlog]);
+
+    // For subpages, replace nav/footer with homepage's canonical versions
+    const injectedHtml = useMemo(() => {
+        if (activePage === 'home') return normalizeMobileNavEditor(injectNavLinks(html, project, hasBlog));
+        return replaceNavAndFooterEditor(html, canonicalHomeHtml);
+    }, [html, project, hasBlog, activePage, canonicalHomeHtml]);
 
     const openInNewTab = () => {
         const newWindow = window.open();

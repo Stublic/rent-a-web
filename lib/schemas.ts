@@ -25,7 +25,7 @@ export function formatValidationErrors(error: z.ZodError): string {
     const issues: string[] = [];
 
     // Fields that are optional — skip their errors
-    const SKIP_FIELDS = new Set(['heroCta', 'services', 'styleKey', 'template', 'autoColors', 'seoSettings']);
+    const SKIP_FIELDS = new Set(['heroCta', 'services', 'styleKey', 'template', 'autoColors', 'fontPair', 'seoSettings', 'designReferenceUrl']);
 
     for (const [field, msgs] of Object.entries(fieldErrors)) {
         if (SKIP_FIELDS.has(field)) continue;
@@ -78,6 +78,9 @@ export const contentSchema = z.object({
     backgroundColor: z.string().regex(/^#([0-9A-F]{3}){1,2}$/i).optional().or(z.literal('')),
     textColor: z.string().regex(/^#([0-9A-F]{3}){1,2}$/i).optional().or(z.literal('')),
 
+    // Typography
+    fontPair: z.string().optional().or(z.literal('')),
+
     // Hero CTA
     heroCta: ctaSchema,
 
@@ -91,7 +94,19 @@ export const contentSchema = z.object({
     servicesBackgroundUrl: z.string().url().optional().or(z.literal('')),
 
     // Design Reference (optional user URL for inspiration)
-    designReferenceUrl: z.string().url().optional().or(z.literal('')),
+    designReferenceUrl: z.preprocess(
+        (val) => {
+            if (!val || typeof val !== 'string') return '';
+            const v = val.trim();
+            if (!v) return '';
+            // Auto-add https:// if missing protocol
+            if (v && !v.startsWith('http://') && !v.startsWith('https://')) {
+                return `https://${v}`;
+            }
+            return v;
+        },
+        z.string().url().optional().or(z.literal(''))
+    ),
 
     // SEO — now managed in Settings tab, kept here for backward compatibility
     metaTitle: z.string().max(60).optional().or(z.literal('')),

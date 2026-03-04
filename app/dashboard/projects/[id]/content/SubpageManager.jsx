@@ -80,7 +80,7 @@ const SUBPAGE_PHASES = [
 
 function SubpageGeneratingOverlay({ seconds, pageName }) {
     const phase = [...SUBPAGE_PHASES].reverse().find(p => seconds >= p.from) || SUBPAGE_PHASES[0];
-    const progress = Math.min(97, 80 * (1 - Math.exp(-seconds / 35)));
+    const progress = Math.min(97, 80 * (1 - Math.exp(-seconds / 160)));
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.93)', backdropFilter: 'blur(12px)' }}>
@@ -93,7 +93,7 @@ function SubpageGeneratingOverlay({ seconds, pageName }) {
                         <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#a78bfa' }} />
                     </div>
                     <h3 className="text-lg font-bold" style={{ color: 'var(--lp-heading)' }}>Generiranje: {pageName}</h3>
-                    <p className="text-xs mt-1" style={{ color: 'var(--lp-text-muted)' }}>Podstranica se kreira prema dizajnu naslovne</p>
+                    <p className="text-xs mt-1" style={{ color: 'var(--lp-text-muted)' }}>Generiranje traje u prosjeku 3–5 minuta.</p>
                 </div>
                 <div className="mx-6 mb-4 rounded-2xl px-5 py-3 flex items-center justify-between" style={{ background: 'var(--lp-surface)', border: '1px solid var(--lp-border)' }}>
                     <div className="flex items-center gap-2.5">
@@ -108,7 +108,7 @@ function SubpageGeneratingOverlay({ seconds, pageName }) {
                     </div>
                     <div className="flex justify-between mt-1">
                         <span className="text-[10px]" style={{ color: 'var(--lp-text-muted)' }}>Generiranje u tijeku</span>
-                        <span className="text-[10px]" style={{ color: 'var(--lp-text-muted)' }}>{seconds > 55 ? 'Koristi se jači model...' : '~50s prosječno'}</span>
+                        <span className="text-[10px]" style={{ color: 'var(--lp-text-muted)' }}>{seconds > 180 ? 'Koristi se jači model...' : '~3-5 min prosječno'}</span>
                     </div>
                 </div>
                 <div className="mx-6 mb-4 space-y-1.5">

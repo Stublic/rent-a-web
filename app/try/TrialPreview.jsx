@@ -23,7 +23,8 @@ const EXTENDED_MSGS = [
 
 function GeneratingOverlay({ seconds }) {
     const phase = [...GENERATION_STEPS].reverse().find(p => seconds >= p.from) || GENERATION_STEPS[0];
-    const progress = Math.min(97, 80 * (1 - Math.exp(-seconds / 30)));
+    // Progress: assume ~4min average, cap at 95%
+    const progress = Math.min(95, (seconds / 240) * 100);
     const startIdx = useMemo(() => Math.floor(Math.random() * EXTENDED_MSGS.length), []);
     const extMsg = seconds >= 50
         ? EXTENDED_MSGS[(startIdx + Math.floor((seconds - 50) / 8)) % EXTENDED_MSGS.length]
@@ -39,7 +40,7 @@ function GeneratingOverlay({ seconds }) {
                         <Loader2 className="w-8 h-8 animate-spin text-emerald-400" />
                     </div>
                     <h3 className="text-lg font-bold text-white">✨ Webica AI stvara web stranicu</h3>
-                    <p className="text-xs text-zinc-500 mt-1">Ovo može potrajati 30–60 sekundi.</p>
+                    <p className="text-xs text-zinc-500 mt-1">Generiranje traje u prosjeku 3–5 minuta.</p>
                 </div>
 
                 {/* Timer + Current phase */}
@@ -66,7 +67,7 @@ function GeneratingOverlay({ seconds }) {
                     </div>
                     <div className="flex justify-between mt-1">
                         <span className="text-[10px] text-zinc-600">Generiranje u tijeku</span>
-                        <span className="text-[10px] text-zinc-600">{seconds > 50 ? 'Koristi se jači model...' : '~45s prosječno'}</span>
+                        <span className="text-[10px] text-zinc-600">{seconds > 180 ? 'Koristi se jači model...' : '~3-5 min prosječno'}</span>
                     </div>
                 </div>
 

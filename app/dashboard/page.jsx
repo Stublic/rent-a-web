@@ -20,6 +20,7 @@ import SubscriptionTab from "./components/SubscriptionTab";
 import ProjectsTab from "./components/ProjectsTab";
 import SettingsTab from "./components/SettingsTab";
 import MediaTab from "./components/MediaTab";
+import SupportTab from "./components/SupportTab";
 import OnboardingTour from "@/components/OnboardingTour";
 import DashboardLoader from "./components/DashboardLoader";
 import { useToast } from "./components/ToastProvider";
@@ -271,7 +272,7 @@ export default function DashboardPage() {
                         {activeTab === "subscription" && <SubscriptionTab user={user} onPortal={handlePortal} />}
                         {activeTab === "projects" && <ProjectsTab />}
                         {activeTab === "media" && <MediaTab />}
-                        {activeTab === "tickets" && <PlaceholderTab title="Podrška & Ticketi" desc="Trebaš promjenu ili imaš problem? Ovdje ćeš moći otvoriti ticket i pratiti njegov status." icon={MessageSquare} />}
+                        {activeTab === "tickets" && <SupportTab />}
                         {activeTab === "settings" && <SettingsTab user={user} logout={logout} />}
                     </div>
                 </div>

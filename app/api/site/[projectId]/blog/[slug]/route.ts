@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { extractBlogColors } from '@/lib/blog-colors';
 
 // Extract header/nav and footer from the project's generated HTML
 function extractSiteChrome(html: string) {
@@ -84,6 +85,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ proj
 
     const chrome = project.generatedHtml ? extractSiteChrome(project.generatedHtml) : null;
     const isDark = project.generatedHtml ? detectDarkTheme(project.generatedHtml) : true;
+    const blogColors = extractBlogColors(project.generatedHtml || '');
 
     const publishDate = post.publishedAt
         ? new Date(post.publishedAt).toLocaleDateString('hr-HR', { year: 'numeric', month: 'long', day: 'numeric' })
@@ -137,7 +139,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ proj
     ` : '';
 
     const html = `<!DOCTYPE html>
-<html lang="hr" data-theme="${isDark ? 'dark' : 'light'}">
+<html lang="hr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -151,39 +153,24 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ proj
     ${chrome?.headContent || `<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">`}
     <style>
         /* ===== Theme Variables ===== */
-        :root, [data-theme="light"] {
-            --blog-bg: #ffffff;
-            --blog-surface: #f4f4f5;
-            --blog-surface-hover: #e4e4e7;
-            --blog-border: #e4e4e7;
-            --blog-text: #18181b;
-            --blog-text-secondary: #52525b;
-            --blog-text-muted: #a1a1aa;
-            --blog-heading: #09090b;
-            --blog-card-bg: #ffffff;
-            --blog-card-border: #e4e4e7;
-            --blog-code-bg: #f4f4f5;
-            --blog-blockquote-bg: #f8f8fa;
-        }
-        [data-theme="dark"] {
-            --blog-bg: #0a0a0a;
-            --blog-surface: #18181b;
-            --blog-surface-hover: #27272a;
-            --blog-border: #27272a;
-            --blog-text: #e4e4e7;
-            --blog-text-secondary: #a1a1aa;
-            --blog-text-muted: #52525b;
-            --blog-heading: #ffffff;
-            --blog-card-bg: #18181b;
-            --blog-card-border: #27272a;
-            --blog-code-bg: #18181b;
-            --blog-blockquote-bg: #18181b;
+        :root {
+            --blog-bg: ${blogColors.bg};
+            --blog-surface: ${blogColors.surface};
+            --blog-surface-hover: ${blogColors.surfaceHover};
+            --blog-border: ${blogColors.border};
+            --blog-text: ${blogColors.text};
+            --blog-text-secondary: ${blogColors.textSecondary};
+            --blog-text-muted: ${blogColors.textMuted};
+            --blog-heading: ${blogColors.heading};
+            --blog-card-bg: ${blogColors.cardBg};
+            --blog-card-border: ${blogColors.cardBorder};
+            --blog-code-bg: ${blogColors.codeBg};
+            --blog-blockquote-bg: ${blogColors.blockquoteBg};
         }
 
         body {
             background: var(--blog-bg) !important;
             color: var(--blog-text) !important;
-            transition: background 0.3s ease, color 0.3s ease;
         }
 
         /* ===== Spacer for fixed nav ===== */
@@ -456,27 +443,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ proj
             color: var(--blog-text-muted); margin-top: 0.5rem;
         }
 
-        /* ===== Theme Toggle ===== */
-        .theme-toggle {
-            position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999;
-            width: 48px; height: 48px; border-radius: 50%;
-            border: 1px solid var(--blog-border);
-            background: var(--blog-surface); color: var(--blog-heading);
-            cursor: pointer; display: flex; align-items: center; justify-content: center;
-            font-size: 1.25rem; transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15); backdrop-filter: blur(8px);
-        }
-        .theme-toggle:hover {
-            transform: scale(1.1); box-shadow: 0 6px 20px rgba(0,0,0,0.25);
-            background: var(--blog-surface-hover);
-        }
-        .theme-toggle .icon { transition: transform 0.3s ease; display: flex; }
-        .theme-toggle:active .icon { transform: rotate(30deg); }
 
         @media (max-width: 640px) {
             .article-main h1 { font-size: 1.5rem; }
             .cover-img { height: 220px; border-radius: 0.75rem; }
-            .theme-toggle { bottom: 1rem; right: 1rem; width: 42px; height: 42px; }
         }
         @media (max-width: 1023px) {
             .article-layout { max-width: 720px; }
@@ -547,11 +517,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ proj
 
     ${chrome?.footer || `<footer style="text-align:center;padding:3rem 2rem;color:var(--blog-text-muted);font-size:0.8rem;border-top:1px solid var(--blog-border)">&copy; ${new Date().getFullYear()} ${bizName}. Sva prava pridržana.</footer>`}
 
-    <!-- Theme Toggle -->
-    <button class="theme-toggle" id="themeToggle" title="Promijeni temu" aria-label="Promijeni temu">
-        <span class="icon" id="themeIcon"></span>
-    </button>
-
     <script>
         // Fix hash links to point back to the home page
         document.querySelectorAll('a[href^="#"]').forEach(a => {
@@ -574,29 +539,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ proj
                 setTimeout(() => fb.classList.remove('show'), 2000);
             });
         }
-
-        // Theme toggle
-        (function() {
-            const KEY = 'blog-theme-${projectId}';
-            const html = document.documentElement;
-            const icon = document.getElementById('themeIcon');
-            const sunSVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
-            const moonSVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
-
-            function setTheme(theme) {
-                html.setAttribute('data-theme', theme);
-                icon.innerHTML = theme === 'dark' ? sunSVG : moonSVG;
-                try { localStorage.setItem(KEY, theme); } catch(e) {}
-            }
-
-            const saved = (() => { try { return localStorage.getItem(KEY); } catch(e) { return null; } })();
-            setTheme(saved || '${isDark ? 'dark' : 'light'}');
-
-            document.getElementById('themeToggle').addEventListener('click', function() {
-                const current = html.getAttribute('data-theme');
-                setTheme(current === 'dark' ? 'light' : 'dark');
-            });
-        })();
     </script>
 </body>
 </html>`;
