@@ -37,6 +37,7 @@ model User {
   media            Media[]
   feedbacks        Feedback[]
   tickets          Ticket[]
+  bugReports       BugReport[]
 
   @@map("user")
 }
@@ -316,4 +317,18 @@ model GoogleAdsCampaign {
   updatedAt              DateTime @updatedAt
 
   @@map("google_ads_campaign")
+}
+
+model BugReport {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String   @db.Text
+  severity    String   @default("medium")   // low, medium, high, critical
+  page        String?                        // URL/page where bug occurred
+  status      String   @default("OPEN")      // OPEN, IN_PROGRESS, RESOLVED
+  createdAt   DateTime @default(now())
+
+  @@map("bug_report")
 }

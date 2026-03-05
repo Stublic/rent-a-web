@@ -2,6 +2,8 @@ import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 
+const FEEDBACK_REWARD = 500;
+
 export async function POST(req) {
     try {
         const headersList = await headers();
@@ -17,6 +19,11 @@ export async function POST(req) {
             return Response.json({ error: 'Neispravni podaci.' }, { status: 400 });
         }
 
+        // Check if user already submitted feedback before (for one-time reward)
+        const existingFeedback = await prisma.feedback.findFirst({
+            where: { userId: session.user.id },
+        });
+
         await prisma.feedback.create({
             data: {
                 userId: session.user.id,
@@ -24,7 +31,18 @@ export async function POST(req) {
             },
         });
 
-        return Response.json({ success: true });
+        let tokensAwarded = 0;
+
+        // Grant 500 tokens only on FIRST feedback
+        if (!existingFeedback) {
+            await prisma.user.update({
+                where: { id: session.user.id },
+                data: { editorTokens: { increment: FEEDBACK_REWARD } },
+            });
+            tokensAwarded = FEEDBACK_REWARD;
+        }
+
+        return Response.json({ success: true, tokensAwarded });
 
     } catch (error) {
         console.error('Feedback API Error:', error);

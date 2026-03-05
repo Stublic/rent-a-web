@@ -854,3 +854,147 @@ body {
     bottom: 5rem !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════
+   ROI CALCULATOR SLIDERS
+   ═══════════════════════════════════════════════════════ */
+
+.roi-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  outline: none;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+/* Track backgrounds with progress fill */
+.roi-slider--green {
+  background: linear-gradient(
+    to right,
+    #10b981 0%,
+    #10b981 var(--slider-progress, 50%),
+    rgba(255, 255, 255, 0.08) var(--slider-progress, 50%),
+    rgba(255, 255, 255, 0.08) 100%
+  );
+}
+
+.roi-slider--blue {
+  background: linear-gradient(
+    to right,
+    #3b82f6 0%,
+    #3b82f6 var(--slider-progress, 50%),
+    rgba(255, 255, 255, 0.08) var(--slider-progress, 50%),
+    rgba(255, 255, 255, 0.08) 100%
+  );
+}
+
+/* Light mode track inactive portion */
+[data-dashboard="true"] .roi-slider--green {
+  background: linear-gradient(
+    to right,
+    #059669 0%,
+    #059669 var(--slider-progress, 50%),
+    rgba(0, 0, 0, 0.08) var(--slider-progress, 50%),
+    rgba(0, 0, 0, 0.08) 100%
+  );
+}
+
+[data-dashboard="true"] .roi-slider--blue {
+  background: linear-gradient(
+    to right,
+    #2563eb 0%,
+    #2563eb var(--slider-progress, 50%),
+    rgba(0, 0, 0, 0.08) var(--slider-progress, 50%),
+    rgba(0, 0, 0, 0.08) 100%
+  );
+}
+
+.dark [data-dashboard="true"] .roi-slider--green {
+  background: linear-gradient(
+    to right,
+    #10b981 0%,
+    #10b981 var(--slider-progress, 50%),
+    rgba(255, 255, 255, 0.08) var(--slider-progress, 50%),
+    rgba(255, 255, 255, 0.08) 100%
+  );
+}
+
+.dark [data-dashboard="true"] .roi-slider--blue {
+  background: linear-gradient(
+    to right,
+    #3b82f6 0%,
+    #3b82f6 var(--slider-progress, 50%),
+    rgba(255, 255, 255, 0.08) var(--slider-progress, 50%),
+    rgba(255, 255, 255, 0.08) 100%
+  );
+}
+
+/* Webkit thumb (Chrome, Safari, Edge) */
+.roi-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2.5px solid #fff;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 0 0px rgba(139, 92, 246, 0);
+  transition: box-shadow 0.2s, transform 0.15s;
+}
+
+.roi-slider--green::-webkit-slider-thumb {
+  background: #10b981;
+}
+
+.roi-slider--blue::-webkit-slider-thumb {
+  background: #3b82f6;
+}
+
+.roi-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35), 0 0 0 6px rgba(139, 92, 246, 0.15);
+}
+
+.roi-slider:active::-webkit-slider-thumb {
+  transform: scale(1.1);
+}
+
+/* Firefox thumb */
+.roi-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2.5px solid #fff;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.roi-slider--green::-moz-range-thumb {
+  background: #10b981;
+}
+
+.roi-slider--blue::-moz-range-thumb {
+  background: #3b82f6;
+}
+
+.roi-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  border: none;
+}
+
+/* Firefox progress fill */
+.roi-slider--green::-moz-range-progress {
+  background: #10b981;
+  border-radius: 999px;
+  height: 6px;
+}
+
+.roi-slider--blue::-moz-range-progress {
+  background: #3b82f6;
+  border-radius: 999px;
+  height: 6px;
+}

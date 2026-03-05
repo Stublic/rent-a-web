@@ -2,14 +2,14 @@
 
 import ThemeProvider from "./components/ThemeProvider";
 import ToastProvider from "./components/ToastProvider";
-import SupportChatPopup from "./components/SupportChatPopup";
+import BetaReportPopup from "./components/BetaReportPopup";
 
 export default function DashboardLayout({ children }) {
     return (
         <ThemeProvider>
             <ToastProvider>
                 {children}
-                <SupportChatPopup />
+                <BetaReportPopup />
             </ToastProvider>
         </ThemeProvider>
     );

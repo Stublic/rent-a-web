@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useParams } from 'next/navigation';
-import { Mail, Phone, Clock, CheckCircle, Circle, Inbox, Megaphone, Calculator, UserCheck, Rocket, TrendingUp, MousePointerClick, Users, DollarSign, ChevronRight, Sparkles, Copy, Check, Loader2, CreditCard, ShieldCheck } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { Mail, Phone, Clock, CheckCircle, Circle, Inbox, Megaphone, Calculator, UserCheck, Rocket, TrendingUp, MousePointerClick, Users, ChevronRight, Sparkles, Copy, Check, Loader2, CreditCard, ShieldCheck, Star, MapPin, Gift, Camera } from 'lucide-react';
 import { confirmGoogleAdsCampaign } from '@/app/actions/google-ads-generator';
 
 function timeAgo(dateStr) {
@@ -14,10 +14,26 @@ function timeAgo(dateStr) {
     return new Date(dateStr).toLocaleDateString('hr-HR');
 }
 
+// ─── Revenue slider steps (non-linear) ────────────────────────────────
+// +1 → 1-5, +5 → 5-50, +10 → 50-100, +50 → 100-500, +100 → 500-1000, +500 → 1000-10000
+const REVENUE_STEPS = (() => {
+    const v = [];
+    for (let i = 1; i <= 5; i += 1) v.push(i);
+    for (let i = 10; i <= 50; i += 5) v.push(i);
+    for (let i = 60; i <= 100; i += 10) v.push(i);
+    for (let i = 150; i <= 500; i += 50) v.push(i);
+    for (let i = 600; i <= 1000; i += 100) v.push(i);
+    for (let i = 1500; i <= 10000; i += 500) v.push(i);
+    return v;
+})();
+const REVENUE_DEFAULT_IDX = REVENUE_STEPS.indexOf(500); // 500€ default
+
 // ─── ROI Calculator ───────────────────────────────────────────────────
 function ROICalculator() {
-    const [revenue, setRevenue] = useState(500);
+    const [revenueIdx, setRevenueIdx] = useState(REVENUE_DEFAULT_IDX);
     const [budget, setBudget] = useState(200);
+
+    const revenue = REVENUE_STEPS[revenueIdx];
 
     // Realistic estimates for local businesses
     const avgCPC = 0.35; // Average CPC for local services in Croatia (EUR)
@@ -41,39 +57,55 @@ function ROICalculator() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    {/* Revenue Input */}
+                    {/* Revenue Slider */}
                     <div>
-                        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--db-text-secondary)' }}>
-                            Prosječna zarada po klijentu (€)
-                        </label>
-                        <div className="relative">
-                            <DollarSign size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-emerald-400" />
+                        <div className="flex items-center justify-between mb-3">
+                            <label className="text-sm font-medium" style={{ color: 'var(--db-text-secondary)' }}>
+                                Prosječna zarada po klijentu
+                            </label>
+                            <span className="text-lg font-bold text-emerald-400">{revenue.toLocaleString('hr-HR')}€</span>
+                        </div>
+                        <div className="relative pt-1">
                             <input
-                                type="number"
-                                value={revenue}
-                                onChange={e => setRevenue(Math.max(0, parseInt(e.target.value) || 0))}
-                                className="w-full pl-10 pr-4 py-3 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-all"
-                                style={{ background: 'var(--db-surface)', border: '1px solid var(--db-border)', color: 'var(--db-heading)' }}
+                                type="range"
+                                value={revenueIdx}
+                                onChange={e => setRevenueIdx(parseInt(e.target.value))}
                                 min="0"
+                                max={REVENUE_STEPS.length - 1}
+                                step="1"
+                                className="roi-slider roi-slider--green"
+                                style={{ '--slider-progress': `${(revenueIdx / (REVENUE_STEPS.length - 1)) * 100}%` }}
                             />
+                            <div className="flex justify-between mt-1.5">
+                                <span className="text-[10px]" style={{ color: 'var(--db-text-muted)' }}>1€</span>
+                                <span className="text-[10px]" style={{ color: 'var(--db-text-muted)' }}>10.000€</span>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Budget Input */}
+                    {/* Budget Slider */}
                     <div>
-                        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--db-text-secondary)' }}>
-                            Mjesečni budžet za oglase (€)
-                        </label>
-                        <div className="relative">
-                            <TrendingUp size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-400" />
+                        <div className="flex items-center justify-between mb-3">
+                            <label className="text-sm font-medium" style={{ color: 'var(--db-text-secondary)' }}>
+                                Mjesečni budžet za oglase
+                            </label>
+                            <span className="text-lg font-bold text-blue-400">{budget}€</span>
+                        </div>
+                        <div className="relative pt-1">
                             <input
-                                type="number"
+                                type="range"
                                 value={budget}
-                                onChange={e => setBudget(Math.max(0, parseInt(e.target.value) || 0))}
-                                className="w-full pl-10 pr-4 py-3 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-all"
-                                style={{ background: 'var(--db-surface)', border: '1px solid var(--db-border)', color: 'var(--db-heading)' }}
-                                min="0"
+                                onChange={e => setBudget(parseInt(e.target.value))}
+                                min="50"
+                                max="2000"
+                                step="25"
+                                className="roi-slider roi-slider--blue"
+                                style={{ '--slider-progress': `${((budget - 50) / (2000 - 50)) * 100}%` }}
                             />
+                            <div className="flex justify-between mt-1.5">
+                                <span className="text-[10px]" style={{ color: 'var(--db-text-muted)' }}>50€</span>
+                                <span className="text-[10px]" style={{ color: 'var(--db-text-muted)' }}>2.000€</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -120,9 +152,11 @@ function AgentCard() {
                 <div className="flex flex-col sm:flex-row gap-5 items-start">
                     {/* Avatar */}
                     <div className="flex-shrink-0">
-                        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-violet-600 to-blue-600 flex items-center justify-center text-3xl font-bold text-white shadow-lg shadow-violet-500/20">
-                            J
-                        </div>
+                        <img
+                            src="https://e0rdnm7yvj57qqp1.public.blob.vercel-storage.com/media/vv3Cm0Rx38s6NZT8QoFlmWDZcu3kSb4m/1772692721175-isamii.png"
+                            alt="Jurica - Google Ads Specialist"
+                            className="w-28 h-28 rounded-2xl object-cover shadow-lg shadow-violet-500/20"
+                        />
                     </div>
 
                     {/* Info */}
@@ -194,6 +228,300 @@ function UnlockSteps() {
     );
 }
 
+// ─── Boost Tips (shown when campaign is ACTIVE) ──────────────────────
+function BoostTips({ projectId }) {
+    const router = useRouter();
+    const editorUrl = `/dashboard/projects/${projectId}/editor`;
+    const [showGMBGuide, setShowGMBGuide] = useState(false);
+
+    // Persist completed cards in localStorage per project
+    const storageKey = `boost-tips-${projectId}`;
+    const [completed, setCompleted] = useState(() => {
+        if (typeof window === 'undefined') return {};
+        try {
+            return JSON.parse(localStorage.getItem(storageKey) || '{}');
+        } catch { return {}; }
+    });
+
+    function toggleCompleted(idx) {
+        setCompleted(prev => {
+            const next = { ...prev, [idx]: !prev[idx] };
+            localStorage.setItem(storageKey, JSON.stringify(next));
+            return next;
+        });
+    }
+
+    const cards = [
+        {
+            id: 'reviews',
+            icon: Star,
+            gradient: 'from-amber-500/20 to-yellow-500/20',
+            border: 'border-amber-500/20',
+            iconColor: 'text-amber-400',
+            doneGradient: 'from-amber-500 to-yellow-500',
+            title: 'Ljudi kupuju od onih kojima vjeruju',
+            text: 'Dodavanje recenzija povećava broj upita za čak 34%. Neka vaši zadovoljni klijenti prodaju umjesto vas.',
+            btn: 'Dodaj recenzije u AI Editoru',
+            action: () => router.push(editorUrl),
+        },
+        {
+            id: 'gmb',
+            icon: MapPin,
+            gradient: 'from-rose-500/20 to-pink-500/20',
+            border: 'border-rose-500/20',
+            iconColor: 'text-rose-400',
+            doneGradient: 'from-rose-500 to-pink-500',
+            title: 'Lokalna dominacija',
+            text: 'Povežite svoju novu web stranicu s besplatnim Google My Business profilom. 70% lokalnih pretraga završava na kartama.',
+            btn: 'Pročitaj upute',
+            action: () => setShowGMBGuide(true),
+        },
+        {
+            id: 'cro',
+            icon: Gift,
+            gradient: 'from-emerald-500/20 to-teal-500/20',
+            border: 'border-emerald-500/20',
+            iconColor: 'text-emerald-400',
+            doneGradient: 'from-emerald-500 to-teal-500',
+            title: 'Pretvorite posjetitelje u kupce',
+            text: 'Ponudite 10% popusta ili besplatnu procjenu na samom vrhu stranice. Jasna ponuda je ključ uspješnih oglasa.',
+            btn: 'Uredi tekst vizualno',
+            action: () => router.push(editorUrl),
+        },
+        {
+            id: 'images',
+            icon: Camera,
+            gradient: 'from-sky-500/20 to-blue-500/20',
+            border: 'border-sky-500/20',
+            iconColor: 'text-sky-400',
+            doneGradient: 'from-sky-500 to-blue-500',
+            title: 'Pokažite svoje prave radove',
+            text: 'Posjetitelji najviše vjeruju autentičnim fotografijama. Zamijenite AI slike fotografijama svojih stvarnih projekata ili tima.',
+            btn: 'Ažuriraj slike',
+            action: () => router.push(editorUrl),
+        },
+    ];
+
+    const completedCount = cards.filter((_, i) => completed[i]).length;
+    const progress = Math.round((completedCount / cards.length) * 100);
+    const progressLabel = progress === 0 ? 'Tek počinjete' : progress < 50 ? 'Dobar početak!' : progress < 100 ? 'Skoro ste tamo!' : 'Potpuno optimizirano! 🎉';
+
+    const gmbSteps = [
+        {
+            num: 1,
+            title: 'Kreirajte Google račun (ako nemate)',
+            desc: 'Posjetite google.com i kreirajte besplatni Google račun ili koristite postojeći.',
+        },
+        {
+            num: 2,
+            title: 'Otvorite Google Business Profile',
+            desc: 'Idite na business.google.com i kliknite "Manage now" za početak postavljanja.',
+            link: 'https://business.google.com/',
+        },
+        {
+            num: 3,
+            title: 'Unesite naziv tvrtke',
+            desc: 'Upišite točan naziv svoje tvrtke kako ga klijenti poznaju.',
+        },
+        {
+            num: 4,
+            title: 'Odaberite kategoriju djelatnosti',
+            desc: 'Odaberite kategoriju koja najbolje opisuje vaše poslovanje (npr. "Stolar", "Frizer", "Restoran").',
+        },
+        {
+            num: 5,
+            title: 'Dodajte lokaciju i kontakt',
+            desc: 'Unesite adresu, broj telefona i radno vrijeme. Dodajte i link na svoju novu web stranicu.',
+        },
+        {
+            num: 6,
+            title: 'Verificirajte profil',
+            desc: 'Google će poslati razglednicu s kodom na vašu adresu. Unesite kod za aktivaciju profila (traje 5-14 dana).',
+        },
+        {
+            num: 7,
+            title: 'Dodajte fotografije i opis',
+            desc: 'Upload-ajte kvalitetne fotografije svog posla, tima i radova. Napišite detaljan opis usluga.',
+        },
+    ];
+
+    return (
+        <div>
+            {/* ── Progress Bar ── */}
+            <div className="rounded-2xl p-5 mb-6" style={{ background: 'var(--db-bg-alt)', border: '1px solid var(--db-border)' }}>
+                <div className="flex items-center justify-between mb-3">
+                    <div>
+                        <h3 className="text-lg font-bold" style={{ color: 'var(--db-heading)' }}>
+                            Optimizacija stranice {progress === 100 && '🎉'}
+                        </h3>
+                        <p className="text-xs mt-0.5" style={{ color: 'var(--db-text-muted)' }}>{progressLabel}</p>
+                    </div>
+                    <div className="text-right">
+                        <span className="text-2xl font-bold" style={{ color: progress === 100 ? '#10b981' : 'var(--db-accent, #a78bfa)' }}>{progress}%</span>
+                        <p className="text-[10px]" style={{ color: 'var(--db-text-muted)' }}>{completedCount}/{cards.length} koraka</p>
+                    </div>
+                </div>
+                <div className="h-2.5 rounded-full overflow-hidden" style={{ background: 'rgba(139,92,246,0.1)' }}>
+                    <div
+                        className="h-full rounded-full transition-all duration-500 ease-out"
+                        style={{
+                            width: `${progress}%`,
+                            background: progress === 100
+                                ? 'linear-gradient(90deg, #10b981, #34d399)'
+                                : 'linear-gradient(90deg, #8b5cf6, #3b82f6)',
+                        }}
+                    />
+                </div>
+            </div>
+
+            <p className="text-sm mb-4" style={{ color: 'var(--db-text-secondary)' }}>
+                Evo kako dobiti još više upita:
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {cards.map((card, i) => {
+                    const done = !!completed[i];
+                    return (
+                        <div
+                            key={card.id}
+                            className={`rounded-2xl p-5 flex flex-col gap-4 transition-all ${done ? 'opacity-75' : 'hover:scale-[1.01]'}`}
+                            style={{ background: 'var(--db-bg-alt)', border: `1px solid ${done ? 'rgba(16,185,129,0.3)' : 'var(--db-border)'}` }}
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${done ? 'from-emerald-500/20 to-emerald-500/20 border-emerald-500/20' : card.gradient + ' ' + card.border} flex items-center justify-center border`}>
+                                    {done
+                                        ? <CheckCircle size={20} className="text-emerald-400" />
+                                        : <card.icon size={20} className={card.iconColor} />
+                                    }
+                                </div>
+                                <h4 className={`text-sm font-bold flex-1 ${done ? 'line-through' : ''}`} style={{ color: 'var(--db-heading)', textDecorationColor: 'var(--db-text-muted)' }}>{card.title}</h4>
+                            </div>
+                            <p className="text-sm leading-relaxed flex-1" style={{ color: 'var(--db-text-secondary)' }}>
+                                {card.text}
+                            </p>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={card.action}
+                                    className="flex-1 py-2.5 px-4 rounded-xl text-xs font-semibold transition-all cursor-pointer hover:brightness-110 active:scale-[0.98] flex items-center justify-center gap-2"
+                                    style={{
+                                        background: 'rgba(139,92,246,0.1)',
+                                        border: '1px solid rgba(139,92,246,0.2)',
+                                        color: 'var(--db-accent, #a78bfa)',
+                                    }}
+                                >
+                                    {card.btn}
+                                    <ChevronRight size={14} />
+                                </button>
+                                <button
+                                    onClick={() => toggleCompleted(i)}
+                                    className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer active:scale-[0.92]"
+                                    style={{
+                                        background: done ? 'rgba(16,185,129,0.15)' : 'rgba(139,92,246,0.06)',
+                                        border: done ? '1px solid rgba(16,185,129,0.3)' : '1px solid var(--db-border)',
+                                    }}
+                                    title={done ? 'Označi kao nedovršeno' : 'Označi kao dovršeno'}
+                                >
+                                    {done
+                                        ? <CheckCircle size={18} className="text-emerald-400" />
+                                        : <Circle size={18} style={{ color: 'var(--db-text-muted)' }} />
+                                    }
+                                </button>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* ── Google My Business Guide Modal ── */}
+            {showGMBGuide && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                    style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+                    onClick={() => setShowGMBGuide(false)}
+                >
+                    <div
+                        className="relative w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl p-6 md:p-8"
+                        style={{ background: 'var(--db-bg-alt)', border: '1px solid var(--db-border)' }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* Close */}
+                        <button
+                            onClick={() => setShowGMBGuide(false)}
+                            className="absolute top-4 right-4 p-1.5 rounded-lg transition-colors cursor-pointer"
+                            style={{ color: 'var(--db-text-muted)' }}
+                        >
+                            <span className="sr-only">Zatvori</span>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                        </button>
+
+                        {/* Header */}
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500/20 to-pink-500/20 flex items-center justify-center border border-rose-500/20">
+                                <MapPin size={20} className="text-rose-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold" style={{ color: 'var(--db-heading)' }}>
+                                    Google My Business upute
+                                </h3>
+                                <p className="text-xs" style={{ color: 'var(--db-text-muted)' }}>
+                                    Besplatno — 15 minuta posla
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Why */}
+                        <div className="rounded-xl p-4 mb-6" style={{ background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.12)' }}>
+                            <p className="text-sm leading-relaxed" style={{ color: 'var(--db-text-secondary)' }}>
+                                <strong style={{ color: 'var(--db-heading)' }}>Zašto je ovo važno?</strong><br />
+                                Google My Business (GMB) profil pomaže vašoj tvrtki da se pojavi na Google Maps-u i u lokalnim rezultatima pretrage.
+                                To je potpuno besplatno i može donijeti značajan dio novih klijenata.
+                            </p>
+                        </div>
+
+                        {/* Steps */}
+                        <div className="space-y-4">
+                            {gmbSteps.map(step => (
+                                <div key={step.num} className="flex gap-3 items-start">
+                                    <div className="flex-shrink-0 w-7 h-7 rounded-lg bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center text-xs font-bold text-white">
+                                        {step.num}
+                                    </div>
+                                    <div className="flex-1 pt-0.5">
+                                        <h4 className="text-sm font-semibold mb-0.5" style={{ color: 'var(--db-heading)' }}>{step.title}</h4>
+                                        <p className="text-xs leading-relaxed" style={{ color: 'var(--db-text-secondary)' }}>{step.desc}</p>
+                                        {step.link && (
+                                            <a
+                                                href={step.link}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1 mt-1 text-xs font-medium text-rose-400 hover:text-rose-300 transition-colors"
+                                            >
+                                                Otvori stranicu <ChevronRight size={12} />
+                                            </a>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* CTA */}
+                        <a
+                            href="https://business.google.com/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-6 w-full py-3 px-6 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-[0.99]"
+                            style={{ background: 'linear-gradient(135deg, #e11d48, #db2777)', boxShadow: '0 6px 24px rgba(225,29,72,0.25)' }}
+                        >
+                            <MapPin size={16} />
+                            Pokreni Google My Business
+                            <ChevronRight size={16} />
+                        </a>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
 // ─── Small helper: Copyable Email ─────────────────────────────────────
 function CopyableEmail({ email }) {
     const [copied, setCopied] = useState(false);
@@ -222,9 +550,9 @@ function CampaignStatus({ status }) {
         PENDING: {
             bg: 'rgba(234,179,8,0.08)',
             border: '1px solid rgba(234,179,8,0.2)',
-            icon: <Loader2 size={18} className="text-yellow-400 animate-spin" />,
-            title: 'Kampanja se generira...',
-            desc: 'AI priprema vaše oglasne materijale. Ovo može potrajati do minute.',
+            icon: <Clock size={18} className="text-yellow-400" />,
+            title: 'Čeka se potvrda',
+            desc: 'Odradite korake ispod i kliknite "Potvrđujem" za pokretanje AI generiranja oglasnih materijala.',
             color: 'text-yellow-400',
         },
         AWAITING_ADMIN: {
@@ -585,7 +913,7 @@ export default function InquiriesPage() {
                                         <button
                                             onClick={handleStartPayment}
                                             disabled={paymentLoading}
-                                            className="w-full py-3 px-6 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-60 hover:scale-[1.01] active:scale-[0.99]"
+                                            className="w-full py-3 px-6 rounded-xl text-sm font-bold text-white transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.99]"
                                             style={{
                                                 background: paymentLoading ? 'rgba(234,179,8,0.3)' : 'linear-gradient(135deg, #f59e0b, #ea580c)',
                                                 boxShadow: paymentLoading ? 'none' : '0 6px 24px rgba(234,179,8,0.25)',
@@ -662,7 +990,7 @@ export default function InquiriesPage() {
                 {/* Show status for existing campaigns */}
                 {!adsLoading && campaign && campaign.status !== 'PENDING' && (
                     <div className="space-y-6">
-                        <ROICalculator />
+                        {campaign.status === 'ACTIVE' ? <BoostTips projectId={projectId} /> : <ROICalculator />}
                         <AgentCard />
                     </div>
                 )}
