@@ -39,7 +39,7 @@ export async function POST(req) {
         }
 
         // One-time payment for Starter → Advanced difference (600€)
-        const priceId = 'price_1T7zZYKhkXukXczcUMjV8Iwx';
+        const priceId = process.env.STRIPE_PRICE_MAINTAINED_UPGRADE;
 
         const user = await prisma.user.findUnique({
             where: { id: session.user.id },
