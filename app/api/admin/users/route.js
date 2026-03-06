@@ -49,7 +49,7 @@ export async function GET(req) {
                 select: {
                     id: true, email: true, name: true, role: true, planName: true,
                     subscriptionStatus: true, createdAt: true, editorTokens: true,
-                    projects: { select: { id: true, name: true, status: true, planName: true } },
+                    projects: { select: { id: true, name: true, status: true, planName: true, buyoutStatus: true, stripeSubscriptionId: true, cancelledAt: true } },
                     _count: { select: { invoices: true } }
                 },
                 orderBy: { createdAt: 'desc' },

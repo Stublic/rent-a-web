@@ -7,6 +7,8 @@ import { auth } from '@/lib/auth';
 import ProjectOnboarding from './ProjectOnboarding';
 import PublishIndicator from './PublishIndicator';
 import UpgradeBanner from './UpgradeBanner';
+import SwitchToMaintenanceButton from './SwitchToMaintenanceButton';
+import ExportDownloadButton from './ExportDownloadButton';
 
 const GRACE_PERIOD_DAYS = 90;
 
@@ -23,7 +25,7 @@ export default async function ProjectLayout({ children, params }) {
     
     const project = session ? await prisma.project.findUnique({
         where: isAdmin ? { id } : { id, userId: session.user.id },
-        select: { hasGenerated: true, planName: true, cancelledAt: true, name: true, subdomain: true, customDomain: true, buyoutStatus: true, exportExpiresAt: true }
+        select: { hasGenerated: true, planName: true, cancelledAt: true, name: true, subdomain: true, customDomain: true, buyoutStatus: true, exportExpiresAt: true, userId: true, stripeSubscriptionId: true }
     }) : null;
 
     // Block access if project is cancelled
@@ -68,8 +70,129 @@ export default async function ProjectLayout({ children, params }) {
         );
     }
 
+    // Auto-lock MAINTAINED projects whose subscription has expired
+    if (project?.buyoutStatus === 'MAINTAINED' && project?.stripeSubscriptionId) {
+        try {
+            const { stripe } = await import('@/lib/stripe');
+            const sub = await stripe.subscriptions.retrieve(project.stripeSubscriptionId);
+            
+            // If Stripe subscription is canceled (period ended), lock the project
+            if (sub.status === 'canceled' || sub.status === 'unpaid' || sub.status === 'past_due') {
+                await prisma.project.update({
+                    where: { id },
+                    data: {
+                        buyoutStatus: 'EXPORTED_LOCKED',
+                        stripeSubscriptionId: null,
+                        exportExpiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days
+                    },
+                });
+                console.log(`🔒 MAINTAINED subscription expired → EXPORTED_LOCKED: ${project.name} (${id})`);
+                const { redirect } = await import('next/navigation');
+                redirect(`/dashboard/projects/${id}/settings`);
+            }
+        } catch (err) {
+            if (err?.digest?.startsWith('NEXT_REDIRECT')) throw err;
+            // If Stripe sub doesn't exist anymore, lock it
+            if (err?.statusCode === 404 || err?.code === 'resource_missing') {
+                await prisma.project.update({
+                    where: { id },
+                    data: {
+                        buyoutStatus: 'EXPORTED_LOCKED',
+                        stripeSubscriptionId: null,
+                        exportExpiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+                    },
+                });
+                console.log(`🔒 MAINTAINED subscription missing → EXPORTED_LOCKED: ${project.name} (${id})`);
+                const { redirect } = await import('next/navigation');
+                redirect(`/dashboard/projects/${id}/settings`);
+            }
+            console.error('Auto-lock check error:', err.message);
+        }
+    }
+
+    // Check for maintained_advanced_upgrade checkout completion
+    if (project?.buyoutStatus === 'MAINTAINED' && project?.planName?.toLowerCase().includes('starter')) {
+        try {
+            const { stripe } = await import('@/lib/stripe');
+            const checkoutSessions = await stripe.checkout.sessions.list({ limit: 5 });
+            const upgradeSession = checkoutSessions.data.find(s =>
+                s.metadata?.type === 'maintained_advanced_upgrade' &&
+                s.metadata?.projectId === id &&
+                s.payment_status === 'paid' &&
+                (Date.now() / 1000 - s.created) < 600
+            );
+
+            if (upgradeSession) {
+                const advancedPlanName = 'Advanced - Landing stranica + Google oglasi';
+                await prisma.project.update({
+                    where: { id },
+                    data: { planName: advancedPlanName },
+                });
+                await prisma.user.update({
+                    where: { id: project.userId },
+                    data: {
+                        planName: advancedPlanName,
+                        editorTokens: { increment: 500 },
+                    },
+                });
+                console.log(`🚀 MAINTAINED project ${id} upgraded to Advanced (from layout)`);
+                const { redirect } = await import('next/navigation');
+                redirect(`/dashboard/projects/${id}/settings`);
+            }
+        } catch (err) {
+            if (err?.digest?.startsWith('NEXT_REDIRECT')) throw err;
+            console.error('Maintained upgrade check error:', err.message);
+        }
+    }
+
     // Block access if project is EXPORTED_LOCKED (Buyout Option 2)
     if (project?.buyoutStatus === 'EXPORTED_LOCKED') {
+        // Check if user just completed maintenance switch checkout
+        const headerList = await headers();
+        const referer = headerList.get('referer') || '';
+        const currentUrl = headerList.get('x-url') || headerList.get('x-invoke-path') || '';
+        
+        // Try to detect ?switched=success from the URL
+        // We need to check Stripe for a recent completed switch checkout
+        try {
+            const { stripe } = await import('@/lib/stripe');
+            const checkoutSessions = await stripe.checkout.sessions.list({ limit: 5 });
+            const matchingSession = checkoutSessions.data.find(s =>
+                s.metadata?.type === 'switch_to_maintenance' &&
+                s.metadata?.projectId === id &&
+                s.payment_status === 'paid' &&
+                // Only match sessions from the last 10 minutes
+                (Date.now() / 1000 - s.created) < 600
+            );
+
+            if (matchingSession) {
+                // Clear this subscription ID from any other project first (unique constraint)
+                if (matchingSession.subscription) {
+                    await prisma.project.updateMany({
+                        where: { stripeSubscriptionId: matchingSession.subscription, id: { not: id } },
+                        data: { stripeSubscriptionId: null },
+                    });
+                }
+
+                // Finalize the switch synchronously
+                await prisma.project.update({
+                    where: { id },
+                    data: {
+                        buyoutStatus: 'MAINTAINED',
+                        stripeSubscriptionId: matchingSession.subscription,
+                        exportExpiresAt: null,
+                    },
+                });
+                console.log(`✅ Project ${id} switched to MAINTAINED (sync, from layout)`);
+                // Redirect to remove the stale page
+                const { redirect } = await import('next/navigation');
+                redirect(`/dashboard/projects/${id}/settings`);
+            }
+        } catch (err) {
+            // Next.js redirect() throws NEXT_REDIRECT — re-throw it
+            if (err?.digest?.startsWith('NEXT_REDIRECT')) throw err;
+            console.error('Switch check error:', err.message);
+        }
         const expiresAt = project.exportExpiresAt ? new Date(project.exportExpiresAt) : null;
         const now = new Date();
         const daysLeft = expiresAt ? Math.max(0, Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))) : 0;
@@ -104,19 +227,29 @@ export default async function ProjectLayout({ children, params }) {
                             </p>
                         )}
                         <div className="flex flex-col sm:flex-row gap-2.5 justify-center">
-                            <a
-                                href={`/api/projects/${id}/export`}
-                                download
-                                className="font-semibold text-sm px-6 py-3 rounded-xl inline-flex items-center justify-center gap-2 transition-all hover:scale-105"
-                                style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)', color: 'white' }}
-                            >
-                                <Download size={18} />
-                                Preuzmi kod (index.html)
-                            </a>
+                            <ExportDownloadButton projectId={id} projectName={project.name} />
                             <Link href="/dashboard" className="font-semibold text-sm px-5 py-2.5 rounded-xl inline-flex items-center justify-center gap-2 transition-all hover:scale-105" style={{ background: 'var(--db-surface)', color: 'var(--db-text-secondary)', border: '1px solid var(--db-border)' }}>
                                 Natrag
                             </Link>
                         </div>
+
+                        {/* Switch to maintenance option */}
+                        {daysLeft > 0 && (
+                            <div className="mt-8 rounded-xl p-5 text-left max-w-md mx-auto" style={{ background: 'var(--db-surface)', border: '1px solid var(--db-border)' }}>
+                                <div className="flex items-start gap-3 mb-3">
+                                    <div className="w-9 h-9 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center justify-center shrink-0">
+                                        <ShieldAlert size={18} className="text-emerald-400" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-bold mb-0.5" style={{ color: 'var(--db-heading)' }}>Predomislili ste se?</h3>
+                                        <p className="text-xs leading-relaxed" style={{ color: 'var(--db-text-muted)' }}>
+                                            Prebacite se na godišnje održavanje (250€/god) i vaša stranica će ponovo biti objavljena. Mi brinemo o hostingu, domeni i tehničkoj podršci.
+                                        </p>
+                                    </div>
+                                </div>
+                                <SwitchToMaintenanceButton projectId={id} />
+                            </div>
+                        )}
                     </div>
                 </main>
             </div>

@@ -106,9 +106,17 @@ export default function AdminUsersPage() {
                                     </td>
                                     <td className="px-4 py-3 text-sm" style={{ color: 'var(--lp-text-secondary)' }}>{user.planName || '—'}</td>
                                     <td className="px-4 py-3">
-                                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${user.subscriptionStatus === 'active' ? 'bg-emerald-500/15 text-emerald-400' : user.subscriptionStatus === 'canceled' ? 'bg-red-500/15 text-red-400' : ''}`} style={!user.subscriptionStatus ? { color: 'var(--lp-text-muted)' } : {}}>
-                                            {user.subscriptionStatus || 'Nema'}
-                                        </span>
+                                        <div className="flex flex-col gap-1">
+                                            <span className={`inline-flex w-fit px-2 py-0.5 rounded text-xs font-medium ${user.subscriptionStatus === 'active' ? 'bg-emerald-500/15 text-emerald-400' : user.subscriptionStatus === 'canceled' ? 'bg-red-500/15 text-red-400' : ''}`} style={!user.subscriptionStatus ? { color: 'var(--lp-text-muted)' } : {}}>
+                                                {user.subscriptionStatus || 'Nema'}
+                                            </span>
+                                            {user.projects?.some(p => p.buyoutStatus === 'MAINTAINED') && (
+                                                <span className="inline-flex w-fit px-2 py-0.5 rounded text-[10px] font-medium bg-amber-500/15 text-amber-400 border border-amber-500/20">Godišnja</span>
+                                            )}
+                                            {!user.projects?.some(p => p.buyoutStatus === 'MAINTAINED') && user.projects?.some(p => p.stripeSubscriptionId && !p.cancelledAt) && (
+                                                <span className="inline-flex w-fit px-2 py-0.5 rounded text-[10px] font-medium bg-blue-500/15 text-blue-400 border border-blue-500/20">Mjesečna</span>
+                                            )}
+                                        </div>
                                     </td>
                                     <td className="px-4 py-3">
                                         <div className="flex items-center gap-1.5">

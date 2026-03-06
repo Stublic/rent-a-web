@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth';
-import { headers } from 'next/headers';
+import { headers, cookies } from 'next/headers';
 import { stripe } from '@/lib/stripe';
 import { NextResponse } from 'next/server';
 
@@ -24,6 +24,13 @@ export async function POST(req) {
         }
         if (trialData?.businessDescription) {
             metadata.trialBusinessDescription = trialData.businessDescription.substring(0, 500);
+        }
+
+        // Pass referral code from cookie to Stripe metadata
+        const cookieStore = await cookies();
+        const refCookie = cookieStore.get('rentawebica_ref');
+        if (refCookie?.value) {
+            metadata.referralCode = refCookie.value;
         }
 
         // Create Checkout Session

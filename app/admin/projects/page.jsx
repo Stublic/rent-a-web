@@ -119,20 +119,20 @@ export default function AdminProjectsPage() {
 
             <div className="db-card overflow-hidden">
                 <div className="overflow-x-auto">
-                <table className="w-full text-sm min-w-[700px]">
-                    <thead>
-                        <tr style={{ borderBottom: '1px solid var(--lp-border)' }}>
-                            {['Projekt', 'Korisnik', 'Plan', 'Status', 'Tokeni', 'Akcije'].map(h => (
-                                <th key={h} className="px-4 py-3 font-medium text-left text-xs" style={{ color: 'var(--lp-text-muted)' }}>{h}</th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {loading ? [...Array(5)].map((_, i) => (
-                            <tr key={i}><td colSpan={6} className="px-4 py-3.5"><div className="h-4 rounded animate-pulse" style={{ background: 'var(--lp-surface)' }} /></td></tr>
-                        )) : projects.length === 0 ? (
-                            <tr><td colSpan={6} className="px-4 py-12 text-center text-sm" style={{ color: 'var(--lp-text-muted)' }}>Nema projekata</td></tr>
-                        ) : projects.map(proj => (
+                    <table className="w-full text-sm min-w-[800px]">
+                        <thead>
+                            <tr style={{ borderBottom: '1px solid var(--lp-border)' }}>
+                                {['Projekt', 'Korisnik', 'Plan', 'Status', 'Tip pretplate', 'Tokeni', 'Akcije'].map(h => (
+                                    <th key={h} className="px-4 py-3 font-medium text-left text-xs" style={{ color: 'var(--lp-text-muted)' }}>{h}</th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {loading ? [...Array(5)].map((_, i) => (
+                                <tr key={i}><td colSpan={7} className="px-4 py-3.5"><div className="h-4 rounded animate-pulse" style={{ background: 'var(--lp-surface)' }} /></td></tr>
+                            )) : projects.length === 0 ? (
+                                <tr><td colSpan={7} className="px-4 py-12 text-center text-sm" style={{ color: 'var(--lp-text-muted)' }}>Nema projekata</td></tr>
+                            ) : projects.map(proj => (
                             <tr key={proj.id} className="hover:bg-white/[0.02] transition-colors" style={{ borderBottom: '1px solid var(--lp-border)' }}>
                                 <td className="px-4 py-3">
                                     <p className="font-medium text-sm" style={{ color: 'var(--lp-heading)' }}>{proj.name}</p>
@@ -148,6 +148,19 @@ export default function AdminProjectsPage() {
                                         <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[proj.status] || statusColors.DRAFT}`}>{proj.status}</span>
                                         {proj.cancelledAt && <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-500/15 text-red-400">OTKAZANO</span>}
                                     </div>
+                                </td>
+                                <td className="px-4 py-3">
+                                    {proj.buyoutStatus === 'MAINTAINED' ? (
+                                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-500/15 text-amber-400 border border-amber-500/20">Godišnja</span>
+                                    ) : proj.buyoutStatus === 'EXPORTED_LOCKED' ? (
+                                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-500/15 text-red-400 border border-red-500/20">Zaključano</span>
+                                    ) : proj.cancelledAt ? (
+                                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-500/15 text-red-400">Otkazano</span>
+                                    ) : proj.stripeSubscriptionId ? (
+                                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-500/15 text-blue-400 border border-blue-500/20">Mjesečna</span>
+                                    ) : (
+                                        <span className="text-xs" style={{ color: 'var(--lp-text-muted)' }}>Nema</span>
+                                    )}
                                 </td>
                                 <td className="px-4 py-3 text-sm" style={{ color: 'var(--lp-text-secondary)' }}>{proj.editorTokens ?? '—'}</td>
                                 <td className="px-4 py-3">

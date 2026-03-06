@@ -45,18 +45,26 @@ export async function GET() {
         // Calculate MRR from active subscriptions
         const subscriptions = await prisma.project.findMany({
             where: { stripeSubscriptionId: { not: null } },
-            select: { planName: true }
+            select: { planName: true, buyoutStatus: true }
         });
 
         let mrr = 0;
+        let yearlyCount = 0;
+        let yearlyRevenue = 0;
         subscriptions.forEach(sub => {
-            if (sub.planName?.includes('Starter')) mrr += 39;
-            else if (sub.planName?.includes('Advanced')) mrr += 89;
-            else if (sub.planName?.includes('Poduzetni')) mrr += 399;
+            if (sub.buyoutStatus === 'MAINTAINED') {
+                // Yearly maintenance — contributes to ARR not MRR
+                yearlyCount++;
+                yearlyRevenue += 250; // 250€/year
+            } else {
+                if (sub.planName?.includes('Starter')) mrr += 39;
+                else if (sub.planName?.includes('Advanced')) mrr += 89;
+                else if (sub.planName?.includes('Poduzetni')) mrr += 399;
+            }
         });
 
         return NextResponse.json({
-            stats: { totalUsers, totalProjects, activeProjects, totalInvoices, mrr },
+            stats: { totalUsers, totalProjects, activeProjects, totalInvoices, mrr, yearlyCount, yearlyRevenue },
             recentUsers,
             recentInvoices,
         });

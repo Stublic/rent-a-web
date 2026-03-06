@@ -216,6 +216,48 @@ export async function POST(req) {
             return Response.json({ received: true });
         }
 
+        // ── Handle Switch to Maintenance (export → maintained) ──
+        if (session.metadata?.type === 'switch_to_maintenance') {
+            const projectId = session.metadata?.projectId;
+            console.log(`🔄 Switch to Maintenance: project=${projectId}`);
+
+            if (projectId) {
+                try {
+                    const project = await prisma.project.findUnique({
+                        where: { id: projectId },
+                        select: { buyoutStatus: true, exportExpiresAt: true, name: true },
+                    });
+
+                    if (project && project.buyoutStatus === 'EXPORTED_LOCKED') {
+                        // Clear this subscription ID from other projects first (unique constraint)
+                        if (subscriptionId) {
+                            await prisma.project.updateMany({
+                                where: { stripeSubscriptionId: subscriptionId, id: { not: projectId } },
+                                data: { stripeSubscriptionId: null },
+                            });
+                        }
+
+                        // Update project: switch to MAINTAINED, link new subscription
+                        await prisma.project.update({
+                            where: { id: projectId },
+                            data: {
+                                buyoutStatus: 'MAINTAINED',
+                                stripeSubscriptionId: subscriptionId,
+                                exportExpiresAt: null,
+                            },
+                        });
+
+                        console.log(`✅ Project ${projectId} switched from EXPORTED_LOCKED to MAINTAINED`);
+                    } else {
+                        console.warn(`⚠️ Project ${projectId} is not in EXPORTED_LOCKED state, skipping.`);
+                    }
+                } catch (err) {
+                    console.error('❌ Error switching to maintenance:', err.message);
+                }
+            }
+            return Response.json({ received: true });
+        }
+
         // Skip if this is a token purchase (no subscription)
         if (!subscriptionId) {
             console.log('⏭️ Skipping token purchase event (no subscription ID)');
@@ -250,6 +292,25 @@ export async function POST(req) {
             const metadataPlanName = session.metadata?.planName;
 
             let planName = metadataPlanName || PRICE_PLAN_MAP[priceId] || "Custom";
+
+            // Skip yearly maintenance subscriptions — they're handled by switch_to_maintenance
+            const yearlyMaintenancePrice = process.env.STRIPE_PRICE_YEARLY_MAINTENANCE || 'price_1T7JUUKhkXukXczc9nP3lKSW';
+            if (priceId === yearlyMaintenancePrice) {
+                console.log('⏭️ Skipping yearly maintenance price (handled by switch_to_maintenance)');
+                return Response.json({ received: true });
+            }
+
+            // Also skip if metadata explicitly marks this as a maintenance switch or buyout
+            if (session.metadata?.type === 'switch_to_maintenance' || session.metadata?.type === 'website_buyout') {
+                console.log(`⏭️ Skipping ${session.metadata.type} (already handled above)`);
+                return Response.json({ received: true });
+            }
+
+            // Skip "Custom" plan subscriptions that aren't renewals (likely unknown/maintenance prices)
+            if (planName === 'Custom' && !renewProjectId && !metadataPlanName) {
+                console.log('⏭️ Skipping unknown price ID (no matching plan, not a renewal):', priceId);
+                return Response.json({ received: true });
+            }
 
             console.log(`🏷️ Determined Plan Name: ${planName} (from ${metadataPlanName ? 'metadata' : 'price map'})`);
             console.log(`💰 Subscription created: ${planName} for ${customerEmail}`);
@@ -354,6 +415,56 @@ export async function POST(req) {
                         data: { editorTokens: { increment: 500 } }
                     });
                     console.log(`🎁 Granted 500 initial tokens to user ${user.id}`);
+
+                    // ── Referral reward processing ──
+                    const referralCode = session.metadata?.referralCode;
+                    if (referralCode) {
+                        try {
+                            const referrer = await prisma.user.findUnique({
+                                where: { referralCode },
+                                select: { id: true, email: true }
+                            });
+
+                            if (referrer && referrer.id !== user.id) {
+                                // Check the new user hasn't already been referred
+                                const currentUser = await prisma.user.findUnique({
+                                    where: { id: user.id },
+                                    select: { referredById: true }
+                                });
+
+                                if (!currentUser?.referredById) {
+                                    const REFERRAL_BONUS = 5000;
+
+                                    // Award tokens to both users
+                                    await prisma.user.update({
+                                        where: { id: user.id },
+                                        data: {
+                                            editorTokens: { increment: REFERRAL_BONUS },
+                                            referredById: referrer.id,
+                                        }
+                                    });
+
+                                    await prisma.user.update({
+                                        where: { id: referrer.id },
+                                        data: {
+                                            editorTokens: { increment: REFERRAL_BONUS },
+                                            referralsCount: { increment: 1 },
+                                        }
+                                    });
+
+                                    console.log(`🎉 Referral reward! ${referrer.email} → ${user.email || customerEmail} (+${REFERRAL_BONUS} tokens each)`);
+                                } else {
+                                    console.log(`ℹ️ User ${user.id} already referred — skipping referral reward`);
+                                }
+                            } else if (referrer?.id === user.id) {
+                                console.log(`⚠️ Self-referral attempt by ${user.email || customerEmail} — skipping`);
+                            } else {
+                                console.log(`⚠️ Referral code "${referralCode}" not found — skipping reward`);
+                            }
+                        } catch (refErr) {
+                            console.error('❌ Error processing referral reward:', refErr.message);
+                        }
+                    }
                 }
 
 

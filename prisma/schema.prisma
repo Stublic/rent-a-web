@@ -30,6 +30,13 @@ model User {
   editorTokens       Int      @default(0)       // Remaining AI edit tokens
   editorTokensUsed   Int      @default(0)       // Total tokens consumed (analytics)
 
+  // Referral system
+  referralCode       String?  @unique           // Unique 6-char code for sharing
+  referredById       String?                    // Who referred this user
+  referredBy         User?    @relation("UserReferrals", fields: [referredById], references: [id])
+  referrals          User[]   @relation("UserReferrals")
+  referralsCount     Int      @default(0)       // Number of successful referrals
+
   sessions         Session[]
   accounts         Account[]
   projects         Project[]

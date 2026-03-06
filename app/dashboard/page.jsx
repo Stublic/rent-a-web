@@ -13,6 +13,7 @@ import {
     Settings as SettingsIcon,
     Menu,
     X,
+    Gift,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -21,6 +22,7 @@ import ProjectsTab from "./components/ProjectsTab";
 import SettingsTab from "./components/SettingsTab";
 import MediaTab from "./components/MediaTab";
 import SupportTab from "./components/SupportTab";
+import ReferralTab from "./components/ReferralTab";
 import OnboardingTour from "@/components/OnboardingTour";
 import DashboardLoader from "./components/DashboardLoader";
 import { useToast } from "./components/ToastProvider";
@@ -29,6 +31,7 @@ const TABS = [
     { id: "subscription", label: "Pregled", icon: CreditCard },
     { id: "projects", label: "Projekti", icon: LayoutDashboard },
     { id: "media", label: "Media", icon: Image },
+    { id: "referrals", label: "Preporuke", icon: Gift },
     { id: "tickets", label: "Ticketi", icon: MessageSquare },
     { id: "settings", label: "Postavke", icon: SettingsIcon },
 ];
@@ -272,6 +275,7 @@ export default function DashboardPage() {
                         {activeTab === "subscription" && <SubscriptionTab user={user} onPortal={handlePortal} />}
                         {activeTab === "projects" && <ProjectsTab />}
                         {activeTab === "media" && <MediaTab />}
+                        {activeTab === "referrals" && <ReferralTab />}
                         {activeTab === "tickets" && <SupportTab />}
                         {activeTab === "settings" && <SettingsTab user={user} logout={logout} />}
                     </div>

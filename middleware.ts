@@ -46,6 +46,24 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL("/auth/login", request.url));
     }
 
+    // ─── Referral tracking: capture ?ref=CODE into cookie ─────────
+    const refCode = request.nextUrl.searchParams.get("ref");
+    if (refCode && refCode.length >= 4 && refCode.length <= 12) {
+        // Build clean URL without the ref param
+        const cleanUrl = request.nextUrl.clone();
+        cleanUrl.searchParams.delete("ref");
+
+        const response = NextResponse.redirect(cleanUrl);
+        response.cookies.set("rentawebica_ref", refCode, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            maxAge: 60 * 60 * 24 * 30, // 30 days
+            path: "/",
+        });
+        return response;
+    }
+
     return NextResponse.next();
 }
 

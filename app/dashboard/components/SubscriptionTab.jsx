@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronRight, FileText, Zap, Globe, Sparkles, AlertTriangle, X, Clock, RefreshCw, MessageSquare, ArrowUpCircle, Check, Bug, Hourglass } from "lucide-react";
+import { ChevronDown, ChevronRight, FileText, Zap, Globe, Sparkles, AlertTriangle, X, Clock, RefreshCw, MessageSquare, ArrowUpCircle, Check, Bug, Hourglass, Download } from "lucide-react";
 import Link from "next/link";
 import { TabLoader, ButtonLoader } from "./DashboardLoader";
 import { useToast } from "./ToastProvider";
@@ -54,6 +54,7 @@ function CollapsibleSection({ title, icon: Icon, count, defaultOpen = false, chi
 
 /* ── Cancel Modal ── */
 function CancelModal({ project, onClose, onConfirm, cancelling }) {
+    const isMaintained = project.buyoutStatus === 'MAINTAINED';
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
@@ -66,7 +67,9 @@ function CancelModal({ project, onClose, onConfirm, cancelling }) {
                     <AlertTriangle size={28} className="text-red-500" />
                 </div>
 
-                <h3 className="text-xl font-bold text-center mb-2" style={{ color: 'var(--db-heading)' }}>Otkazivanje pretplate</h3>
+                <h3 className="text-xl font-bold text-center mb-2" style={{ color: 'var(--db-heading)' }}>
+                    {isMaintained ? 'Otkazivanje godišnjeg održavanja' : 'Otkazivanje pretplate'}
+                </h3>
                 <p className="text-center text-sm mb-5" style={{ color: 'var(--db-text-secondary)' }}>Jeste li sigurni da želite otkazati pretplatu za:</p>
 
                 <div className="rounded-xl p-4 mb-4" style={{ background: 'var(--db-bg)', border: '1px solid var(--db-border)' }}>
@@ -74,28 +77,37 @@ function CancelModal({ project, onClose, onConfirm, cancelling }) {
                         <Globe size={18} className="shrink-0" style={{ color: 'var(--db-text-muted)' }} />
                         <div className="min-w-0">
                             <h4 className="font-bold truncate" style={{ color: 'var(--db-heading)' }}>{project.name}</h4>
-                            <p className="text-sm" style={{ color: 'var(--db-text-muted)' }}>{project.planName}</p>
+                            <p className="text-sm" style={{ color: 'var(--db-text-muted)' }}>{isMaintained ? 'Godišnje održavanje — 250€/god' : project.planName}</p>
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-amber-500/5 border border-amber-500/15 rounded-xl p-3 mb-3">
-                    <p className="text-amber-400/90 text-xs leading-relaxed">
-                        <Hourglass size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> <strong>Vaši podaci bit će sačuvani {GRACE_PERIOD_DAYS} dana</strong> nakon otkazivanja.
-                    </p>
-                </div>
-
-                <div className="bg-red-500/5 border border-red-500/15 rounded-xl p-3 mb-5">
-                    <p className="text-red-400/90 text-xs leading-relaxed">
-                        <AlertTriangle size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> Nakon {GRACE_PERIOD_DAYS} dana svi podaci bit će <strong>trajno obrisani</strong>. Vaša web stranica odmah prestaje biti javno dostupna.
-                    </p>
-                </div>
+                {isMaintained ? (
+                    <div className="bg-amber-500/5 border border-amber-500/15 rounded-xl p-3 mb-5">
+                        <p className="text-amber-400/90 text-xs leading-relaxed">
+                            <Download size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> Vaša stranica će biti skinuta s interneta. Imat ćete <strong>90 dana za preuzimanje koda</strong>. Možete se u bilo kojem trenutku ponovno prebaciti na održavanje.
+                        </p>
+                    </div>
+                ) : (
+                    <>
+                        <div className="bg-amber-500/5 border border-amber-500/15 rounded-xl p-3 mb-3">
+                            <p className="text-amber-400/90 text-xs leading-relaxed">
+                                <Hourglass size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> <strong>Vaši podaci bit će sačuvani {GRACE_PERIOD_DAYS} dana</strong> nakon otkazivanja.
+                            </p>
+                        </div>
+                        <div className="bg-red-500/5 border border-red-500/15 rounded-xl p-3 mb-5">
+                            <p className="text-red-400/90 text-xs leading-relaxed">
+                                <AlertTriangle size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> Nakon {GRACE_PERIOD_DAYS} dana svi podaci bit će <strong>trajno obrisani</strong>. Vaša web stranica odmah prestaje biti javno dostupna.
+                            </p>
+                        </div>
+                    </>
+                )}
 
                 <div className="flex gap-3">
-                    <button onClick={onClose} disabled={cancelling} className="flex-1 font-medium py-3 rounded-xl transition-colors" style={{ background: 'var(--db-bg)', border: '1px solid var(--db-border)', color: 'var(--db-heading)' }}>
+                    <button onClick={onClose} disabled={cancelling} className="flex-1 font-medium py-3 rounded-xl transition-colors cursor-pointer" style={{ background: 'var(--db-bg)', border: '1px solid var(--db-border)', color: 'var(--db-heading)' }}>
                         Odustani
                     </button>
-                    <button onClick={onConfirm} disabled={cancelling} className="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
+                    <button onClick={onConfirm} disabled={cancelling} className="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer">
                         {cancelling ? <><ButtonLoader size={14} /> Otkazujem...</> : 'Potvrdi otkazivanje'}
                     </button>
                 </div>
@@ -114,6 +126,7 @@ export default function SubscriptionTab({ user, onPortal }) {
     const [renewingProjectId, setRenewingProjectId] = useState(null);
     const [editorTokens, setEditorTokens] = useState(0);
     const [upgradingProjectId, setUpgradingProjectId] = useState(null);
+    const [revertingProjectId, setRevertingProjectId] = useState(null);
     const toast = useToast();
 
     const fetchData = async () => {
@@ -142,8 +155,21 @@ export default function SubscriptionTab({ user, onPortal }) {
                 body: JSON.stringify({ projectId: cancelProject.id })
             });
             const data = await res.json();
-            if (data.success) { await fetchData(); setCancelProject(null); }
-            else alert(data.error || 'Greška pri otkazivanju.');
+            if (data.success) {
+                if (data.cancelAtPeriodEnd) {
+                    // MAINTAINED project — cancel at period end, show toast
+                    toast.success(data.message || 'Pretplata otkazana.');
+                    await fetchData();
+                    setCancelProject(null);
+                } else if (data.redirectToExport) {
+                    // Immediate cancel → redirect to export screen
+                    window.location.href = `/dashboard/projects/${cancelProject.id}/settings`;
+                } else {
+                    await fetchData();
+                    setCancelProject(null);
+                }
+            }
+            else toast.error(data.error || 'Greška pri otkazivanju.');
         } catch (err) {
             console.error('Cancel error:', err);
             alert('Došlo je do greške.');
@@ -194,6 +220,28 @@ export default function SubscriptionTab({ user, onPortal }) {
         }
     };
 
+    const handleMaintainedUpgrade = async (projectId) => {
+        setUpgradingProjectId(projectId);
+        try {
+            const res = await fetch('/api/maintained-upgrade-checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ projectId })
+            });
+            const data = await res.json();
+            if (data.url) {
+                window.location.href = data.url;
+            } else {
+                toast.error(data.error || 'Greška pri kreiranju checkout sessiona.');
+            }
+        } catch (err) {
+            console.error('Maintained upgrade error:', err);
+            toast.error('Došlo je do greške.');
+        } finally {
+            setUpgradingProjectId(null);
+        }
+    };
+
     const activeProjects = projects.filter(p => !p.cancelledAt);
     const cancelledProjects = projects.filter(p => p.cancelledAt);
     const starterProjects = activeProjects.filter(p => p.planName?.toLowerCase().includes('starter') && p.stripeSubscriptionId);
@@ -202,6 +250,10 @@ export default function SubscriptionTab({ user, onPortal }) {
         if (project.cancelledAt) {
             const daysLeft = getDaysLeft(project.cancelledAt);
             return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">Briše se za {daysLeft}d</span>;
+        }
+        if (project.cancelAtPeriodEnd && project.periodEndDate) {
+            const daysLeft = Math.max(0, Math.ceil((new Date(project.periodEndDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+            return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">Ističe za {daysLeft}d</span>;
         }
         if (project.stripeSubscriptionId) return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Aktivan</span>;
         return <span className="px-2.5 py-1 rounded-full text-xs font-semibold" style={{ background: 'var(--db-surface)', color: 'var(--db-text-muted)' }}>Bez pretplate</span>;
@@ -252,9 +304,9 @@ export default function SubscriptionTab({ user, onPortal }) {
                         </div>
                         <div className="flex-shrink-0 flex flex-col items-center gap-1.5">
                             <button
-                                onClick={() => handleUpgrade(project.id)}
+                                onClick={() => project.buyoutStatus === 'MAINTAINED' ? handleMaintainedUpgrade(project.id) : handleUpgrade(project.id)}
                                 disabled={upgradingProjectId === project.id}
-                                className="font-bold text-sm px-6 py-3 rounded-xl transition-all flex items-center gap-2 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="font-bold text-sm px-6 py-3 rounded-xl transition-all flex items-center gap-2 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                                 style={{
                                     background: 'linear-gradient(135deg, #10b981, #059669)',
                                     color: 'white',
@@ -268,7 +320,7 @@ export default function SubscriptionTab({ user, onPortal }) {
                                 )}
                             </button>
                             <span className="text-[11px]" style={{ color: 'var(--db-text-muted)' }}>
-                                39€ → 99€/mj · proporcionalna naplata
+                                {project.buyoutStatus === 'MAINTAINED' ? '600€ jednokratno · nadoplata razlike' : '39€ → 99€/mj · proporcionalna naplata'}
                             </span>
                         </div>
                     </div>
@@ -318,9 +370,44 @@ export default function SubscriptionTab({ user, onPortal }) {
                                 </div>
                                 <div className="flex items-center gap-2">
                                     {project.stripeSubscriptionId && (
-                                        <button onClick={() => setCancelProject(project)} className="text-xs font-medium text-red-400/60 hover:text-red-400 px-2 py-1.5 rounded-lg hover:bg-red-500/5 transition-all">
-                                            Otkaži
-                                        </button>
+                                        project.cancelAtPeriodEnd && project.periodEndDate ? (
+                                            <button
+                                                onClick={async () => {
+                                                    setRevertingProjectId(project.id);
+                                                    try {
+                                                        const res = await fetch('/api/revert-cancellation', {
+                                                            method: 'POST',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify({ projectId: project.id }),
+                                                        });
+                                                        const data = await res.json();
+                                                        if (data.success) {
+                                                            toast.success('Pretplata je obnovljena!');
+                                                            await fetchData();
+                                                        } else {
+                                                            toast.error(data.error || 'Greška.');
+                                                        }
+                                                    } catch {
+                                                        toast.error('Greška pri obnovi.');
+                                                    } finally {
+                                                        setRevertingProjectId(null);
+                                                    }
+                                                }}
+                                                disabled={revertingProjectId === project.id}
+                                                className="text-xs font-medium px-2 py-1.5 rounded-lg transition-all flex items-center gap-1 disabled:opacity-50 cursor-pointer"
+                                                style={{ color: '#f59e0b', background: 'rgba(245,158,11,0.05)' }}
+                                            >
+                                                {revertingProjectId === project.id ? (
+                                                    <><ButtonLoader size={10} /> Aktiviram...</>
+                                                ) : (
+                                                    <><RefreshCw size={10} /> Ponovo aktiviraj ({Math.max(0, Math.ceil((new Date(project.periodEndDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))}d)</>
+                                                )}
+                                            </button>
+                                        ) : (
+                                            <button onClick={() => setCancelProject(project)} className="text-xs font-medium text-red-400/60 hover:text-red-400 px-2 py-1.5 rounded-lg hover:bg-red-500/5 transition-all cursor-pointer">
+                                                Otkaži
+                                            </button>
+                                        )
                                     )}
                                     <Link
                                         href={`/dashboard/projects/${project.id}/${project.hasGenerated ? 'editor' : 'content'}`}

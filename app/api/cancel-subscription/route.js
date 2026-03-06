@@ -39,10 +39,34 @@ export async function POST(req) {
     }
 
     try {
-        // Cancel the subscription in Stripe immediately
-        await stripe.subscriptions.cancel(project.stripeSubscriptionId);
+        // If project was bought out + maintained, use cancel_at_period_end 
+        // so user keeps access until the billing period ends
+        if (project.buyoutStatus === 'MAINTAINED') {
+            const sub = await stripe.subscriptions.update(project.stripeSubscriptionId, {
+                cancel_at_period_end: true,
+            });
 
-        // Set cancelledAt and clear subscription ID
+            // Calculate when the subscription will actually end
+            // billing_cycle_anchor + 1 year for yearly subscriptions
+            const anchorTs = sub.billing_cycle_anchor || sub.created;
+            const endDate = new Date(anchorTs * 1000);
+            endDate.setFullYear(endDate.getFullYear() + 1);
+            while (endDate < new Date()) {
+                endDate.setFullYear(endDate.getFullYear() + 1);
+            }
+
+            console.log(`✅ MAINTAINED subscription set to cancel at period end: ${endDate.toISOString()}`);
+
+            return Response.json({
+                success: true,
+                message: `Pretplata je otkazana. Vaš projekt ostaje aktivan do ${endDate.toLocaleDateString('hr-HR', { day: 'numeric', month: 'long', year: 'numeric' })}.`,
+                cancelAtPeriodEnd: true,
+                periodEndDate: endDate.toISOString(),
+            });
+        }
+
+        // Normal cancel flow — immediately cancel in Stripe
+        await stripe.subscriptions.cancel(project.stripeSubscriptionId);
         await prisma.project.update({
             where: { id: project.id },
             data: {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Globe, ExternalLink, Copy, Check, Loader2, AlertTriangle, Trash2, Rocket, CloudOff, Link2, Mail, RefreshCw, AlertCircle, Upload, Image as ImageIcon } from "lucide-react";
+import { Globe, ExternalLink, Copy, Check, Loader2, AlertTriangle, Trash2, Rocket, CloudOff, Link2, Mail, RefreshCw, AlertCircle, Upload, Image as ImageIcon, Crown, Download, Shield, Server, CalendarClock, CreditCard, XCircle } from "lucide-react";
 import { saveSeoSettingsAction } from "@/app/actions/seo-settings";
 import { resetProjectAction } from "@/app/actions/reset-project";
 import { useRouter } from 'next/navigation';
@@ -13,6 +13,7 @@ const SETTINGS_TABS = [
     { id: 'domain', label: 'Domena', icon: Link2 },
     { id: 'email', label: 'Email', icon: Mail },
     { id: 'seo', label: 'SEO', icon: Globe },
+    { id: 'buyout', label: 'Otkup', icon: Crown },
     { id: 'danger', label: 'Opasna zona', icon: AlertTriangle },
 ];
 
@@ -56,6 +57,13 @@ export default function SettingsPage({ params }) {
     const [savingSeo, setSavingSeo] = useState(false);
     const [seoSuccess, setSeoSuccess] = useState(false);
 
+    // Buyout state
+    const [buyoutStatus, setBuyoutStatus] = useState('NONE');
+    const [buyoutLoading, setBuyoutLoading] = useState(null);
+    const [maintenanceInfo, setMaintenanceInfo] = useState(null);
+    const [cancellingMaintenance, setCancellingMaintenance] = useState(false);
+    const [showMaintenanceCancelConfirm, setShowMaintenanceCancelConfirm] = useState(false);
+
     useEffect(() => {
         async function init() {
             const p = await params;
@@ -67,8 +75,10 @@ export default function SettingsPage({ params }) {
                 const d = await res.json();
                 if (d.contactEmail) setContactEmail(d.contactEmail);
                 if (d.planName) setPlanName(d.planName);
+                if (d.buyoutStatus) setBuyoutStatus(d.buyoutStatus);
                 if (d.projectName) setProjectName(d.projectName);
                 if (d.subpageKeys) setSubpageKeys(d.subpageKeys);
+                if (d.maintenanceInfo) setMaintenanceInfo(d.maintenanceInfo);
                 // Load existing SEO settings, pre-fill from AI-generated content
                 if (d.seoSettings) {
                     // Merge autoSeo as defaults where seoSettings.pages doesn't have values
@@ -347,6 +357,26 @@ export default function SettingsPage({ params }) {
                     const isActive = activeTab === tab.id;
                     // Hide domain tab if not published
                     if (tab.id === 'domain' && !status?.published) return null;
+                    // Show 'Pretplata' tab for MAINTAINED, or 'Otkup' for eligible NONE
+                    if (tab.id === 'buyout') {
+                        if (buyoutStatus === 'MAINTAINED') {
+                            // Show as subscription tab
+                            return (
+                                <button
+                                    key="maintenance"
+                                    onClick={() => setActiveTab('buyout')}
+                                    className={`settings-tab ${isActive ? 'settings-tab-active' : ''}`}
+                                    title="Pretplata"
+                                >
+                                    <CreditCard size={14} />
+                                    <span className="hidden sm:inline">Pretplata</span>
+                                </button>
+                            );
+                        }
+                        if (buyoutStatus !== 'NONE') return null;
+                        const pn = planName.toLowerCase();
+                        if (!pn.includes('starter') && !pn.includes('advanced') && !pn.includes('growth')) return null;
+                    }
                     return (
                         <button
                             key={tab.id}
@@ -714,6 +744,438 @@ export default function SettingsPage({ params }) {
                         </div>
                     </section>
                 )}
+
+                {/* ═══ MAINTAINED SUBSCRIPTION TAB ═══ */}
+                {activeTab === 'buyout' && buyoutStatus === 'MAINTAINED' && (
+                    <section className="db-card rounded-2xl p-6">
+                        <div className="flex items-center gap-3 mb-5">
+                            <div className={`w-10 h-10 ${maintenanceInfo?.cancelAtPeriodEnd ? 'bg-amber-500/10 border-amber-500/20' : 'bg-emerald-500/10 border-emerald-500/20'} border rounded-xl flex items-center justify-center`}>
+                                <CreditCard size={20} className={maintenanceInfo?.cancelAtPeriodEnd ? 'text-amber-400' : 'text-emerald-400'} />
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-semibold" style={{ color: 'var(--db-heading)' }}>Godišnje održavanje</h2>
+                                <p className="text-[color:var(--db-text-muted)] text-sm">
+                                    {maintenanceInfo?.cancelAtPeriodEnd
+                                        ? 'Pretplata je otkazana — projekt ostaje aktivan do isteka'
+                                        : 'Vaša otkupljena web stranica je na godišnjem održavanju'}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Cancellation banner */}
+                        {maintenanceInfo?.cancelAtPeriodEnd && maintenanceInfo?.periodEndDate && (
+                            <div className="rounded-xl p-4 mb-4" style={{ background: 'rgba(245,158,11,0.05)', border: '1px solid rgba(245,158,11,0.2)' }}>
+                                <div className="flex items-start gap-3">
+                                    <AlertTriangle size={18} className="text-amber-400 shrink-0 mt-0.5" />
+                                    <div className="flex-1">
+                                        <p className="text-sm font-bold text-amber-400 mb-1">Pretplata otkazana</p>
+                                        <p className="text-xs leading-relaxed" style={{ color: 'var(--db-text-muted)' }}>
+                                            Vaš projekt ostaje potpuno aktivan do <strong className="text-amber-400">{new Date(maintenanceInfo.periodEndDate).toLocaleDateString('hr-HR', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>. 
+                                            Nakon tog datuma, projekt će biti zaključan i imat ćete 90 dana za preuzimanje koda.
+                                        </p>
+                                        <div className="flex items-center gap-2 mt-3 flex-wrap">
+                                            <button
+                                                onClick={async () => {
+                                                    setCancellingMaintenance(true);
+                                                    try {
+                                                        const res = await fetch('/api/revert-cancellation', {
+                                                            method: 'POST',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify({ projectId }),
+                                                        });
+                                                        const data = await res.json();
+                                                        if (data.success) {
+                                                            toast.success('Pretplata je obnovljena!');
+                                                            router.refresh();
+                                                            window.location.reload();
+                                                        } else {
+                                                            toast.error(data.error || 'Greška.');
+                                                        }
+                                                    } catch {
+                                                        toast.error('Greška pri obnovi.');
+                                                    } finally {
+                                                        setCancellingMaintenance(false);
+                                                    }
+                                                }}
+                                                disabled={cancellingMaintenance}
+                                                className="text-xs font-bold px-4 py-2 rounded-lg transition-all hover:scale-105 cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                                                style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white' }}
+                                            >
+                                                {cancellingMaintenance ? <><Loader2 size={12} className="animate-spin" /> Obnavljam...</> : <><RefreshCw size={12} /> Predomislio sam se — zadrži pretplatu</>}
+                                            </button>
+                                            <button
+                                                onClick={async () => {
+                                                    try {
+                                                        const res = await fetch(`/api/projects/${projectId}/export`);
+                                                        if (!res.ok) { toast.error('Greška pri preuzimanju.'); return; }
+                                                        const blob = await res.blob();
+                                                        const { saveAs } = await import('file-saver');
+                                                        const safeName = (projectName || 'website')
+                                                            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                                                            .replace(/[đĐ]/g, 'd')
+                                                            .replace(/[^a-zA-Z0-9\s-]/g, '')
+                                                            .replace(/\s+/g, '-')
+                                                            .toLowerCase()
+                                                            .substring(0, 50) || 'website';
+                                                        saveAs(blob, `${safeName}-export.zip`);
+                                                        toast.success('Preuzimanje pokrenuto!');
+                                                    } catch {
+                                                        toast.error('Greška pri preuzimanju.');
+                                                    }
+                                                }}
+                                                className="text-xs font-bold px-4 py-2 rounded-lg transition-all hover:scale-105 cursor-pointer flex items-center gap-1.5"
+                                                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: 'var(--db-text-secondary)' }}
+                                            >
+                                                <Download size={12} /> Preuzmi stranicu (.zip)
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Status card */}
+                        <div className="rounded-xl p-5 mb-4" style={{ 
+                            background: maintenanceInfo?.cancelAtPeriodEnd ? 'rgba(245,158,11,0.03)' : 'rgba(16,185,129,0.05)', 
+                            border: `1px solid ${maintenanceInfo?.cancelAtPeriodEnd ? 'rgba(245,158,11,0.1)' : 'rgba(16,185,129,0.15)'}` 
+                        }}>
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-2">
+                                    {maintenanceInfo?.cancelAtPeriodEnd ? (
+                                        <>
+                                            <span className="w-2.5 h-2.5 bg-amber-400 rounded-full" />
+                                            <span className="text-sm font-bold text-amber-400">Vrijedi do isteka</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="w-2.5 h-2.5 bg-emerald-400 rounded-full animate-pulse" />
+                                            <span className="text-sm font-bold text-emerald-400">Aktivna pretplata</span>
+                                        </>
+                                    )}
+                                </div>
+                                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${maintenanceInfo?.cancelAtPeriodEnd ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>
+                                    {maintenanceInfo?.cancelAtPeriodEnd ? 'Otkazano' : 'Otkupljeno + Održavanje'}
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="rounded-lg p-3" style={{ background: 'var(--db-bg)', border: '1px solid var(--db-border)' }}>
+                                    <p className="text-[10px] uppercase tracking-wider font-medium mb-1" style={{ color: 'var(--db-text-muted)' }}>Plan</p>
+                                    <p className="text-sm font-bold" style={{ color: 'var(--db-heading)' }}>Godišnje održavanje</p>
+                                    <p className="text-xs mt-0.5" style={{ color: 'var(--db-text-muted)' }}>Hosting, domena, tehnička podrška</p>
+                                </div>
+                                <div className="rounded-lg p-3" style={{ background: 'var(--db-bg)', border: '1px solid var(--db-border)' }}>
+                                    <p className="text-[10px] uppercase tracking-wider font-medium mb-1" style={{ color: 'var(--db-text-muted)' }}>Cijena</p>
+                                    <p className="text-sm font-bold" style={{ color: 'var(--db-heading)' }}>250€ <span className="font-normal text-xs" style={{ color: 'var(--db-text-muted)' }}>/godišnje</span></p>
+                                </div>
+                            </div>
+
+                            {maintenanceInfo && (
+                                <div className="mt-4 space-y-1.5">
+                                    {maintenanceInfo.startDate && (
+                                        <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--db-text-muted)' }}>
+                                            <CalendarClock size={14} />
+                                            Početak pretplate: <strong style={{ color: 'var(--db-text-secondary)' }}>{new Date(maintenanceInfo.startDate).toLocaleDateString('hr-HR', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>
+                                        </div>
+                                    )}
+                                    {maintenanceInfo.cancelAtPeriodEnd && maintenanceInfo.periodEndDate ? (
+                                        <div className="flex items-center gap-2 text-xs text-amber-400">
+                                            <CalendarClock size={14} />
+                                            Pristup do: <strong>{new Date(maintenanceInfo.periodEndDate).toLocaleDateString('hr-HR', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>
+                                        </div>
+                                    ) : maintenanceInfo.nextBillingDate ? (
+                                        <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--db-text-secondary)' }}>
+                                            <CalendarClock size={14} className="text-emerald-400" />
+                                            Sljedeća naplata: <strong className="text-emerald-400">{new Date(maintenanceInfo.nextBillingDate).toLocaleDateString('hr-HR', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>
+                                        </div>
+                                    ) : null}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* What's included */}
+                        <div className="rounded-xl p-4 mb-5" style={{ background: 'var(--db-bg)', border: '1px solid var(--db-border)' }}>
+                            <h3 className="text-xs uppercase tracking-wider font-medium mb-3" style={{ color: 'var(--db-text-muted)' }}>Uključeno u održavanje</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {['Hosting i SSL certifikat', 'Registracija domene', 'Tehnička podrška', 'Pristup dashboardu i uređivaču', 'Stranica online i aktivna', 'Sigurnosne nadogradnje'].map((item) => (
+                                    <div key={item} className="flex items-center gap-2 text-xs" style={{ color: 'var(--db-text-secondary)' }}>
+                                        <Check size={12} className="text-emerald-400 shrink-0" />
+                                        {item}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Download section */}
+                        <div className="rounded-xl p-4 mb-5 flex items-center justify-between" style={{ background: 'var(--db-bg)', border: '1px solid var(--db-border)' }}>
+                            <div>
+                                <h3 className="text-xs uppercase tracking-wider font-medium mb-1" style={{ color: 'var(--db-text-muted)' }}>Vaša web stranica</h3>
+                                <p className="text-xs" style={{ color: 'var(--db-text-muted)' }}>Preuzmite ažurnu verziju web stranice s svim slikama</p>
+                            </div>
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        toast.success('Priprema preuzimanja...');
+                                        const res = await fetch(`/api/projects/${projectId}/export`);
+                                        if (!res.ok) { 
+                                            const errText = await res.text().catch(() => '');
+                                            console.error('Export error:', res.status, errText);
+                                            toast.error(errText || 'Greška pri preuzimanju.'); 
+                                            return; 
+                                        }
+                                        const blob = await res.blob();
+                                        const { saveAs } = await import('file-saver');
+                                        const safeName = (projectName || 'website')
+                                            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                                            .replace(/[đĐ]/g, 'd')
+                                            .replace(/[^a-zA-Z0-9\s-]/g, '')
+                                            .replace(/\s+/g, '-')
+                                            .toLowerCase()
+                                            .substring(0, 50) || 'website';
+                                        saveAs(blob, `${safeName}-export.zip`);
+                                        toast.success('Preuzimanje pokrenuto!');
+                                    } catch (err) {
+                                        console.error('Download error:', err);
+                                        toast.error('Greška pri preuzimanju.');
+                                    }
+                                }}
+                                className="text-xs font-bold px-4 py-2 rounded-lg transition-all hover:scale-105 cursor-pointer flex items-center gap-1.5 shrink-0"
+                                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: 'var(--db-text-secondary)' }}
+                            >
+                                <Download size={12} /> Preuzmi (.zip)
+                            </button>
+                        </div>
+
+                        {/* Cancel section — only show if NOT already cancelled */}
+                        {!maintenanceInfo?.cancelAtPeriodEnd && (
+                            <>
+                                {!showMaintenanceCancelConfirm ? (
+                                    <button
+                                        onClick={() => setShowMaintenanceCancelConfirm(true)}
+                                        className="text-xs font-medium text-red-400/60 hover:text-red-400 px-3 py-2 rounded-lg hover:bg-red-500/5 transition-all cursor-pointer"
+                                    >
+                                        <XCircle size={12} className="inline mr-1" />
+                                        Otkaži godišnje održavanje
+                                    </button>
+                                ) : (
+                                    <div className="rounded-xl p-4" style={{ background: 'rgba(239,68,68,0.03)', border: '1px solid rgba(239,68,68,0.15)' }}>
+                                        <div className="flex items-start gap-3 mb-3">
+                                            <AlertTriangle size={20} className="text-red-400 shrink-0 mt-0.5" />
+                                            <div>
+                                                <h4 className="text-sm font-bold text-red-400 mb-1">Jeste li sigurni?</h4>
+                                                <p className="text-xs leading-relaxed" style={{ color: 'var(--db-text-muted)' }}>
+                                                    Vaš projekt će ostati aktivan do isteka trenutnog obračunskog razdoblja. Nakon toga, stranica će biti skinuta s interneta i imat ćete <strong className="text-amber-400">90 dana</strong> za preuzimanje kompletnog koda.
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => setShowMaintenanceCancelConfirm(false)}
+                                                disabled={cancellingMaintenance}
+                                                className="flex-1 text-xs font-medium py-2.5 rounded-lg transition-colors cursor-pointer"
+                                                style={{ background: 'var(--db-bg)', border: '1px solid var(--db-border)', color: 'var(--db-heading)' }}
+                                            >
+                                                Odustani
+                                            </button>
+                                            <button
+                                                onClick={async () => {
+                                                    setCancellingMaintenance(true);
+                                                    try {
+                                                        const res = await fetch('/api/cancel-subscription', {
+                                                            method: 'POST',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify({ projectId }),
+                                                        });
+                                                        const data = await res.json();
+                                                        if (data.success) {
+                                                            toast.success(data.message || 'Pretplata otkazana.');
+                                                            router.refresh();
+                                                            window.location.reload();
+                                                        } else {
+                                                            toast.error(data.error || 'Greška pri otkazivanju.');
+                                                        }
+                                                    } catch {
+                                                        toast.error('Greška pri otkazivanju.');
+                                                    } finally {
+                                                        setCancellingMaintenance(false);
+                                                        setShowMaintenanceCancelConfirm(false);
+                                                    }
+                                                }}
+                                                disabled={cancellingMaintenance}
+                                                className="flex-1 bg-red-600 hover:bg-red-500 text-white text-xs font-bold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                                            >
+                                                {cancellingMaintenance ? <><Loader2 size={12} className="animate-spin" /> Otkazujem...</> : 'Potvrdi otkazivanje'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </section>
+                )}
+
+                {/* ═══ BUYOUT TAB ═══ */}
+                {activeTab === 'buyout' && buyoutStatus === 'NONE' && (() => {
+                    const pn = planName.toLowerCase();
+                    const isAdvanced = pn.includes('advanced') || pn.includes('growth');
+                    const buyoutPrice = isAdvanced ? 990 : 390;
+
+                    async function handleBuyout(option) {
+                        setBuyoutLoading(option);
+                        try {
+                            const res = await fetch('/api/buyout-checkout', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ projectId, option }),
+                            });
+                            const data = await res.json();
+                            if (res.ok && data.url) {
+                                window.location.href = data.url;
+                            } else {
+                                toast.error(data.error || 'Greška pri pokretanju plaćanja.');
+                            }
+                        } catch {
+                            toast.error('Greška pri pokretanju plaćanja.');
+                        } finally {
+                            setBuyoutLoading(null);
+                        }
+                    }
+
+                    return (
+                        <section>
+                            {/* Header */}
+                            <div className="text-center mb-8">
+                                <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full text-amber-400 text-xs font-semibold mb-4">
+                                    <Crown size={14} />
+                                    Ekskluzivna ponuda
+                                </div>
+                                <h2 className="text-2xl font-bold text-white mb-2">Otkupite svoju web stranicu</h2>
+                                <p className="text-[color:var(--db-text-muted)] text-sm max-w-lg mx-auto">
+                                    Umjesto mjesečne pretplate, platite jednokratni iznos i postanite trajni vlasnik svoje web stranice. Odaberite opciju koja vam odgovara.
+                                </p>
+                            </div>
+
+                            {/* Pricing Cards */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                {/* Option 1: Buyout + Yearly Maintenance */}
+                                <div className="relative db-card border-2 border-emerald-500/30 rounded-2xl p-6 flex flex-col transition-all hover:border-emerald-500/50 hover:shadow-lg hover:shadow-emerald-500/5">
+                                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                                        <span className="px-3 py-1 bg-emerald-500 text-white text-xs font-bold rounded-full shadow-lg">PREPORUČENO</span>
+                                    </div>
+                                    <div className="flex items-center gap-3 mb-4 mt-2">
+                                        <div className="w-10 h-10 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-center">
+                                            <Shield size={20} className="text-emerald-400" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-bold text-white">Otkup + Održavanje</h3>
+                                            <p className="text-xs text-[color:var(--db-text-muted)]">Stranica ostaje online</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="mb-5">
+                                        <div className="flex items-baseline gap-1 mb-1">
+                                            <span className="text-3xl font-bold text-white">{buyoutPrice}€</span>
+                                            <span className="text-[color:var(--db-text-muted)] text-sm">jednokratno</span>
+                                        </div>
+                                        <div className="flex items-baseline gap-1">
+                                            <span className="text-lg font-semibold text-emerald-400">+ 250€</span>
+                                            <span className="text-[color:var(--db-text-muted)] text-sm">/godišnje</span>
+                                        </div>
+                                        <p className="text-xs text-[color:var(--db-text-muted)] mt-1">Za hosting, domenu i tehničko održavanje</p>
+                                    </div>
+
+                                    <ul className="space-y-2.5 mb-6 flex-1">
+                                        {[
+                                            'Trajno vlasništvo nad kodom',
+                                            'Stranica ostaje online i aktivna',
+                                            'Pristup dashboardu i uređivaču',
+                                            'Mi brinemo o hostingu i domeni',
+                                            'Tehnička podrška uključena',
+                                            'Bez mjesečne pretplate',
+                                        ].map((item, i) => (
+                                            <li key={i} className="flex items-start gap-2 text-sm text-[color:var(--db-text-secondary)]">
+                                                <Check size={15} className="text-emerald-400 shrink-0 mt-0.5" />
+                                                {item}
+                                            </li>
+                                        ))}
+                                    </ul>
+
+                                    <button
+                                        onClick={() => handleBuyout('maintain')}
+                                        disabled={buyoutLoading !== null}
+                                        className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-sm transition-all disabled:opacity-50 hover:shadow-lg hover:shadow-emerald-500/20"
+                                    >
+                                        {buyoutLoading === 'maintain' ? <Loader2 size={18} className="animate-spin" /> : <Shield size={18} />}
+                                        {buyoutLoading === 'maintain' ? 'Preusmjeravanje...' : 'Odaberi Otkup + Održavanje'}
+                                    </button>
+                                </div>
+
+                                {/* Option 2: Buyout & Code Export */}
+                                <div className="relative db-card border border-[color:var(--db-border)] rounded-2xl p-6 flex flex-col transition-all hover:border-zinc-600 hover:shadow-lg">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="w-10 h-10 bg-orange-500/10 border border-orange-500/20 rounded-xl flex items-center justify-center">
+                                            <Download size={20} className="text-orange-400" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-bold text-white">Otkup i Preuzimanje</h3>
+                                            <p className="text-xs text-[color:var(--db-text-muted)]">Preuzmite kod, hostajte sami</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="mb-5">
+                                        <div className="flex items-baseline gap-1 mb-1">
+                                            <span className="text-3xl font-bold text-white">{buyoutPrice}€</span>
+                                            <span className="text-[color:var(--db-text-muted)] text-sm">jednokratno</span>
+                                        </div>
+                                        <p className="text-xs text-[color:var(--db-text-muted)] mt-1">Bez ikakvih daljnjih troškova</p>
+                                    </div>
+
+                                    <ul className="space-y-2.5 mb-5 flex-1">
+                                        {[
+                                            'Trajno vlasništvo nad kodom',
+                                            'Preuzmite kompletni HTML kod',
+                                            'Hostajte gdje god želite',
+                                            'Nema godišnjih naknada',
+                                        ].map((item, i) => (
+                                            <li key={i} className="flex items-start gap-2 text-sm text-[color:var(--db-text-secondary)]">
+                                                <Check size={15} className="text-orange-400 shrink-0 mt-0.5" />
+                                                {item}
+                                            </li>
+                                        ))}
+                                    </ul>
+
+                                    {/* Warning box */}
+                                    <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-3 mb-5">
+                                        <p className="text-xs text-amber-400/90 font-medium flex items-start gap-1.5">
+                                            <AlertTriangle size={13} className="shrink-0 mt-0.5" />
+                                            <span>
+                                                <strong>Važno:</strong> Nakon otkupa, vaša stranica se skida s interneta. Uređivač i AI editor postaju nedostupni. Imate 90 dana za preuzimanje koda prije trajnog brisanja projekta.
+                                            </span>
+                                        </p>
+                                    </div>
+
+                                    <button
+                                        onClick={() => handleBuyout('export')}
+                                        disabled={buyoutLoading !== null}
+                                        className="w-full flex items-center justify-center gap-2 px-5 py-3 font-semibold rounded-xl text-sm transition-all disabled:opacity-50 hover:opacity-90"
+                                        style={{ background: '#27272a', color: '#d4d4d8', border: '1px solid #3f3f46' }}
+                                    >
+                                        {buyoutLoading === 'export' ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+                                        {buyoutLoading === 'export' ? 'Preusmjeravanje...' : 'Odaberi Otkup i Preuzimanje'}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* FAQ / info footer */}
+                            <div className="mt-6 db-card rounded-xl p-4">
+                                <p className="text-xs text-[color:var(--db-text-muted)] text-center">
+                                    <Server size={12} className="inline mr-1" />
+                                    Imate pitanja o otkupu? Obratite nam se putem <a href="mailto:jurica@webica.hr" className="text-emerald-400 hover:underline">jurica@webica.hr</a> ili kroz podršku u dashboardu.
+                                </p>
+                            </div>
+                        </section>
+                    );
+                })()}
 
                 {/* ═══ DANGER ZONE TAB ═══ */}
                 {activeTab === 'danger' && (

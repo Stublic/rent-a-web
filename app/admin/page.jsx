@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Users, FolderOpen, FileText, DollarSign, Activity } from 'lucide-react';
+import { Users, FolderOpen, FileText, DollarSign, Activity, CalendarCheck } from 'lucide-react';
 
 export default function AdminDashboard() {
     const [data, setData] = useState(null);
@@ -20,8 +20,8 @@ export default function AdminDashboard() {
             <div className="p-6 md:p-8">
                 <div className="animate-pulse space-y-6">
                     <div className="h-7 rounded w-48" style={{ background: 'var(--lp-surface)' }} />
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                        {[...Array(4)].map((_, i) => (
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                        {[...Array(6)].map((_, i) => (
                             <div key={i} className="h-28 rounded-xl" style={{ background: 'var(--lp-surface)' }} />
                         ))}
                     </div>
@@ -35,7 +35,9 @@ export default function AdminDashboard() {
         { label: 'Ukupno Korisnika', value: stats.totalUsers, icon: Users, color: 'rgba(59,130,246,0.8)' },
         { label: 'Ukupno Projekata', value: stats.totalProjects, icon: FolderOpen, color: 'rgba(34,197,94,0.8)' },
         { label: 'Aktivnih Projekata', value: stats.activeProjects, icon: Activity, color: 'rgba(245,158,11,0.8)' },
-        { label: 'MRR', value: `€${stats.mrr || 0}`, icon: DollarSign, color: 'rgba(168,85,247,0.8)' },
+        { label: 'MRR (mjesečno)', value: `€${stats.mrr || 0}`, icon: DollarSign, color: 'rgba(168,85,247,0.8)' },
+        { label: 'Godišnje pretplate', value: stats.yearlyCount || 0, icon: CalendarCheck, color: 'rgba(245,158,11,0.8)' },
+        { label: 'ARR (godišnje)', value: `€${stats.yearlyRevenue || 0}`, icon: DollarSign, color: 'rgba(34,197,94,0.8)' },
     ];
 
     return (
@@ -46,7 +48,7 @@ export default function AdminDashboard() {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
                 {cards.map(card => (
                     <div key={card.label} className="db-card p-5">
                         <div className="flex items-center justify-between mb-3">

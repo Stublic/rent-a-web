@@ -84,6 +84,24 @@ export const auth = betterAuth({
                             }
                         });
                     }
+
+                    // Generate unique referral code for the new user
+                    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+                    let referralCode = '';
+                    let isUnique = false;
+                    while (!isUnique) {
+                        referralCode = '';
+                        for (let i = 0; i < 6; i++) {
+                            referralCode += chars.charAt(Math.floor(Math.random() * chars.length));
+                        }
+                        const existing = await prisma.user.findUnique({ where: { referralCode } });
+                        if (!existing) isUnique = true;
+                    }
+                    await prisma.user.update({
+                        where: { id: user.id },
+                        data: { referralCode }
+                    });
+                    console.log(`🔗 Generated referral code for ${user.email}: ${referralCode}`);
                 }
             }
         }

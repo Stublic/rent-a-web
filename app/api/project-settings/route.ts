@@ -41,8 +41,38 @@ export async function GET(req: Request) {
         for (const key of subpageKeys) {
             autoSeo[key] = extractMeta(rf[key]);
         }
+        // Fetch maintenance subscription info if applicable
+        let maintenanceInfo = null;
+        if (project.buyoutStatus === 'MAINTAINED' && project.stripeSubscriptionId) {
+            try {
+                const { stripe } = await import('@/lib/stripe');
+                const sub = await (stripe as any).subscriptions.retrieve(project.stripeSubscriptionId);
 
-        return NextResponse.json({ contactEmail: project.contactEmail ?? '', seoSettings, planName: project.planName || '', projectName: project.name || '', subpageKeys, autoSeo, buyoutStatus: project.buyoutStatus || 'NONE', hasSubscription: !!project.stripeSubscriptionId });
+                // Newer Stripe API uses billing_cycle_anchor (no current_period_end)
+                const anchorTs = sub.billing_cycle_anchor || sub.created;
+                let nextBillingDate = null;
+                if (anchorTs) {
+                    const nextDate = new Date(anchorTs * 1000);
+                    nextDate.setFullYear(nextDate.getFullYear() + 1);
+                    while (nextDate < new Date()) {
+                        nextDate.setFullYear(nextDate.getFullYear() + 1);
+                    }
+                    nextBillingDate = nextDate.toISOString();
+                }
+
+                maintenanceInfo = {
+                    nextBillingDate: sub.cancel_at_period_end ? null : nextBillingDate, // No next billing if cancelling
+                    status: sub.status,
+                    startDate: anchorTs ? new Date(anchorTs * 1000).toISOString() : null,
+                    cancelAtPeriodEnd: !!sub.cancel_at_period_end,
+                    periodEndDate: sub.cancel_at_period_end ? nextBillingDate : null, // When access ends
+                };
+            } catch (e) {
+                console.error('Failed to fetch maintenance sub info:', e);
+            }
+        }
+
+        return NextResponse.json({ contactEmail: project.contactEmail ?? '', seoSettings, planName: project.planName || '', projectName: project.name || '', subpageKeys, autoSeo, buyoutStatus: project.buyoutStatus || 'NONE', hasSubscription: !!project.stripeSubscriptionId, maintenanceInfo });
     } catch (err) {
         console.error('GET project-settings error:', err);
         return NextResponse.json({ error: 'Server error' }, { status: 500 });
