@@ -1,19 +1,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Bug, Clock, Loader2, CheckCircle, AlertTriangle, Trash2, RefreshCw, User as UserIcon } from 'lucide-react';
+import { Bug, Clock, Loader2, CheckCircle, AlertTriangle, Trash2, RefreshCw, User as UserIcon, Circle, MapPin, PlayCircle, RotateCcw } from 'lucide-react';
 
 const SEVERITY_CONFIG = {
-    low: { label: 'Nizak', color: '#3b82f6', emoji: '🔵' },
-    medium: { label: 'Srednji', color: '#f59e0b', emoji: '🟡' },
-    high: { label: 'Visok', color: '#f97316', emoji: '🟠' },
-    critical: { label: 'Kritičan', color: '#ef4444', emoji: '🔴' },
+    low: { label: 'Nizak', color: '#3b82f6' },
+    medium: { label: 'Srednji', color: '#f59e0b' },
+    high: { label: 'Visok', color: '#f97316' },
+    critical: { label: 'Kritičan', color: '#ef4444' },
 };
 
 const STATUS_CONFIG = {
-    OPEN: { label: 'Otvoren', color: '#3b82f6', icon: Clock, next: 'IN_PROGRESS', nextLabel: '▶ U tijeku' },
-    IN_PROGRESS: { label: 'U tijeku', color: '#f59e0b', icon: AlertTriangle, next: 'RESOLVED', nextLabel: '✅ Riješi' },
-    RESOLVED: { label: 'Riješen', color: '#22c55e', icon: CheckCircle, next: 'OPEN', nextLabel: '🔄 Ponovo otvori' },
+    OPEN: { label: 'Otvoren', color: '#3b82f6', icon: Clock, next: 'IN_PROGRESS', nextLabel: 'U tijeku', nextIcon: PlayCircle },
+    IN_PROGRESS: { label: 'U tijeku', color: '#f59e0b', icon: AlertTriangle, next: 'RESOLVED', nextLabel: 'Riješi', nextIcon: CheckCircle },
+    RESOLVED: { label: 'Riješen', color: '#22c55e', icon: CheckCircle, next: 'OPEN', nextLabel: 'Ponovo otvori', nextIcon: RotateCcw },
 };
 
 export default function AdminBugReportsPage() {
@@ -86,7 +86,7 @@ export default function AdminBugReportsPage() {
 
             {/* Filters */}
             <div className="flex gap-2 mb-6 flex-wrap">
-                {Object.entries({ ALL: 'Sve', OPEN: '🔵 Otvoreni', IN_PROGRESS: '🟡 U tijeku', RESOLVED: '✅ Riješeni' }).map(([key, label]) => (
+                {Object.entries({ ALL: 'Sve', OPEN: 'Otvoreni', IN_PROGRESS: 'U tijeku', RESOLVED: 'Riješeni' }).map(([key, label]) => (
                     <button
                         key={key}
                         onClick={() => setStatusFilter(key)}
@@ -135,14 +135,14 @@ export default function AdminBugReportsPage() {
                                             <span className="flex items-center gap-1 px-1.5 py-0.5 rounded" style={{ background: `${st.color}15`, color: st.color }}>
                                                 <StatusIcon size={11} /> {st.label}
                                             </span>
-                                            <span className="px-1.5 py-0.5 rounded" style={{ background: `${sev.color}15`, color: sev.color }}>
-                                                {sev.emoji} {sev.label}
+                                            <span className="px-1.5 py-0.5 rounded flex items-center gap-1" style={{ background: `${sev.color}15`, color: sev.color }}>
+                                                <Circle size={8} fill={sev.color} stroke={sev.color} /> {sev.label}
                                             </span>
                                             <span className="flex items-center gap-1">
                                                 <UserIcon size={11} />
                                                 {report.user?.name || report.user?.email}
                                             </span>
-                                            {report.page && <span>📍 {report.page}</span>}
+                                            {report.page && <span className="flex items-center gap-0.5"><MapPin size={10} /> {report.page}</span>}
                                             <span>
                                                 {new Date(report.createdAt).toLocaleDateString('hr-HR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                                             </span>
@@ -171,6 +171,18 @@ export default function AdminBugReportsPage() {
                                 <div className="text-sm whitespace-pre-wrap rounded-lg px-3.5 py-3" style={{ background: 'rgba(255,255,255,0.03)', color: 'var(--lp-text-secondary)' }}>
                                     {report.description}
                                 </div>
+
+                                {/* Screenshot */}
+                                {report.screenshotUrl && (
+                                    <a href={report.screenshotUrl} target="_blank" rel="noopener noreferrer" className="block mt-3">
+                                        <img
+                                            src={report.screenshotUrl}
+                                            alt="Bug screenshot"
+                                            className="rounded-lg max-h-48 object-contain transition-opacity hover:opacity-80"
+                                            style={{ border: '1px solid var(--lp-border)' }}
+                                        />
+                                    </a>
+                                )}
                             </div>
                         );
                     })}

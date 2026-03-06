@@ -7,6 +7,7 @@ import { revalidatePath } from 'next/cache';
 import { injectContactFormScript } from '@/lib/contact-form-script';
 import { sanitizeHtml } from '@/lib/sanitize-html';
 import { parseAiResponse } from '@/lib/parse-ai-response';
+import { detectTargetSection, replaceSectionInHtml } from '@/lib/section-extractor';
 
 import { getModel } from '@/lib/gemini-with-fallback';
 
@@ -37,10 +38,15 @@ const SYSTEM_PROMPT = `Ti si Webica AI Editor — stručan web developer koji ur
 ## FORMAT ODGOVORA
 Vrati SAMO čisti JSON (bez markdown blokova):
 {
-  "html": "...kompletni HTML počevši s <!DOCTYPE html>...",
-  "summary": "Kratki opis izmjene (hrvatski, 1-2 rečenice, počni s ✅)",
+  "html": "...HTML sadržaj (kompletni ILI samo sekcija ovisno o zahtjevu)...",
+  "summary": "Kratki opis izmjene (hrvatski, 1-2 rečenice)",
   "suggestion": "Prijedlog za sljedeću izmjenu (hrvatski, pitanje)"
-}`;
+}
+
+## PARTIAL vs FULL EDITING
+- When you receive only a SECTION of the page (e.g. just the <footer>), return ONLY that section in "html" — NOT the full page.
+- When you receive the FULL page HTML, return the FULL modified HTML starting with <!DOCTYPE html>.
+- NEVER wrap a section in <!DOCTYPE html> or <html> tags when editing a section.`;
 
 // ─── Build conversation history for Gemini Chat API ───────────────────────────
 interface ConversationEntry {
@@ -132,37 +138,76 @@ export async function editWebsiteAction(
     }
 
     try {
-        // 5. Build multi-turn chat with full HTML context
+        // 5. Detect if we can do a partial (section) edit
+        const sectionMatch = detectTargetSection(editRequest, currentHtml);
+        const isPartialEdit = !!sectionMatch;
+
+        let htmlForAI: string;
+        let partialContext = '';
+
+        if (isPartialEdit) {
+            htmlForAI = sectionMatch.sectionHtml;
+            partialContext = `\n\n⚠️ VAŽNO: Šaljem ti SAMO "${sectionMatch.section}" sekciju stranice (${htmlForAI.length} znakova umjesto ${currentHtml.length}).
+Vrati SAMO modificiranu "${sectionMatch.section}" sekciju — NE cijelu stranicu, NE dodavaj <!DOCTYPE>, <html>, <head> ili <body> tagove.`;
+            console.log(`⚡ Partial edit mode: sending only "${sectionMatch.section}" (${htmlForAI.length} chars instead of ${currentHtml.length})`);
+        } else {
+            htmlForAI = currentHtml;
+            console.log(`📄 Full page edit mode (${currentHtml.length} chars)`);
+        }
+
+        // Build multi-turn chat
         const chatHistory = buildChatHistory(conversationHistory);
 
-        // The current message includes the FULL HTML + user's edit request
-        const currentMessage = `**Trenutni HTML stranice:**
+        const currentMessage = `**Trenutni HTML${isPartialEdit ? ` (samo ${sectionMatch.section} sekcija)` : ' stranice'}:**
 \`\`\`html
-${currentHtml}
+${htmlForAI}
 \`\`\`
 
 **Zahtjev korisnika:**
-"${editRequest}"
+"${editRequest}"${partialContext}
 
 Primijeni izmjenu i vrati JSON odgovor.`;
 
-        // 6. Use Chat API with fallback on 503/timeout
+        // 6. Use Chat API with streaming + inactivity timeout + fallback
         let rawText = '';
         let usedFallback = false;
+        const INACTIVITY_MS = 120_000;
 
         for (let modelAttempt = 0; modelAttempt < 2; modelAttempt++) {
             try {
                 const { model } = await getModel(modelAttempt > 0);
                 const chat = model.startChat({ history: chatHistory });
-                const result = await Promise.race([
-                    chat.sendMessage(currentMessage),
-                    new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error('AI timeout')), 120000)
-                    )
-                ]) as any;
+                const streamResult = await chat.sendMessageStream(currentMessage);
 
-                const response = await result.response;
-                rawText = response.text();
+                // Consume stream with inactivity timeout
+                const chunks: string[] = [];
+                let timer: ReturnType<typeof setTimeout> | null = null;
+
+                rawText = await new Promise<string>((resolve, reject) => {
+                    const resetTimer = () => {
+                        if (timer) clearTimeout(timer);
+                        timer = setTimeout(() => reject(new Error('AI timeout')), INACTIVITY_MS);
+                    };
+                    resetTimer();
+
+                    (async () => {
+                        try {
+                            for await (const chunk of streamResult.stream) {
+                                const text = chunk.text?.() || '';
+                                if (text) {
+                                    chunks.push(text);
+                                    resetTimer();
+                                }
+                            }
+                            if (timer) clearTimeout(timer);
+                            resolve(chunks.join(''));
+                        } catch (err) {
+                            if (timer) clearTimeout(timer);
+                            reject(err);
+                        }
+                    })();
+                });
+
                 if (modelAttempt > 0) usedFallback = true;
                 break;
             } catch (err: any) {
@@ -177,7 +222,7 @@ Primijeni izmjenu i vrati JSON odgovor.`;
             }
         }
 
-        console.log(`✅ Gemini returned ${rawText.length} characters`);
+        console.log(`✅ Gemini returned ${rawText.length} characters${isPartialEdit ? ' (partial)' : ''}`);
 
         // 7. Parse AI response
         const parsed = parseAiResponse(rawText);
@@ -186,8 +231,16 @@ Primijeni izmjenu i vrati JSON odgovor.`;
             return { error: 'AI nije vratio ispravan odgovor. Pokušajte ponovno ili reformulirajte zahtjev.' };
         }
 
-        // 8. Sanitize HTML
-        let modifiedHtml = sanitizeHtml(parsed.html);
+        // 8. Reconstruct full HTML if partial edit
+        let modifiedHtml: string;
+        if (isPartialEdit && sectionMatch) {
+            // AI returned only the section — merge back into full page
+            const sectionHtml = sanitizeHtml(parsed.html);
+            modifiedHtml = replaceSectionInHtml(sectionMatch.before, sectionHtml, sectionMatch.after);
+            console.log(`🔧 Merged partial edit back into full HTML (${modifiedHtml.length} chars)`);
+        } else {
+            modifiedHtml = sanitizeHtml(parsed.html);
+        }
 
         // 9. Basic validation
         if (!modifiedHtml.includes('<!DOCTYPE') && !modifiedHtml.includes('<html')) {

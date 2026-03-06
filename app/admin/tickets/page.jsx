@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import {
     MessageSquare, Clock, CheckCircle, AlertTriangle, ChevronRight,
-    Filter, RefreshCw, Send, ArrowLeft, User as UserIcon,
+    Filter, RefreshCw, Send, ArrowLeft, User as UserIcon, Crown, Bot, RotateCcw,
 } from 'lucide-react';
 
 const STATUS_CONFIG = {
@@ -142,7 +142,7 @@ export default function AdminTicketsPage() {
                                 className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-90"
                                 style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e' }}
                             >
-                                ✅ Označi riješenim
+                                <CheckCircle size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '2px' }} /> Označi riješenim
                             </button>
                         )}
                         {ticket.status === 'RESOLVED' && (
@@ -151,7 +151,7 @@ export default function AdminTicketsPage() {
                                 className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-90"
                                 style={{ background: 'rgba(59,130,246,0.15)', color: '#3b82f6' }}
                             >
-                                🔄 Ponovno otvori
+                                <RotateCcw size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '2px' }} /> Ponovno otvori
                             </button>
                         )}
                     </div>
@@ -176,9 +176,9 @@ export default function AdminTicketsPage() {
                                         }}
                                     >
                                         <div className="flex items-center gap-2 mb-1 text-xs font-bold" style={{ opacity: 0.7 }}>
-                                            {isUser && '👤 Korisnik'}
-                                            {isAI && '🤖 AI Asistent'}
-                                            {isAdmin && '👑 Admin'}
+                                            {isUser && <><UserIcon size={11} /> Korisnik</>}
+                                            {isAI && <><Bot size={11} /> AI Asistent</>}
+                                            {isAdmin && <><Crown size={11} /> Admin</>}
                                             <span className="font-normal">
                                                 {new Date(msg.createdAt).toLocaleTimeString('hr-HR', { hour: '2-digit', minute: '2-digit' })}
                                             </span>
@@ -242,7 +242,7 @@ export default function AdminTicketsPage() {
 
             {/* Status filters */}
             <div className="flex gap-2 mb-6 flex-wrap">
-                {Object.entries({ ALL: 'Sve', ESCALATED: '⚠️ Eskalirani', OPEN: 'Otvoreni', RESOLVED: '✅ Riješeni' }).map(([key, label]) => (
+                {Object.entries({ ALL: 'Sve', ESCALATED: 'Eskalirani', OPEN: 'Otvoreni', RESOLVED: 'Riješeni' }).map(([key, label]) => (
                     <button
                         key={key}
                         onClick={() => setStatusFilter(key)}
@@ -308,7 +308,7 @@ export default function AdminTicketsPage() {
                                         </div>
                                         {latestMsg && (
                                             <p className="text-xs mt-2 truncate" style={{ color: 'var(--lp-text-muted)', opacity: 0.7 }}>
-                                                {latestMsg.role === 'USER' ? '👤 ' : latestMsg.role === 'ADMIN' ? '👑 ' : '🤖 '}
+                                                {latestMsg.role === 'USER' ? <><UserIcon size={10} style={{ display: 'inline', verticalAlign: 'middle' }} />{' '}</> : latestMsg.role === 'ADMIN' ? <><Crown size={10} style={{ display: 'inline', verticalAlign: 'middle' }} />{' '}</> : <><Bot size={10} style={{ display: 'inline', verticalAlign: 'middle' }} />{' '}</>}
                                                 {latestMsg.content.substring(0, 100)}...
                                             </p>
                                         )}

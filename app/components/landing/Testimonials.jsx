@@ -1,15 +1,50 @@
 'use client';
 import { Star, Quote } from 'lucide-react';
-import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 
 const reviews = [
-  { name: 'Dario Cesarec', role: 'Motion rehab', text: 'Pacijenti sada lako nalaze sve informacije o terapijama. Stranica izgleda profesionalno i ulijeva povjerenje, što je u mom poslu ključno.', color: '#3b82f6', initials: 'DC' },
-  { name: 'Danko Đurić', role: 'DANKO ogradni sustavi', text: 'Trebala mi je jednostavna stranica da prikažem naše projekte. Rent a webica je to riješio brzo, a upiti za ponude sada stižu redovito.', color: '#f59e0b', initials: 'DĐ' },
-  { name: 'Adrijana Stjepić', role: 'Franjić Teks', text: 'Naš asortiman radne odjeće napokon izgleda profesionalno online. Klijenti nas lakše nalaze, a ja se ne moram brinuti oko tehničkog održavanja.', color: '#a855f7', initials: 'AS' },
-  { name: 'Mirko Blažević', role: 'MB Servis d.o.o.', text: 'Za samo dva dana imali smo stranicu online. Profesionalan dizajn i brza isporuka su pravi adut za sve koji tek kreću.', color: '#10b981', initials: 'MB' },
-  { name: 'Ivana Perković', role: 'Studio IP fotografija', text: 'Portfolio izgleda fenomenalno. Klijenti mi redovito kažu koliko je stranica dojmljiva — a sve to bez da se ja ikada bavim tehničkim dijelom.', color: '#ec4899', initials: 'IP' },
-  { name: 'Tomislav Jurić', role: 'TJ Elektro', text: 'Od kad imamo stranicu, broj upita je porastao. Jednostavna administracija i odlična podrška čine ovaj servis idealnim za male obrte.', color: '#f97316', initials: 'TJ' },
+  {
+    name: 'Dario Cesarec',
+    role: 'Motion rehab',
+    text: 'Pacijenti sada lako nalaze sve informacije o terapijama. Stranica izgleda profesionalno i ulijeva povjerenje, što je u mom poslu ključno.',
+    color: '#3b82f6',
+    img: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=120&h=120&fit=crop&crop=face',
+  },
+  {
+    name: 'Danko Đurić',
+    role: 'DANKO ogradni sustavi',
+    text: 'Trebala mi je jednostavna stranica da prikažem naše projekte. Rent a webica je to riješio brzo, a upiti za ponude sada stižu redovito.',
+    color: '#f59e0b',
+    img: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=120&h=120&fit=crop&crop=face',
+  },
+  {
+    name: 'Adrijana Stjepić',
+    role: 'Franjić Teks',
+    text: 'Naš asortiman radne odjeće napokon izgleda profesionalno online. Klijenti nas lakše nalaze, a ja se ne moram brinuti oko tehničkog održavanja.',
+    color: '#a855f7',
+    img: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=120&h=120&fit=crop&crop=face',
+  },
+  {
+    name: 'Mirko Blažević',
+    role: 'MB Servis d.o.o.',
+    text: 'Za samo dva dana imali smo stranicu online. Profesionalan dizajn i brza isporuka su pravi adut za sve koji tek kreću.',
+    color: '#10b981',
+    img: 'https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=120&h=120&fit=crop&crop=face',
+  },
+  {
+    name: 'Ivana Perković',
+    role: 'Studio IP fotografija',
+    text: 'Portfolio izgleda fenomenalno. Klijenti mi redovito kažu koliko je stranica dojmljiva — a sve to bez da se ja ikada bavim tehničkim dijelom.',
+    color: '#ec4899',
+    img: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=120&h=120&fit=crop&crop=face',
+  },
+  {
+    name: 'Tomislav Jurić',
+    role: 'TJ Elektro',
+    text: 'Od kad imamo stranicu, broj upita je porastao. Jednostavna administracija i odlična podrška čine ovaj servis idealnim za male obrte.',
+    color: '#f97316',
+    img: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=120&h=120&fit=crop&crop=face',
+  },
 ];
 
 // Duplicate for infinite scroll
@@ -18,38 +53,60 @@ const allReviews = [...reviews, ...reviews, ...reviews];
 function TestimonialCard({ review }) {
   return (
     <div
-      className="flex-shrink-0 w-[280px] sm:w-[300px] p-6 rounded-2xl flex flex-col gap-4 relative"
+      className="flex-shrink-0 w-[280px] sm:w-[300px] rounded-2xl flex flex-col relative overflow-hidden group"
       style={{
-        background: 'var(--lp-surface)',
-        border: '1px solid var(--lp-border)',
+        background: 'var(--lp-card)',
+        border: '1px solid var(--lp-card-border)',
       }}
     >
-      {/* Quote icon */}
-      <div className="absolute top-4 right-5 opacity-20" style={{ color: 'var(--lp-accent-green)' }}>
-        <Quote size={28} fill="currentColor" stroke="none" />
-      </div>
+      {/* Top accent line */}
+      <div className="h-0.5 w-full" style={{ background: `linear-gradient(90deg, ${review.color}80, ${review.color}20)` }} />
 
-      {/* Stars */}
-      <div className="flex gap-1" style={{ color: 'var(--lp-accent-orange)' }}>
-        {[...Array(5)].map((_, i) => <Star key={i} size={14} fill="currentColor" />)}
-      </div>
+      {/* Hover glow */}
+      <div
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+        style={{ background: `radial-gradient(ellipse at top, ${review.color}08, transparent 70%)` }}
+      />
 
-      {/* Text */}
-      <p className="text-sm leading-relaxed flex-1" style={{ color: 'var(--lp-text-secondary)' }}>
-        &ldquo;{review.text}&rdquo;
-      </p>
-
-      {/* Author */}
-      <div className="flex items-center gap-3 pt-4" style={{ borderTop: '1px solid var(--lp-border)' }}>
-        <div
-          className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-white text-xs flex-shrink-0"
-          style={{ background: review.color }}
-        >
-          {review.initials}
+      <div className="p-6 flex flex-col gap-4 relative">
+        {/* Quote icon */}
+        <div className="absolute top-4 right-5" style={{ color: review.color, opacity: 0.12 }}>
+          <Quote size={32} fill="currentColor" stroke="none" />
         </div>
-        <div>
-          <div className="font-bold text-sm" style={{ color: 'var(--lp-heading)' }}>{review.name}</div>
-          <div className="text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--lp-text-muted)' }}>{review.role}</div>
+
+        {/* Stars */}
+        <div className="flex gap-0.5">
+          {[...Array(5)].map((_, i) => (
+            <Star key={i} size={13} fill="#f59e0b" stroke="none" />
+          ))}
+        </div>
+
+        {/* Text */}
+        <p className="text-sm leading-relaxed flex-1" style={{ color: 'var(--lp-text-secondary)' }}>
+          &ldquo;{review.text}&rdquo;
+        </p>
+
+        {/* Author */}
+        <div className="flex items-center gap-3 pt-4" style={{ borderTop: '1px solid var(--lp-border)' }}>
+          <div className="relative flex-shrink-0">
+            <img
+              src={review.img}
+              alt={review.name}
+              width={40}
+              height={40}
+              className="w-10 h-10 rounded-full object-cover"
+              loading="lazy"
+            />
+            {/* Online dot */}
+            <div
+              className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2"
+              style={{ background: review.color, borderColor: 'var(--lp-card)' }}
+            />
+          </div>
+          <div className="min-w-0">
+            <div className="font-bold text-sm truncate" style={{ color: 'var(--lp-heading)' }}>{review.name}</div>
+            <div className="text-[11px] font-medium uppercase tracking-wide truncate" style={{ color: review.color }}>{review.role}</div>
+          </div>
         </div>
       </div>
     </div>
@@ -59,9 +116,9 @@ function TestimonialCard({ review }) {
 // One animated column scrolling upward
 function ScrollColumn({ items, duration, reverse = false }) {
   return (
-    <div className="relative overflow-hidden" style={{ maskImage: 'linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%)' }}>
+    <div className="relative overflow-hidden" style={{ maskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)' }}>
       <motion.div
-        className="flex flex-col gap-4"
+        className="flex flex-col gap-5"
         animate={{ y: reverse ? ['-50%', '0%'] : ['0%', '-50%'] }}
         transition={{ duration, ease: 'linear', repeat: Infinity }}
       >
@@ -143,7 +200,7 @@ export default function Testimonials() {
         {/* Scrolling columns — fixed height container */}
         <div className="h-[520px] sm:h-[560px] overflow-hidden">
           {/* Mobile: 2 columns, Desktop: 3 columns */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 h-full">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-5 h-full">
             <ScrollColumn items={col1} duration={28} reverse={false} />
             <ScrollColumn items={col2} duration={24} reverse={true} />
             <div className="hidden md:block">

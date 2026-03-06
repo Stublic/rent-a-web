@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useRef, useMemo, useEffect } from "react";
-import { FileText, Plus, Loader2, Check, RefreshCw, Trash2, Coins, Sparkles, X, ChevronDown } from "lucide-react";
+import {
+    FileText, Plus, Loader2, Check, RefreshCw, Trash2, Coins, Sparkles, X, ChevronDown,
+    Users, Settings, Mail, Target, Star, DollarSign, Camera, HelpCircle, MessageSquare,
+    BarChart3, Rocket, ClipboardList, Briefcase, FileEdit, MapPin, ArrowLeftRight,
+    CalendarDays, Building2, Pencil, Palette, Save, AlertTriangle, Hourglass
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { generateSubpageAction, generateCustomSubpageAction, deleteSubpageAction } from "@/app/actions/generate-subpage";
 import { useRouter } from "next/navigation";
@@ -10,30 +15,30 @@ import { ExtendedWaitBanner } from "@/app/dashboard/components/ExtendedWaitMessa
 
 // ─── Predefined subpages ─────────────────────────────────────────────────────
 const SUBPAGES = [
-    { slug: 'o-nama', label: 'O nama', description: 'Priča o vašem poslovanju, misija i vrijednosti', icon: '👥' },
-    { slug: 'usluge', label: 'Usluge', description: 'Detaljne kartice usluga, cjenik, FAQ', icon: '⚙️' },
-    { slug: 'kontakt', label: 'Kontakt', description: 'Kontakt forma, mapa, radno vrijeme', icon: '📧' },
+    { slug: 'o-nama', label: 'O nama', description: 'Priča o vašem poslovanju, misija i vrijednosti', Icon: Users },
+    { slug: 'usluge', label: 'Usluge', description: 'Detaljne kartice usluga, cjenik, FAQ', Icon: Settings },
+    { slug: 'kontakt', label: 'Kontakt', description: 'Kontakt forma, mapa, radno vrijeme', Icon: Mail },
 ];
 
 // ─── Section catalog for custom subpages ─────────────────────────────────────
 const SECTION_CATALOG = [
-    { id: 'hero', label: 'Hero sekcija', icon: '🎯', desc: 'Naslov, podnaslov i CTA gumb' },
-    { id: 'features', label: 'Značajke', icon: '⭐', desc: 'Kartice s ikonama i opisima' },
-    { id: 'pricing', label: 'Cjenik / Paketi', icon: '💰', desc: 'Usporedba cjenovnih paketa' },
-    { id: 'gallery', label: 'Galerija', icon: '📸', desc: 'Mreža slika i portflio' },
-    { id: 'team', label: 'Naš tim', icon: '👥', desc: 'Kartice članova tima' },
-    { id: 'faq', label: 'Česta pitanja', icon: '❓', desc: 'Harmonika s pitanjima i odgovorima' },
-    { id: 'testimonials', label: 'Recenzije', icon: '💬', desc: 'Citati i ocjene klijenata' },
-    { id: 'stats', label: 'Statistika', icon: '📊', desc: 'Brojke i postignuća' },
-    { id: 'contact_form', label: 'Kontakt forma', icon: '📧', desc: 'Forma za poruke i upite' },
-    { id: 'cta', label: 'Poziv na akciju', icon: '🚀', desc: 'Završni CTA blok s naglaskom' },
-    { id: 'process', label: 'Kako radimo', icon: '📋', desc: '3-5 koraka procesa rada' },
-    { id: 'case_studies', label: 'Studije slučaja', icon: '💼', desc: 'Projekti i rezultati (ROI)' },
-    { id: 'text_block', label: 'Tekstualni blok', icon: '📄', desc: 'Dugi tekst za pravne stranice' },
-    { id: 'map_location', label: 'Mapa i lokacija', icon: '📍', desc: 'Google Maps + adresa' },
-    { id: 'before_after', label: 'Prije / Poslije', icon: '🔄', desc: 'Usporedba transformacija' },
-    { id: 'booking', label: 'Rezervacija', icon: '📅', desc: 'Forma za rezervacije termina' },
-    { id: 'logo_cloud', label: 'Logo Cloud', icon: '🏢', desc: 'Logotipi partnera i klijenata' },
+    { id: 'hero', label: 'Hero sekcija', Icon: Target, desc: 'Naslov, podnaslov i CTA gumb' },
+    { id: 'features', label: 'Značajke', Icon: Star, desc: 'Kartice s ikonama i opisima' },
+    { id: 'pricing', label: 'Cjenik / Paketi', Icon: DollarSign, desc: 'Usporedba cjenovnih paketa' },
+    { id: 'gallery', label: 'Galerija', Icon: Camera, desc: 'Mreža slika i portflio' },
+    { id: 'team', label: 'Naš tim', Icon: Users, desc: 'Kartice članova tima' },
+    { id: 'faq', label: 'Česta pitanja', Icon: HelpCircle, desc: 'Harmonika s pitanjima i odgovorima' },
+    { id: 'testimonials', label: 'Recenzije', Icon: MessageSquare, desc: 'Citati i ocjene klijenata' },
+    { id: 'stats', label: 'Statistika', Icon: BarChart3, desc: 'Brojke i postignuća' },
+    { id: 'contact_form', label: 'Kontakt forma', Icon: Mail, desc: 'Forma za poruke i upite' },
+    { id: 'cta', label: 'Poziv na akciju', Icon: Rocket, desc: 'Završni CTA blok s naglaskom' },
+    { id: 'process', label: 'Kako radimo', Icon: ClipboardList, desc: '3-5 koraka procesa rada' },
+    { id: 'case_studies', label: 'Studije slučaja', Icon: Briefcase, desc: 'Projekti i rezultati (ROI)' },
+    { id: 'text_block', label: 'Tekstualni blok', Icon: FileEdit, desc: 'Dugi tekst za pravne stranice' },
+    { id: 'map_location', label: 'Mapa i lokacija', Icon: MapPin, desc: 'Google Maps + adresa' },
+    { id: 'before_after', label: 'Prije / Poslije', Icon: ArrowLeftRight, desc: 'Usporedba transformacija' },
+    { id: 'booking', label: 'Rezervacija', Icon: CalendarDays, desc: 'Forma za rezervacije termina' },
+    { id: 'logo_cloud', label: 'Logo Cloud', Icon: Building2, desc: 'Logotipi partnera i klijenata' },
 ];
 
 // ─── Smart template matching ─────────────────────────────────────────────────
@@ -72,10 +77,10 @@ function slugify(text) {
 
 // ─── Loader overlay ──────────────────────────────────────────────────────────
 const SUBPAGE_PHASES = [
-    { from: 0, label: "Čitanje dizajna naslovne...", icon: "📄" },
-    { from: 8, label: "Webica AI generira sadržaj...", icon: "✍️" },
-    { from: 30, label: "Usklađivanje i spremanje...", icon: "🎨" },
-    { from: 55, label: "Koristi se jači AI model...", icon: "🚀" },
+    { from: 0, label: "Čitanje dizajna naslovne...", Icon: FileText },
+    { from: 8, label: "Webica AI generira sadržaj...", Icon: Pencil },
+    { from: 30, label: "Usklađivanje i spremanje...", Icon: Palette },
+    { from: 55, label: "Koristi se jači AI model...", Icon: Rocket },
 ];
 
 function SubpageGeneratingOverlay({ seconds, pageName }) {
@@ -97,7 +102,7 @@ function SubpageGeneratingOverlay({ seconds, pageName }) {
                 </div>
                 <div className="mx-6 mb-4 rounded-2xl px-5 py-3 flex items-center justify-between" style={{ background: 'var(--db-surface)', border: '1px solid var(--db-border)' }}>
                     <div className="flex items-center gap-2.5">
-                        <motion.span key={phase.icon} initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-xl">{phase.icon}</motion.span>
+                        <motion.span key={phase.Icon.displayName || phase.from} initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex items-center"><phase.Icon size={18} style={{ color: '#a78bfa' }} /></motion.span>
                         <motion.p key={phase.label} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} className="text-xs font-medium" style={{ color: 'var(--db-text-secondary)' }}>{phase.label}</motion.p>
                     </div>
                     <p className="text-2xl font-bold tabular-nums" style={{ color: '#a78bfa' }}>{seconds}s</p>
@@ -118,7 +123,7 @@ function SubpageGeneratingOverlay({ seconds, pageName }) {
                         return (
                             <div key={i} className="flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all"
                                 style={{ background: isActive ? 'rgba(139,92,246,0.08)' : isDone ? 'rgba(139,92,246,0.05)' : 'transparent', border: isActive ? '1px solid rgba(139,92,246,0.2)' : '1px solid transparent' }}>
-                                <span className="text-sm w-5 text-center flex-shrink-0">{isDone ? '✅' : isActive ? '⏳' : '○'}</span>
+                                <span className="text-sm w-5 text-center flex-shrink-0 flex items-center justify-center">{isDone ? <Check size={14} className="text-emerald-400" /> : isActive ? <Hourglass size={14} style={{ color: '#a78bfa' }} /> : '○'}</span>
                                 <span className="text-xs" style={{ color: isActive ? 'var(--db-heading)' : isDone ? 'var(--db-text-secondary)' : 'var(--db-text-muted)' }}>{p.label}</span>
                             </div>
                         );
@@ -128,7 +133,7 @@ function SubpageGeneratingOverlay({ seconds, pageName }) {
 
                 <div className="mx-6 mb-6 flex items-start gap-2.5 rounded-xl px-4 py-3"
                     style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)' }}>
-                    <span className="text-base flex-shrink-0 mt-0.5">⚠️</span>
+                    <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" style={{ color: '#fbbf24' }} />
                     <p className="text-xs font-medium" style={{ color: '#fbbf24' }}>
                         <strong>Ne zatvaraj stranicu!</strong> Generiranje je u tijeku.
                     </p>
@@ -301,7 +306,7 @@ export default function SubpageManager({ project }) {
                                     border: isGenerated ? '1px solid rgba(34,197,94,0.15)' : '1px solid var(--db-border)'
                                 }}>
                                 <div className="flex items-center gap-3 min-w-0">
-                                    <span className="text-xl flex-shrink-0">{page.icon}</span>
+                                    <page.Icon size={20} className="flex-shrink-0" style={{ color: '#a78bfa' }} />
                                     <div className="min-w-0">
                                         <p className="text-sm font-semibold" style={{ color: 'var(--db-heading)' }}>{page.label}</p>
                                         <p className="text-[11px] truncate" style={{ color: 'var(--db-text-muted)' }}>{page.description}</p>
@@ -474,7 +479,7 @@ export default function SubpageManager({ project }) {
                                                         border: isSelected ? '1px solid rgba(139,92,246,0.3)' : '1px solid var(--db-border)',
                                                     }}
                                                 >
-                                                    <span className="text-lg flex-shrink-0 mt-0.5">{section.icon}</span>
+                                                    <section.Icon size={18} className="flex-shrink-0 mt-0.5" style={{ color: isSelected ? '#c4b5fd' : 'var(--db-text-muted)' }} />
                                                     <div className="min-w-0">
                                                         <p className="text-xs font-semibold leading-tight" style={{ color: isSelected ? '#c4b5fd' : 'var(--db-heading)' }}>
                                                             {section.label}

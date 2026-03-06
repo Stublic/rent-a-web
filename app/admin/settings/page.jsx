@@ -1,20 +1,31 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Cpu, Check, RefreshCw, Edit3 } from 'lucide-react';
+import { Cpu, Check, RefreshCw, Edit3, AlertTriangle } from 'lucide-react';
 
 const PRESET_MODELS = [
     { id: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro', badge: 'Najnoviji' },
     { id: 'gemini-3-pro-preview', label: 'Gemini 3 Pro', badge: 'Stabilan' },
 ];
 
+const PRESET_IMAGE_MODELS = [
+    { id: 'gemini-3.1-flash-image-preview', label: 'Nano Banana 2', badge: 'Najnoviji' },
+    { id: 'gemini-3-pro-image-preview', label: 'Nano Banana Pro', badge: 'Gasi se 9.3.' },
+];
+
 export default function AdminSettingsPage() {
     const [primary, setPrimary] = useState('');
     const [fallback, setFallback] = useState('');
+    const [imagePrimary, setImagePrimary] = useState('');
+    const [imageFallback, setImageFallback] = useState('');
     const [customPrimary, setCustomPrimary] = useState('');
     const [customFallback, setCustomFallback] = useState('');
+    const [customImagePrimary, setCustomImagePrimary] = useState('');
+    const [customImageFallback, setCustomImageFallback] = useState('');
     const [showCustomPrimary, setShowCustomPrimary] = useState(false);
     const [showCustomFallback, setShowCustomFallback] = useState(false);
+    const [showCustomImagePrimary, setShowCustomImagePrimary] = useState(false);
+    const [showCustomImageFallback, setShowCustomImageFallback] = useState(false);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [toast, setToast] = useState(null);
@@ -25,6 +36,8 @@ export default function AdminSettingsPage() {
             .then(data => {
                 setPrimary(data.aiPrimaryModel || 'gemini-3.1-pro-preview');
                 setFallback(data.aiFallbackModel || 'gemini-3-pro-preview');
+                setImagePrimary(data.aiImageModel || 'gemini-3.1-flash-image-preview');
+                setImageFallback(data.aiImageModelFallback || 'gemini-3-pro-image-preview');
             })
             .catch(() => {})
             .finally(() => setLoading(false));
@@ -35,21 +48,20 @@ export default function AdminSettingsPage() {
         setTimeout(() => setToast(null), 3000);
     };
 
-    const save = async (newPrimary, newFallback) => {
+    const save = async (updates) => {
         setSaving(true);
         try {
             const res = await fetch('/api/admin/config', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    aiPrimaryModel: newPrimary || primary,
-                    aiFallbackModel: newFallback || fallback,
-                }),
+                body: JSON.stringify(updates),
             });
             if (!res.ok) throw new Error('Failed');
-            setPrimary(newPrimary || primary);
-            setFallback(newFallback || fallback);
-            showToast('Model postavke spremljene!');
+            if (updates.aiPrimaryModel) setPrimary(updates.aiPrimaryModel);
+            if (updates.aiFallbackModel) setFallback(updates.aiFallbackModel);
+            if (updates.aiImageModel) setImagePrimary(updates.aiImageModel);
+            if (updates.aiImageModelFallback) setImageFallback(updates.aiImageModelFallback);
+            showToast('Postavke spremljene!');
         } catch {
             showToast('Greška pri spremanju.', 'error');
         } finally {
@@ -61,23 +73,43 @@ export default function AdminSettingsPage() {
         if (type === 'primary') {
             setPrimary(modelId);
             setShowCustomPrimary(false);
-            save(modelId, null);
-        } else {
+            save({ aiPrimaryModel: modelId });
+        } else if (type === 'fallback') {
             setFallback(modelId);
             setShowCustomFallback(false);
-            save(null, modelId);
+            save({ aiFallbackModel: modelId });
+        } else if (type === 'imagePrimary') {
+            setImagePrimary(modelId);
+            setShowCustomImagePrimary(false);
+            save({ aiImageModel: modelId });
+        } else if (type === 'imageFallback') {
+            setImageFallback(modelId);
+            setShowCustomImageFallback(false);
+            save({ aiImageModelFallback: modelId });
         }
     };
 
     const handleCustomSave = (type) => {
-        const val = type === 'primary' ? customPrimary.trim() : customFallback.trim();
-        if (!val) return;
         if (type === 'primary') {
+            const val = customPrimary.trim();
+            if (!val) return;
             setPrimary(val);
-            save(val, null);
-        } else {
+            save({ aiPrimaryModel: val });
+        } else if (type === 'fallback') {
+            const val = customFallback.trim();
+            if (!val) return;
             setFallback(val);
-            save(null, val);
+            save({ aiFallbackModel: val });
+        } else if (type === 'imagePrimary') {
+            const val = customImagePrimary.trim();
+            if (!val) return;
+            setImagePrimary(val);
+            save({ aiImageModel: val });
+        } else if (type === 'imageFallback') {
+            const val = customImageFallback.trim();
+            if (!val) return;
+            setImageFallback(val);
+            save({ aiImageModelFallback: val });
         }
     };
 
@@ -158,12 +190,60 @@ export default function AdminSettingsPage() {
                     accentColor="rgba(59,130,246,0.8)"
                 />
             </div>
+
+            {/* AI Image Model Selection */}
+            <div className="db-card p-6 space-y-6 mt-6">
+                <div className="flex items-center gap-3 pb-4" style={{ borderBottom: '1px solid var(--lp-border)' }}>
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-700 flex items-center justify-center">
+                        <Cpu size={18} className="text-white" />
+                    </div>
+                    <div>
+                        <h2 className="font-bold text-sm" style={{ color: 'var(--lp-heading)' }}>AI Image Model</h2>
+                        <p className="text-xs" style={{ color: 'var(--lp-text-muted)' }}>Odaberite model za generiranje slika (cover slike, hero slike itd.)</p>
+                    </div>
+                </div>
+
+                {/* Image Primary Model */}
+                <ModelSelector
+                    label="Primarni Image Model"
+                    description="Koristi se za generiranje slika"
+                    current={imagePrimary}
+                    saving={saving}
+                    presets={PRESET_IMAGE_MODELS}
+                    showCustom={showCustomImagePrimary}
+                    customValue={customImagePrimary}
+                    onCustomChange={setCustomImagePrimary}
+                    onToggleCustom={() => setShowCustomImagePrimary(!showCustomImagePrimary)}
+                    onPresetClick={(id) => handlePresetClick(id, 'imagePrimary')}
+                    onCustomSave={() => handleCustomSave('imagePrimary')}
+                    accentColor="rgba(16,185,129,0.8)"
+                />
+
+                <div style={{ borderTop: '1px solid var(--lp-border)' }} />
+
+                {/* Image Fallback Model */}
+                <ModelSelector
+                    label="Fallback Image Model"
+                    description="Koristi se kada primarni image model nije dostupan"
+                    current={imageFallback}
+                    saving={saving}
+                    presets={PRESET_IMAGE_MODELS}
+                    showCustom={showCustomImageFallback}
+                    customValue={customImageFallback}
+                    onCustomChange={setCustomImageFallback}
+                    onToggleCustom={() => setShowCustomImageFallback(!showCustomImageFallback)}
+                    onPresetClick={(id) => handlePresetClick(id, 'imageFallback')}
+                    onCustomSave={() => handleCustomSave('imageFallback')}
+                    accentColor="rgba(34,197,94,0.8)"
+                />
+            </div>
         </div>
     );
 }
 
-function ModelSelector({ label, description, current, saving, showCustom, customValue, onCustomChange, onToggleCustom, onPresetClick, onCustomSave, accentColor }) {
-    const isPreset = PRESET_MODELS.some(m => m.id === current);
+function ModelSelector({ label, description, current, saving, presets, showCustom, customValue, onCustomChange, onToggleCustom, onPresetClick, onCustomSave, accentColor }) {
+    const models = presets || PRESET_MODELS;
+    const isPreset = models.some(m => m.id === current);
 
     return (
         <div className="space-y-3">
@@ -181,7 +261,7 @@ function ModelSelector({ label, description, current, saving, showCustom, custom
 
             {/* Preset Buttons */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {PRESET_MODELS.map(m => {
+                {models.map(m => {
                     const isActive = current === m.id;
                     return (
                         <button
@@ -272,7 +352,7 @@ function ModelSelector({ label, description, current, saving, showCustom, custom
 
                 {!isPreset && !showCustom && (
                     <p className="text-[11px] mt-1" style={{ color: '#f59e0b' }}>
-                        ⚠️ Koristi se custom model: <strong>{current}</strong>
+                        <AlertTriangle size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '2px' }} /> Koristi se custom model: <strong>{current}</strong>
                     </p>
                 )}
             </div>

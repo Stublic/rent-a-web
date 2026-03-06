@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Check } from 'lucide-react';
+import { Check, Bot } from 'lucide-react';
 import { STYLES } from '@/lib/styles';
 
 // Re-export for backward compatibility
@@ -52,7 +52,7 @@ export default function StylePicker({ selected, onSelect }) {
                                 <Check size={10} className="text-black" />
                             </span>
                         )}
-                        <span className="text-xl">🤖</span>
+                        <Bot size={20} />
                         <span className="text-xs font-bold text-white">AI odabir</span>
                         <span className="text-[10px] text-zinc-500 leading-tight">AI sam bira najbolji stil</span>
                     </button>

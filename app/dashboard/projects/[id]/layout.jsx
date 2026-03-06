@@ -6,6 +6,7 @@ import { headers } from 'next/headers';
 import { auth } from '@/lib/auth';
 import ProjectOnboarding from './ProjectOnboarding';
 import PublishIndicator from './PublishIndicator';
+import UpgradeBanner from './UpgradeBanner';
 
 const GRACE_PERIOD_DAYS = 90;
 
@@ -123,6 +124,8 @@ export default async function ProjectLayout({ children, params }) {
     }
 
     const isAdvancedPlan = (project?.planName?.toLowerCase().includes('growth') || project?.planName?.toLowerCase().includes('advanced'));
+    const isStarterPlan = project?.planName?.toLowerCase().includes('starter');
+    const showUpgradeBanner = isStarterPlan && !isAdvancedPlan && project?.stripeSubscriptionId;
 
     // Build live preview URL
     const previewUrl = project?.customDomain
@@ -214,6 +217,11 @@ export default async function ProjectLayout({ children, params }) {
                   </div>
               </div>
            </header>
+
+           {/* ── UPGRADE BANNER (Starter → Advanced) ── */}
+           {showUpgradeBanner && (
+               <UpgradeBanner projectId={id} projectName={project?.name} />
+           )}
            
            {/* ── MAIN CONTENT ── */}
            <main className="flex-1 pb-[4.5rem] md:pb-0">

@@ -2,6 +2,95 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { extractBlogColors } from '@/lib/blog-colors';
 
+// ─── Nav injection helpers ──────────────────────────────────────────────────────
+
+const PREDEFINED_LABELS: Record<string, string> = {
+    'o-nama': 'O nama', 'usluge': 'Usluge', 'kontakt': 'Kontakt',
+};
+
+function getLabels(project: any): Record<string, string> {
+    const labels = { ...PREDEFINED_LABELS };
+    const custom = ((project.contentData || {}) as any)._customSubpages || {};
+    for (const [slug, meta] of Object.entries(custom) as [string, any][]) {
+        if (meta?.title) labels[slug] = meta.title;
+    }
+    return labels;
+}
+
+function extractNavLinkClass(html: string): string {
+    const nav = html.match(/<nav[\s\S]*?<\/nav>/i);
+    if (!nav) return '';
+    const poc = nav[0].match(/<a\s[^>]*href=["']\/["'][^>]*>[^<]*<\/a>/i);
+    if (!poc) return '';
+    const c = poc[0].match(/class="([^"]*)"/);
+    return c ? c[1].replace(/\bborder-b[-\w]*/g, '').replace(/\bborder-primary\b/g, '').replace(/\bpb-\d+/g, '').replace(/\s{2,}/g, ' ').trim() : '';
+}
+
+function injectNavLinksForBlog(html: string, project: any): string {
+    if (!html || !project) return html;
+    html = html.replace(/<a\s[^>]*href=["']\/api\/site\/[^"']*\/blog["'][^>]*>[\s\S]*?<\/a>\s*/gi, '');
+    const reactFiles = (project.reactFiles || {}) as Record<string, string>;
+    const labels = getLabels(project);
+    const allSlugs = Object.keys(reactFiles).filter(k => labels[k]);
+    const linkClass = extractNavLinkClass(html);
+    const navMatch = html.match(/<nav[\s\S]*?<\/nav>/i);
+    const dld = navMatch?.[0]?.match(/<div[^>]*class="[^"]*hidden\s+md:flex[^"]*"[^>]*>[\s\S]*?<\/div>/i);
+    const navArea = dld?.[0] || '';
+    const missing = allSlugs.filter(s => !navArea.includes(`href="/${s}"`) && !navArea.includes(`href='/${s}'`));
+    if (missing.length > 0) {
+        const nl = missing.map(s => `<a href="/${s}"${linkClass ? ` class="${linkClass}"` : ''}>${labels[s]}</a>`).join('\n                    ');
+        if (html.includes('<!-- NAV_LINKS -->')) html = html.replace('<!-- NAV_LINKS -->', nl);
+        else if (navMatch) { const poc = navMatch[0].match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i); if (poc) html = html.replace(navMatch[0], navMatch[0].replace(poc[0], poc[0] + '\n                    ' + nl)); }
+        const mm = html.match(/<div[^>]*id=["']mobile-menu["'][^>]*>[\s\S]*?<\/div>/i);
+        if (mm) { const mp = mm[0].match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i); let mc = ''; if (mp) { const c = mp[0].match(/class="([^"]*)"/); if (c) mc = c[1].replace(/\bborder-b[-\w]*/g, '').replace(/\bborder-primary\b/g, '').replace(/\s{2,}/g, ' ').trim(); } const ml = missing.map(s => `<a href="/${s}"${mc ? ` class="${mc}"` : ''}>${labels[s]}</a>`).join('\n            '); if (html.includes('<!-- NAV_LINKS_MOBILE -->')) html = html.replace(/<!-- NAV_LINKS_MOBILE -->/g, ml); else if (mp) html = html.replace(mm[0], mm[0].replace(mp[0], mp[0] + '\n            ' + ml)); }
+        if (html.includes('<!-- FOOTER_NAV_LINKS -->')) html = html.replace(/<!-- FOOTER_NAV_LINKS -->/g, missing.map(s => `<li><a href="/${s}" class="text-textMuted hover:text-white transition-colors">${labels[s]}</a></li>`).join('\n                        '));
+        else { const fm = html.match(/<footer[\s\S]*?<\/footer>/i); if (fm) { const fh = fm[0].match(/<li>\s*<a\s[^>]*href=["']\/["'][^>]*>[^<]*<\/a>\s*<\/li>/i); if (fh && !fm[0].includes(`href="/${missing[0]}"`)) { let fc = 'hover:text-white transition-colors'; const fcm = fh[0].match(/<a\s[^>]*class="([^"]*)"/); if (fcm) fc = fcm[1]; const fl = missing.map(s => `<li><a href="/${s}" class="${fc}">${labels[s]}</a></li>`).join('\n                        '); html = html.replace(fm[0], fm[0].replace(fh[0], fh[0] + '\n                        ' + fl)); } } }
+    }
+    html = html.replace(/<!-- NAV_LINKS -->/g, '').replace(/<!-- NAV_LINKS_MOBILE -->/g, '').replace(/<!-- FOOTER_NAV_LINKS -->/g, '');
+    return html;
+}
+
+function injectBlogNavForPost(html: string): string {
+    if (html.includes('href="/blog"') || html.includes("href='/blog'")) return html;
+    const lc = extractNavLinkClass(html);
+    const bl = `<a href="/blog"${lc ? ` class="${lc}"` : ''}>Blog</a>`;
+    const ns = html.match(/<nav[\s\S]*?<\/nav>/i);
+    if (ns) { const dl = ns[0].match(/<div[^>]*class="[^"]*hidden\s+md:flex[^"]*"[^>]*>[\s\S]*?<\/div>/i); const t = dl || ns; const lp = /<a\s[^>]*href=["']\/[a-z-]*["'][^>]*>[^<]*<\/a>/gi; const links = t[0].match(lp); if (links?.length) { const last = links[links.length - 1]; html = html.replace(t[0], t[0].replace(last, last + '\n                    ' + bl)); } }
+    const mm = html.match(/<div[^>]*id=["']mobile-menu["'][^>]*>[\s\S]*?<\/div>/i);
+    if (mm && !mm[0].includes('href="/blog"')) { const mh = mm[0]; const cta = mh.match(/<a\s[^>]*class="[^"]*(?:bg-(?:primary|brand)[^"]*|inline-flex[^"]*rounded-full)"[^>]*>[\s\S]*?<\/a>/i); const mnl = mh.match(/<a\s[^>]*href=["']\/[a-z][a-z-]*["'][^>]*>[^<]*<\/a>/gi); let mc = ''; if (mnl?.length) { const c = mnl[0].match(/class="([^"]*)"/); if (c) mc = c[1]; } const mbl = `<a href="/blog"${mc ? ` class="${mc}"` : ''}>Blog</a>`; if (cta) html = html.replace(mm[0], mh.replace(cta[0], mbl + '\n            ' + cta[0])); else { const all = mh.match(/<a\s[^>]*href=["']\/[a-z-]*["'][^>]*>[^<]*<\/a>/gi); if (all?.length) html = html.replace(mm[0], mh.replace(all[all.length - 1], all[all.length - 1] + '\n            ' + mbl)); } }
+    const fm = html.match(/<footer[\s\S]*?<\/footer>/i);
+    if (fm && !fm[0].includes('href="/blog"')) { const items = fm[0].match(/<li>\s*<a\s[^>]*href=["']\/[a-z-]*["'][^>]*>[\s\S]*?<\/a>\s*<\/li>/gi); if (items?.length) { const last = items[items.length - 1]; let fc = 'hover:text-white transition-colors'; const fpc = fm[0].match(/<li>\s*<a\s[^>]*class="([^"]*)"[^>]*href=["']\/["']/i) || fm[0].match(/<li>\s*<a\s[^>]*href=["']\/["'][^>]*class="([^"]*)"/i); if (fpc) fc = fpc[1]; html = html.replace(fm[0], fm[0].replace(last, last + `\n                        <li><a href="/blog" class="${fc}">Blog</a></li>`)); } }
+    return html;
+}
+
+function normalizeMobileNavForPost(html: string): string {
+    const mm = html.match(/<div[^>]*id=["']mobile-menu["'][^>]*>[\s\S]*?<\/div>/i);
+    if (!mm) return html;
+    const mh = mm[0];
+    const other = mh.match(/<a\s[^>]*href=["']\/[a-z][a-z-]*["'][^>]*>[^<]*<\/a>/gi);
+    if (!other?.length) return html;
+    const sc = other[0].match(/class="([^"]*)"/);
+    if (!sc) return html;
+    const poc = mh.match(/<a\s([^>]*)href=["']\/["']([^>]*)>\s*Početna\s*<\/a>/i);
+    if (!poc) return html;
+    const pc = poc[0].match(/class="([^"]*)"/);
+    if (!pc || pc[1] === sc[1]) return html;
+    return html.replace(mm[0], mh.replace(poc[0], poc[0].replace(`class="${pc[1]}"`, `class="${sc[1]}"`)));
+}
+
+function rewriteLinksForPreview(html: string, projectId: string): string {
+    html = html.replace(/href="\/blog"/gi, `href="/api/site/${projectId}/blog"`);
+    html = html.replace(/href='\/blog'/gi, `href='/api/site/${projectId}/blog'`);
+    html = html.replace(/href="\/([a-z][a-z0-9-]*)"/gi, (match, slug) => {
+        if (slug === 'blog') return match;
+        return `href="/api/site/${projectId}/preview?page=${slug}"`;
+    });
+    html = html.replace(/href="\/"/g, `href="/api/site/${projectId}/preview"`);
+    html = html.replace(/href='\/'/g, `href='/api/site/${projectId}/preview'`);
+    html = html.replace(/href="#([^"]*)"/g, `href="/api/site/${projectId}/preview#$1"`);
+    return html;
+}
+
 // Extract header/nav and footer from the project's generated HTML
 function extractSiteChrome(html: string) {
     let header = '';
@@ -43,7 +132,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ proj
 
     const project = await prisma.project.findUnique({
         where: { id: projectId },
-        select: { name: true, contentData: true, generatedHtml: true }
+        select: { name: true, contentData: true, generatedHtml: true, reactFiles: true }
     });
 
     if (!project) {
@@ -83,7 +172,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ proj
     const homeUrl = `/api/site/${projectId}/preview`;
     const postUrl = `/api/site/${projectId}/blog/${slug}`;
 
-    const chrome = project.generatedHtml ? extractSiteChrome(project.generatedHtml) : null;
+    // Process homepage through full nav injection before extracting chrome
+    let processedHtml = project.generatedHtml || '';
+    processedHtml = injectNavLinksForBlog(processedHtml, project);
+    processedHtml = injectBlogNavForPost(processedHtml);
+    processedHtml = normalizeMobileNavForPost(processedHtml);
+    processedHtml = rewriteLinksForPreview(processedHtml, projectId);
+
+    const chrome = processedHtml ? extractSiteChrome(processedHtml) : null;
     const isDark = project.generatedHtml ? detectDarkTheme(project.generatedHtml) : true;
     const blogColors = extractBlogColors(project.generatedHtml || '');
 
@@ -168,9 +264,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ proj
             --blog-blockquote-bg: ${blogColors.blockquoteBg};
         }
 
-        body {
-            background: var(--blog-bg) !important;
-            color: var(--blog-text) !important;
+        .blog-content-area {
+            background: var(--blog-bg);
+            color: var(--blog-text);
+            min-height: 60vh;
         }
 
         /* ===== Spacer for fixed nav ===== */
@@ -456,6 +553,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ proj
 <body>
     ${chrome?.header || `<header style="border-bottom:1px solid var(--blog-border);padding:1.25rem 2rem;display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto"><a href="${homeUrl}" style="font-weight:800;font-size:1.25rem;color:${primary};text-decoration:none">${bizName}</a><a href="${blogUrl}" style="color:var(--blog-text-muted);text-decoration:none;font-size:0.875rem">← Svi članci</a></header>`}
 
+    <div class="blog-content-area">
     <!-- Spacer for fixed nav -->
     <div class="nav-spacer"></div>
 
@@ -467,7 +565,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ proj
 
     <div class="article-layout">
         <article class="article-main">
-            ${post.category ? `<a href="${blogUrl}?category=${post.category.slug}" class="category-badge">📁 ${post.category.name}</a>` : ''}
+            ${post.category ? `<a href="${blogUrl}?category=${post.category.slug}" class="category-badge">${post.category.name}</a>` : ''}
             <div class="article-meta">${publishDate}</div>
             <h1>${post.title}</h1>
             ${post.excerpt ? `<p class="excerpt-text">${post.excerpt}</p>` : ''}
@@ -514,15 +612,34 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ proj
     </div>
 
     ${relatedHtml}
+    </div>
 
     ${chrome?.footer || `<footer style="text-align:center;padding:3rem 2rem;color:var(--blog-text-muted);font-size:0.8rem;border-top:1px solid var(--blog-border)">&copy; ${new Date().getFullYear()} ${bizName}. Sva prava pridržana.</footer>`}
 
     <script>
-        // Fix hash links to point back to the home page
-        document.querySelectorAll('a[href^="#"]').forEach(a => {
-            const hash = a.getAttribute('href');
-            a.href = '${homeUrl}' + hash;
-        });
+        // Mobile menu toggle
+        (function() {
+            const btn = document.getElementById('mobile-menu-btn');
+            const menu = document.getElementById('mobile-menu');
+            if (btn && menu) {
+                btn.addEventListener('click', function() {
+                    const isOpen = menu.classList.contains('opacity-100');
+                    if (isOpen) {
+                        menu.classList.remove('opacity-100', 'pointer-events-auto', 'translate-y-0');
+                        menu.classList.add('opacity-0', 'pointer-events-none', '-translate-y-4');
+                    } else {
+                        menu.classList.add('opacity-100', 'pointer-events-auto', 'translate-y-0');
+                        menu.classList.remove('opacity-0', 'pointer-events-none', '-translate-y-4');
+                    }
+                });
+                menu.querySelectorAll('a').forEach(function(a) {
+                    a.addEventListener('click', function() {
+                        menu.classList.remove('opacity-100', 'pointer-events-auto', 'translate-y-0');
+                        menu.classList.add('opacity-0', 'pointer-events-none', '-translate-y-4');
+                    });
+                });
+            }
+        })();
 
         // Set share URLs dynamically (uses current page URL for correct domain)
         const shareUrl = encodeURIComponent(window.location.href);

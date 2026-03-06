@@ -136,12 +136,20 @@ This is a demo page to impress a potential client — it must WOW them immediate
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Space+Grotesk:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>tailwind.config = { theme: { extend: { /* your custom colors/fonts here */ } } }</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
 \`\`\`
 - Use <i data-lucide="icon-name"></i> for icons, call lucide.createIcons() at end of body.
-- GSAP ScrollTrigger: animate every section in (fade + slide-up, stagger children). Add number counter animations for stats.
+- ANIMATIONS: Use CSS-only scroll-triggered reveal animations. Do NOT use GSAP or any external animation library.
+  Add this CSS in a <style> tag inside <head>:
+  .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.6s ease, transform 0.6s ease; }
+  .reveal.visible { opacity: 1; transform: none; }
+  .reveal-delay-1 { transition-delay: 0.1s; } .reveal-delay-2 { transition-delay: 0.2s; } .reveal-delay-3 { transition-delay: 0.3s; }
+  Add this script before </body>:
+  <script>
+  const observer = new IntersectionObserver((entries) => { entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } }); }, { threshold: 0.15 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+  </script>
+  Apply class="reveal" to every <section> and major content block. Use reveal-delay-N on children to stagger. Add number counter animations for stats using IntersectionObserver.
 
 ## STOCK IMAGES — use these exact URLs, they are pre-selected to match the business and style
 - HERO image: ${photos.hero}

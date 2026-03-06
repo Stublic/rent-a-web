@@ -22,7 +22,7 @@ export async function POST(req) {
     await transporter.sendMail({
       from: process.env.SMTP_FROM,
       to: process.env.ADMIN_EMAIL,
-      subject: `📬 Novi kontakt upit s platforme - ${name}`,
+      subject: `Novi kontakt upit s platforme - ${name}`,
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
           <h2 style="color: #7c3aed;">Novi kontakt upit</h2>
@@ -53,11 +53,11 @@ export async function POST(req) {
     await transporter.sendMail({
       from: process.env.SMTP_FROM,
       to: email,
-      subject: '✨ Zaprimili smo vaš upit',
+      subject: 'Zaprimili smo vaš upit',
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; color: #333; text-align: left;">
           <div style="background: linear-gradient(135deg, #7c3aed, #6d28d9); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
-             <h1 style="color: white; margin: 0; font-size: 24px;">✨ Zaprimili smo vaš upit</h1>
+             <h1 style="color: white; margin: 0; font-size: 24px;">Zaprimili smo vaš upit</h1>
           </div>
           <div style="padding: 30px; background: #fafafa; border: 1px solid #e5e5e5; border-top: none; border-radius: 0 0 12px 12px;">
             <p style="font-size: 16px; margin-top: 0;">Pozdrav ${name},</p>

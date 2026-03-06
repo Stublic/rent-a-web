@@ -14,6 +14,7 @@ import {
     Send,
     Eye,
     ExternalLink,
+    Lock,
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────
@@ -263,9 +264,9 @@ function MockupGenerate() {
 function MockupChat() {
     const conversation = [
         { role: 'user', text: 'Promijeni boju gumba u zelenu' },
-        { role: 'ai', text: 'Napravljeno! Gumbi su sada zeleni. 🎨' },
+        { role: 'ai', text: 'Napravljeno! Gumbi su sada zeleni.' },
         { role: 'user', text: 'Dodaj recenziju od Marije Horvat' },
-        { role: 'ai', text: 'Dodano! Recenzija je vidljiva na stranici. ⭐' },
+        { role: 'ai', text: 'Dodano! Recenzija je vidljiva na stranici.' },
     ];
 
     const [visible, setVisible] = useState(0);
@@ -476,7 +477,7 @@ function MockupPublish() {
                 {[
                     { label: 'Posjeta', val: '0', unit: '/dan' },
                     { label: 'Status', val: '✓', unit: 'Online' },
-                    { label: 'SSL', val: '🔒', unit: 'Aktivan' },
+                    { label: 'SSL', val: <Lock size={16} />, unit: 'Aktivan' },
                 ].map((s, i) => (
                     <motion.div
                         key={i}
@@ -513,7 +514,7 @@ function MockupPublish() {
                             style={{ background: 'linear-gradient(135deg, #16a34a, #22c55e)', color: 'white' }}
                         >
                             <CheckCircle size={16} />
-                            Stranica je uživo! 🎉
+                            Stranica je uživo!
                         </motion.div>
                     )}
                 </AnimatePresence>
@@ -626,15 +627,15 @@ function MobileStepWrapper({ step, index: i, StepMockup }) {
                 ref={mockupRef}
                 className="rounded-2xl overflow-hidden"
                 style={{
-                    background: 'var(--lp-surface)',
-                    border: '1px solid var(--lp-border)',
+                    background: '#18181b',
+                    border: '1px solid #27272a',
                     boxShadow: `0 0 40px ${step.color}12`,
                 }}
             >
                 {/* Window chrome */}
                 <div
                     className="flex items-center gap-2 px-4 py-3 border-b"
-                    style={{ borderColor: 'var(--lp-border)' }}
+                    style={{ borderColor: '#27272a' }}
                 >
                     <div className="flex gap-1.5">
                         <span className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
@@ -644,7 +645,7 @@ function MobileStepWrapper({ step, index: i, StepMockup }) {
                     <div className="flex-1 flex items-center justify-center">
                         <div
                             className="flex items-center gap-2 text-xs"
-                            style={{ color: 'var(--lp-text-muted)' }}
+                            style={{ color: '#71717a' }}
                         >
                             <Icon size={11} style={{ color: step.color }} />
                             {step.label}
@@ -874,8 +875,8 @@ export default function HowItWorksShowcase() {
                         <div
                             className="rounded-2xl overflow-hidden shadow-2xl"
                             style={{
-                                background: 'var(--lp-surface)',
-                                border: '1px solid var(--lp-border)',
+                                background: '#18181b',
+                                border: '1px solid #27272a',
                                 boxShadow: `0 0 60px ${STEPS[active].color}15`,
                                 transition: 'box-shadow 0.5s ease',
                             }}
@@ -883,7 +884,7 @@ export default function HowItWorksShowcase() {
                             {/* Window chrome */}
                             <div
                                 className="flex items-center gap-2 px-4 py-3 border-b"
-                                style={{ borderColor: 'var(--lp-border)' }}
+                                style={{ borderColor: '#27272a' }}
                             >
                                 <div className="flex gap-1.5">
                                     <span className="w-3 h-3 rounded-full bg-red-500/60" />
@@ -898,7 +899,7 @@ export default function HowItWorksShowcase() {
                                             animate={{ opacity: 1 }}
                                             exit={{ opacity: 0 }}
                                             className="flex items-center gap-2 text-xs"
-                                            style={{ color: 'var(--lp-text-muted)' }}
+                                            style={{ color: '#71717a' }}
                                         >
                                             {React.createElement(STEPS[active].icon, { size: 12, style: { color: STEPS[active].color } })}
                                             {STEPS[active].label}

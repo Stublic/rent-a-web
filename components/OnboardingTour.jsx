@@ -20,7 +20,7 @@ export default function OnboardingTour() {
             popoverClass: 'rentaweb-tour-popover',
             nextBtnText: 'Dalje →',
             prevBtnText: '← Natrag',
-            doneBtnText: 'Završi ✓',
+            doneBtnText: 'Završi',
             progressText: '{{current}} / {{total}}',
             onDestroyStarted: () => {
                 localStorage.setItem(TOUR_DONE_KEY, 'true');
@@ -30,7 +30,7 @@ export default function OnboardingTour() {
                 {
                     element: '#tour-welcome',
                     popover: {
-                        title: '👋 Dobrodošli u Rent a webica!',
+                        title: 'Dobrodošli u Rent a webica!',
                         description: 'Ovo je vaša kontrolna ploča. Odavde upravljate svim aspektima vaše web prisutnosti — od pretplate do vaših web stranica. Dozvolite nam da vam pokažemo osnove!',
                         side: 'bottom',
                         align: 'center',
@@ -39,7 +39,7 @@ export default function OnboardingTour() {
                 {
                     element: '#tour-subscription',
                     popover: {
-                        title: '📊 Pregled pretplate i tokena',
+                        title: 'Pregled pretplate i tokena',
                         description: 'Ovdje vidite status vaše pretplate, plan koji koristite i koliko AI tokena imate na raspolaganju. Tokeni se koriste za AI izmjene na vašoj web stranici.',
                         side: 'right',
                         align: 'start',
@@ -48,7 +48,7 @@ export default function OnboardingTour() {
                 {
                     element: '#tour-projects',
                     popover: {
-                        title: '📁 Vaši projekti',
+                        title: 'Vaši projekti',
                         description: 'Ovdje se nalaze svi vaši web projekti. Kliknite na bilo koji projekt da ga otvorite — tamo unosite sadržaj, koristite AI editor i upravljate postavkama.',
                         side: 'right',
                         align: 'start',
@@ -57,7 +57,7 @@ export default function OnboardingTour() {
                 {
                     element: '#tour-new-project',
                     popover: {
-                        title: '✨ Kreirajte novi projekt',
+                        title: 'Kreirajte novi projekt',
                         description: 'Želite novu web stranicu? Kliknite ovdje! Odaberite paket i u par minuta AI će vam generirati profesionalnu web stranicu.',
                         side: 'bottom',
                         align: 'end',
@@ -73,7 +73,7 @@ export default function OnboardingTour() {
                 {
                     element: '#tour-support',
                     popover: {
-                        title: '🎫 Podrška',
+                        title: 'Podrška',
                         description: 'Trebate pomoć ili imate pitanje? Ovdje možete otvoriti ticket za podršku i pratiti njegov status. Tu smo za vas!',
                         side: 'right',
                         align: 'start',
@@ -82,7 +82,7 @@ export default function OnboardingTour() {
                 {
                     element: '#tour-user-menu',
                     popover: {
-                        title: '👤 Vaš profil',
+                        title: 'Vaš profil',
                         description: 'Kliknite na vaše ime za pristup postavkama računa, promjenu lozinke ili odjavu iz sustava.',
                         side: 'bottom',
                         align: 'end',

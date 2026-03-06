@@ -137,7 +137,7 @@ export async function POST(req: Request) {
                     const emailHtml = `
                         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
                             <div style="background: linear-gradient(135deg, #7c3aed, #6d28d9); padding: 40px 30px; text-align: center; border-radius: 12px 12px 0 0;">
-                                <h1 style="color: white; margin: 0; font-size: 24px;">🚀 Uspješna kupnja!</h1>
+                                <h1 style="color: white; margin: 0; font-size: 24px;">Uspješna kupnja!</h1>
                                 <p style="color: rgba(255,255,255,0.85); margin: 8px 0 0; font-size: 14px;">Vaši AI tokeni su spremni</p>
                             </div>
                             
@@ -192,7 +192,7 @@ export async function POST(req: Request) {
                     await transporter.sendMail({
                         from: process.env.SMTP_FROM || 'Rent a webica <noreply@rentaweb.hr>',
                         to: customerEmail,
-                        subject: `🚀 Uspješna kupnja ${tokens} AI tokena${invoiceNumber ? ` - Račun ${invoiceNumber}` : ''}`,
+                        subject: `Uspješna kupnja ${tokens} AI tokena${invoiceNumber ? ` - Račun ${invoiceNumber}` : ''}`,
                         html: emailHtml,
                         attachments: invoiceUrl ? [
                             {

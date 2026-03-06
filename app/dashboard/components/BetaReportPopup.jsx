@@ -1,15 +1,15 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Bug, MessageSquare, X, Send, Loader2, CheckCircle, Star } from 'lucide-react';
+import { Bug, MessageSquare, X, Send, Loader2, CheckCircle, Star, ImagePlus, Trash2, Circle, Heart, PartyPopper, Coins, MapPin } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
 // ─── Severity Options ──────────────────────────────────────────────────────────
 const SEVERITY_OPTIONS = [
-    { value: 'low', label: 'Nizak', color: '#3b82f6', emoji: '🔵' },
-    { value: 'medium', label: 'Srednji', color: '#f59e0b', emoji: '🟡' },
-    { value: 'high', label: 'Visok', color: '#f97316', emoji: '🟠' },
-    { value: 'critical', label: 'Kritičan', color: '#ef4444', emoji: '🔴' },
+    { value: 'low', label: 'Nizak', color: '#3b82f6' },
+    { value: 'medium', label: 'Srednji', color: '#f59e0b' },
+    { value: 'high', label: 'Visok', color: '#f97316' },
+    { value: 'critical', label: 'Kritičan', color: '#ef4444' },
 ];
 
 // ─── Feedback Questions (same as /dashboard/feedback) ──────────────────────────
@@ -190,7 +190,10 @@ export default function BetaReportPopup() {
     const [bugTitle, setBugTitle] = useState('');
     const [bugDesc, setBugDesc] = useState('');
     const [severity, setSeverity] = useState('medium');
+    const [screenshot, setScreenshot] = useState(null);
+    const [screenshotPreview, setScreenshotPreview] = useState(null);
     const [bugLoading, setBugLoading] = useState(false);
+    const fileInputRef = useRef(null);
 
     // Feedback state
     const [answers, setAnswers] = useState({});
@@ -213,8 +216,25 @@ export default function BetaReportPopup() {
 
     const resetForms = () => {
         setBugTitle(''); setBugDesc(''); setSeverity('medium');
+        setScreenshot(null); setScreenshotPreview(null);
         setAnswers({}); setCustomAnswers({});
         setSubmitted(false); setTokensAwarded(0);
+    };
+
+    const handleScreenshot = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (file.size > 10 * 1024 * 1024) { alert('Slika mora biti manja od 10MB'); return; }
+        setScreenshot(file);
+        const reader = new FileReader();
+        reader.onload = (ev) => setScreenshotPreview(ev.target.result);
+        reader.readAsDataURL(file);
+    };
+
+    const removeScreenshot = () => {
+        setScreenshot(null);
+        setScreenshotPreview(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
     const setAnswer = (id, value) => setAnswers(prev => ({ ...prev, [id]: value }));
@@ -225,10 +245,16 @@ export default function BetaReportPopup() {
         if (!bugTitle.trim() || !bugDesc.trim() || bugLoading) return;
         setBugLoading(true);
         try {
+            const formData = new FormData();
+            formData.append('title', bugTitle.trim());
+            formData.append('description', bugDesc.trim());
+            formData.append('severity', severity);
+            formData.append('page', pathname);
+            if (screenshot) formData.append('screenshot', screenshot);
+
             const res = await fetch('/api/bug-reports', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title: bugTitle.trim(), description: bugDesc.trim(), severity, page: pathname }),
+                body: formData,
             });
             if (res.ok) {
                 const data = await res.json();
@@ -311,7 +337,7 @@ export default function BetaReportPopup() {
                             </div>
                             <div>
                                 <h3 className="font-bold text-white text-sm">Beta Tester Zona</h3>
-                                <p className="text-[11px] text-white/70">Tvoj feedback nam je važan! 🙏</p>
+                                <p className="text-[11px] text-white/70 flex items-center gap-1">Tvoj feedback nam je važan! <Heart size={11} className="text-white/70" /></p>
                             </div>
                         </div>
                         <button onClick={() => { setOpen(false); setTimeout(resetForms, 300); }} className="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center transition-colors">
@@ -322,8 +348,8 @@ export default function BetaReportPopup() {
                     {/* Tabs */}
                     <div className="flex flex-shrink-0" style={{ borderBottom: '1px solid var(--lp-border, #222)' }}>
                         {[
-                            { key: 'bug', label: '🐛 Bug Report' },
-                            { key: 'feedback', label: '💬 Feedback' },
+                            { key: 'bug', label: 'Bug Report', icon: Bug },
+                            { key: 'feedback', label: 'Feedback', icon: MessageSquare },
                         ].map(t => (
                             <button
                                 key={t.key}
@@ -334,7 +360,7 @@ export default function BetaReportPopup() {
                                     borderBottom: tab === t.key ? '2px solid rgba(255,255,255,0.6)' : '2px solid transparent',
                                 }}
                             >
-                                {t.label}
+                                <t.icon size={13} /> {t.label}
                             </button>
                         ))}
                     </div>
@@ -346,13 +372,13 @@ export default function BetaReportPopup() {
                                 <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ background: 'rgba(34,197,94,0.1)' }}>
                                     <CheckCircle size={32} style={{ color: '#22c55e' }} />
                                 </div>
-                                <h3 className="font-bold text-lg mb-2" style={{ color: 'var(--lp-heading)' }}>Hvala ti! 🎉</h3>
+                                <h3 className="font-bold text-lg mb-2 flex items-center justify-center gap-2" style={{ color: 'var(--lp-heading)' }}>Hvala ti! <PartyPopper size={18} style={{ color: '#4ade80' }} /></h3>
                                 <p className="text-sm mb-3" style={{ color: 'var(--lp-text-muted)' }}>
                                     {tab === 'bug' ? 'Bug report je poslan. Naš tim će ga pregledati.' : 'Hvala na feedbacku!'}
                                 </p>
                                 {tokensAwarded > 0 && (
                                     <div className="rounded-xl px-4 py-3 mb-5 flex items-center gap-2" style={{ background: 'rgba(250,204,21,0.1)', border: '1px solid rgba(250,204,21,0.2)' }}>
-                                        <span className="text-xl">🪙</span>
+                                        <Coins size={20} className="text-yellow-400" />
                                         <div className="text-left">
                                             <p className="text-sm font-bold" style={{ color: '#fbbf24' }}>+{tokensAwarded} tokena!</p>
                                             <p className="text-[11px]" style={{ color: 'var(--lp-text-muted)' }}>
@@ -410,14 +436,48 @@ export default function BetaReportPopup() {
                                                     color: severity === opt.value ? opt.color : 'var(--lp-text-muted)',
                                                 }}
                                             >
-                                                {opt.emoji} {opt.label}
+                                                <Circle size={10} fill={opt.color} stroke={opt.color} /> {opt.label}
                                             </button>
                                         ))}
                                     </div>
                                 </div>
 
                                 <div className="text-xs rounded-lg px-3 py-2" style={{ background: 'rgba(255,255,255,0.03)', color: 'var(--lp-text-muted)' }}>
-                                    📍 Stranica: <span style={{ color: 'var(--lp-text-secondary)' }}>{pathname}</span>
+                                    <MapPin size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /> Stranica: <span style={{ color: 'var(--lp-text-secondary)' }}>{pathname}</span>
+                                </div>
+
+                                {/* Screenshot upload */}
+                                <div>
+                                    <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--lp-text-secondary)' }}>Screenshot (opcionalno)</label>
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleScreenshot}
+                                        className="hidden"
+                                    />
+                                    {screenshotPreview ? (
+                                        <div className="relative rounded-xl overflow-hidden" style={{ border: '1px solid var(--lp-border)' }}>
+                                            <img src={screenshotPreview} alt="Screenshot" className="w-full max-h-32 object-cover" />
+                                            <button
+                                                type="button"
+                                                onClick={removeScreenshot}
+                                                className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center transition-all hover:scale-110"
+                                                style={{ background: 'rgba(0,0,0,0.7)', color: '#fff' }}
+                                            >
+                                                <Trash2 size={12} />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            className="w-full py-3 rounded-xl text-xs font-medium flex items-center justify-center gap-2 transition-all hover:opacity-80"
+                                            style={{ background: 'rgba(255,255,255,0.03)', border: '1px dashed var(--lp-border)', color: 'var(--lp-text-muted)' }}
+                                        >
+                                            <ImagePlus size={14} /> Dodaj screenshot
+                                        </button>
+                                    )}
                                 </div>
 
                                 <button

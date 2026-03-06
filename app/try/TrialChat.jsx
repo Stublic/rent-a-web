@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Loader2, Sparkles, Lock, ArrowRight, Search, Pencil, ShieldCheck } from 'lucide-react';
+import { Loader2, Sparkles, Lock, ArrowRight, Search, Pencil, ShieldCheck, Wrench } from 'lucide-react';
+import { fixVisibilityClient } from '@/lib/fix-visibility-client';
 
 const MAX_FREE_EDITS = 2;
 
@@ -105,7 +106,7 @@ export default function TrialChat({ html, onHtmlUpdate, editsUsed, onEditUsed, o
                     ...prev,
                     {
                         role: 'assistant',
-                        content: data.message || '✅ Izmjena primijenjena!',
+                        content: data.message || 'Izmjena primijenjena!',
                         success: true,
                         suggestion: data.suggestion || '',
                     },
@@ -142,8 +143,47 @@ export default function TrialChat({ html, onHtmlUpdate, editsUsed, onEditUsed, o
         }
     };
 
+    // ─── Auto-detect "page is broken" requests ─────────────────────────────────
+    const FIX_KEYWORDS = [
+        'prazna', 'nevidljiv', 'skriveni', 'ne vidi', 'ne prikazuje',
+        'nestalo', 'blank', 'hidden', 'invisible', 'opacity',
+        'ne vidim', 'nema ništa', 'prazan', 'nema sadržaj',
+        'slomljen', 'broken', 'crni ekran', 'bijeli ekran',
+        'samo hero', 'samo footer', 'samo navbar', 'prazno',
+        'horizontalni scroll', 'overflow', 'duplirano', 'dupla sekcija',
+        'popravi', 'fix', 'ne radi',
+    ];
+    const isFixRequest = (text) => {
+        const lower = text.toLowerCase();
+        return FIX_KEYWORDS.some(kw => lower.includes(kw));
+    };
+
+    // ─── Client-side page fix (no AI, no edits consumed) ────────────────
+    const handleFixPage = () => {
+        if (!html) return;
+        const fixed = fixVisibilityClient(html);
+        if (fixed !== html) {
+            onHtmlUpdate(fixed);
+            setMessages(prev => [...prev,
+                { role: 'user', content: 'Popravi stranicu' },
+                { role: 'assistant', content: 'Popravak primijenjen! Ispravljeni su problemi s layoutom i vidljivošću.', success: true, suggestion: 'Pregledaj promjene u previewu' },
+            ]);
+        } else {
+            setMessages(prev => [...prev,
+                { role: 'user', content: 'Popravi stranicu' },
+                { role: 'assistant', content: 'Stranica izgleda ispravno — nisam pronašao probleme.', success: true },
+            ]);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        // Auto-detect layout/visibility issues → deterministic fix, not AI
+        if (isFixRequest(input)) {
+            setInput('');
+            handleFixPage();
+            return;
+        }
         await submitEdit(input);
     };
 
@@ -192,7 +232,7 @@ export default function TrialChat({ html, onHtmlUpdate, editsUsed, onEditUsed, o
                             <Sparkles size={18} className="text-zinc-400" />
                         </div>
                         <div>
-                            <p className="text-zinc-300 font-medium mb-1">Zdravo! 👋 Ja sam tvoj AI asistent.</p>
+                            <p className="text-zinc-300 font-medium mb-1">Zdravo! Ja sam tvoj AI asistent.</p>
                             <p className="text-zinc-500 text-xs">Reci mi što želiš promijeniti na stranici.</p>
                         </div>
                         <div className="space-y-2 text-left max-w-sm mx-auto">

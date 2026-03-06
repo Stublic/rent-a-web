@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronRight, FileText, Zap, Globe, Sparkles, AlertTriangle, X, Clock, RefreshCw, MessageSquare } from "lucide-react";
+import { ChevronDown, ChevronRight, FileText, Zap, Globe, Sparkles, AlertTriangle, X, Clock, RefreshCw, MessageSquare, ArrowUpCircle, Check, Bug, Hourglass } from "lucide-react";
 import Link from "next/link";
 import { TabLoader, ButtonLoader } from "./DashboardLoader";
+import { useToast } from "./ToastProvider";
 
 const GRACE_PERIOD_DAYS = 90;
 
@@ -80,13 +81,13 @@ function CancelModal({ project, onClose, onConfirm, cancelling }) {
 
                 <div className="bg-amber-500/5 border border-amber-500/15 rounded-xl p-3 mb-3">
                     <p className="text-amber-400/90 text-xs leading-relaxed">
-                        ⏳ <strong>Vaši podaci bit će sačuvani {GRACE_PERIOD_DAYS} dana</strong> nakon otkazivanja.
+                        <Hourglass size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> <strong>Vaši podaci bit će sačuvani {GRACE_PERIOD_DAYS} dana</strong> nakon otkazivanja.
                     </p>
                 </div>
 
                 <div className="bg-red-500/5 border border-red-500/15 rounded-xl p-3 mb-5">
                     <p className="text-red-400/90 text-xs leading-relaxed">
-                        ⚠️ Nakon {GRACE_PERIOD_DAYS} dana svi podaci bit će <strong>trajno obrisani</strong>. Vaša web stranica odmah prestaje biti javno dostupna.
+                        <AlertTriangle size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> Nakon {GRACE_PERIOD_DAYS} dana svi podaci bit će <strong>trajno obrisani</strong>. Vaša web stranica odmah prestaje biti javno dostupna.
                     </p>
                 </div>
 
@@ -112,6 +113,8 @@ export default function SubscriptionTab({ user, onPortal }) {
     const [cancelling, setCancelling] = useState(false);
     const [renewingProjectId, setRenewingProjectId] = useState(null);
     const [editorTokens, setEditorTokens] = useState(0);
+    const [upgradingProjectId, setUpgradingProjectId] = useState(null);
+    const toast = useToast();
 
     const fetchData = async () => {
         try {
@@ -168,8 +171,32 @@ export default function SubscriptionTab({ user, onPortal }) {
         }
     };
 
+    const handleUpgrade = async (projectId) => {
+        setUpgradingProjectId(projectId);
+        try {
+            const res = await fetch('/api/upgrade-plan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ projectId })
+            });
+            const data = await res.json();
+            if (data.success) {
+                toast.success(data.message || 'Uspješno nadograđeno na Advanced!');
+                await fetchData(); // refresh everything
+            } else {
+                toast.error(data.error || 'Greška pri nadogradnji.');
+            }
+        } catch (err) {
+            console.error('Upgrade error:', err);
+            toast.error('Došlo je do greške pri nadogradnji.');
+        } finally {
+            setUpgradingProjectId(null);
+        }
+    };
+
     const activeProjects = projects.filter(p => !p.cancelledAt);
     const cancelledProjects = projects.filter(p => p.cancelledAt);
+    const starterProjects = activeProjects.filter(p => p.planName?.toLowerCase().includes('starter') && p.stripeSubscriptionId);
 
     const getStatusBadge = (project) => {
         if (project.cancelledAt) {
@@ -187,6 +214,66 @@ export default function SubscriptionTab({ user, onPortal }) {
             {cancelProject && (
                 <CancelModal project={cancelProject} onClose={() => !cancelling && setCancelProject(null)} onConfirm={handleCancelSubscription} cancelling={cancelling} />
             )}
+
+            {/* ── Upgrade Banner (Starter → Advanced) ── */}
+            {starterProjects.map(project => (
+                <div
+                    key={`upgrade-${project.id}`}
+                    className="relative overflow-hidden rounded-2xl p-5 md:p-6 db-fade-in"
+                    style={{
+                        background: 'linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(59,130,246,0.06) 50%, rgba(139,92,246,0.06) 100%)',
+                        border: '1px solid rgba(16,185,129,0.2)',
+                    }}
+                >
+                    {/* Decorative glow */}
+                    <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full blur-3xl pointer-events-none" style={{ background: 'rgba(16,185,129,0.12)' }} />
+
+                    <div className="relative flex flex-col md:flex-row md:items-center gap-4">
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2">
+                                <ArrowUpCircle size={20} className="text-emerald-400 shrink-0" />
+                                <h3 className="text-base font-bold" style={{ color: 'var(--db-heading)' }}>
+                                    Nadogradi na Advanced
+                                </h3>
+                                <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
+                                    {project.name}
+                                </span>
+                            </div>
+                            <p className="text-sm leading-relaxed mb-3" style={{ color: 'var(--db-text-secondary)' }}>
+                                Otključajte neograničene podstranice, SEO Blog i dobijte dodatnih 500 AI tokena!
+                            </p>
+                            <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs" style={{ color: 'var(--db-text-muted)' }}>
+                                <span className="flex items-center gap-1"><Check size={12} className="text-emerald-400" /> Podstranice (Usluge, O nama, Kontakt)</span>
+                                <span className="flex items-center gap-1"><Check size={12} className="text-emerald-400" /> CMS Blog sustav</span>
+                                <span className="flex items-center gap-1"><Check size={12} className="text-emerald-400" /> 10 AI članaka mjesečno</span>
+                                <span className="flex items-center gap-1"><Check size={12} className="text-emerald-400" /> +500 AI tokena bonus</span>
+                                <span className="flex items-center gap-1"><Check size={12} className="text-emerald-400" /> Napredne animacije</span>
+                            </div>
+                        </div>
+                        <div className="flex-shrink-0 flex flex-col items-center gap-1.5">
+                            <button
+                                onClick={() => handleUpgrade(project.id)}
+                                disabled={upgradingProjectId === project.id}
+                                className="font-bold text-sm px-6 py-3 rounded-xl transition-all flex items-center gap-2 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                style={{
+                                    background: 'linear-gradient(135deg, #10b981, #059669)',
+                                    color: 'white',
+                                    boxShadow: '0 4px 14px rgba(16,185,129,0.3)',
+                                }}
+                            >
+                                {upgradingProjectId === project.id ? (
+                                    <><ButtonLoader size={14} /> Nadogradnja...</>
+                                ) : (
+                                    <><Zap size={16} /> Nadogradi na Advanced</>
+                                )}
+                            </button>
+                            <span className="text-[11px]" style={{ color: 'var(--db-text-muted)' }}>
+                                39€ → 99€/mj · proporcionalna naplata
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            ))}
 
             {/* Header */}
             <div className="flex items-center justify-between mb-2">
@@ -327,16 +414,16 @@ export default function SubscriptionTab({ user, onPortal }) {
 
             {/* ── Quick Actions ── */}
             <div className="grid sm:grid-cols-2 gap-4 pt-2">
-                <div className="db-card p-5 group cursor-pointer">
+                <Link href="/dashboard/bug-report" className="db-card p-5 group block">
                     <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform" style={{ color: 'var(--db-text-secondary)' }}>
-                        <Zap size={20} />
+                        <Bug size={20} />
                     </div>
-                    <h4 className="font-bold mb-1.5" style={{ color: 'var(--db-heading)' }}>Poboljšajte svoj web</h4>
-                    <p className="text-sm mb-3" style={{ color: 'var(--db-text-muted)' }}>Dodajte nove funkcionalnosti, SEO članke ili Google Ads vođenje.</p>
+                    <h4 className="font-bold mb-1.5" style={{ color: 'var(--db-heading)' }}>Prijavite bug</h4>
+                    <p className="text-sm mb-3" style={{ color: 'var(--db-text-muted)' }}>Nešto ne radi kako treba? Prijavite grešku i pomozite nam poboljšati platformu.</p>
                     <span className="text-sm font-semibold flex items-center gap-1" style={{ color: 'var(--db-text-secondary)' }}>
-                        Prikaži opcije <ChevronRight size={14} />
+                        Prijavi bug <ChevronRight size={14} />
                     </span>
-                </div>
+                </Link>
 
                 <Link href="/dashboard/feedback" className="db-card p-5 group block">
                     <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform" style={{ color: 'var(--db-text-secondary)' }}>

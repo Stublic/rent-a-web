@@ -1,24 +1,24 @@
 'use client';
 
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { ExternalLink, RefreshCw, Loader2 } from 'lucide-react';
+import { ExternalLink, RefreshCw, Loader2, FileText, Search, Pencil, Palette, Rocket, Check, Hourglass, AlertTriangle, Sparkles, Globe } from 'lucide-react';
 
 const GENERATION_STEPS = [
-    { from: 0,  label: "Priprema podataka...",                  icon: "📋" },
-    { from: 6,  label: "Webica AI analizira tvoj biznis...",    icon: "🔍" },
-    { from: 15, label: "Kreiranje stranice i sadržaja...",      icon: "✍️" },
-    { from: 30, label: "Generiranje slika i optimizacija...",   icon: "🎨" },
-    { from: 50, label: "Koristi se jači AI model...",           icon: "🚀" },
+    { from: 0,  label: "Priprema podataka...",                  Icon: FileText },
+    { from: 6,  label: "Webica AI analizira tvoj biznis...",    Icon: Search },
+    { from: 15, label: "Kreiranje stranice i sadržaja...",      Icon: Pencil },
+    { from: 30, label: "Generiranje slika i optimizacija...",   Icon: Palette },
+    { from: 50, label: "Koristi se jači AI model...",           Icon: Rocket },
 ];
 
 const EXTENDED_MSGS = [
-    { text: "Webica AI razmišlja extra duboko danas... 🧠", sub: "Kompleksniji dizajn = više vremena" },
-    { text: "Kreativnost zahtijeva strpljenje! 🎨", sub: "Svaki piksel se ručno slaže (AI to radi)" },
-    { text: "Generira se responsivni dizajn za sve uređaje 📱", sub: "Mobilni, tablet, desktop — sve u jednom" },
-    { text: "Još malo! Savršenstvo ne trpi žurbu ⏳", sub: "Kvaliteta > brzina" },
-    { text: "Koristi se napredni AI model za bolji rezultat 🚀", sub: "Automatski fallback na jači model" },
-    { text: "Webica AI piše mobile-first kod s animacijama ✨", sub: "Smooth scroll, fade-in, hover efekti..." },
-    { text: "Skoro gotovo! AI radi završne provjere 🔍", sub: "Validacija HTML-a, pristupačnosti i brzine" },
+    { text: "Webica AI razmišlja extra duboko danas...", sub: "Kompleksniji dizajn = više vremena" },
+    { text: "Kreativnost zahtijeva strpljenje!", sub: "Svaki piksel se ručno slaže (AI to radi)" },
+    { text: "Generira se responsivni dizajn za sve uređaje", sub: "Mobilni, tablet, desktop — sve u jednom" },
+    { text: "Još malo! Savršenstvo ne trpi žurbu", sub: "Kvaliteta > brzina" },
+    { text: "Koristi se napredni AI model za bolji rezultat", sub: "Automatski fallback na jači model" },
+    { text: "Webica AI piše mobile-first kod s animacijama", sub: "Smooth scroll, fade-in, hover efekti..." },
+    { text: "Skoro gotovo! AI radi završne provjere", sub: "Validacija HTML-a, pristupačnosti i brzine" },
 ];
 
 function GeneratingOverlay({ seconds }) {
@@ -39,14 +39,14 @@ function GeneratingOverlay({ seconds }) {
                         <div className="absolute inset-0 rounded-full animate-pulse bg-emerald-500/15" />
                         <Loader2 className="w-8 h-8 animate-spin text-emerald-400" />
                     </div>
-                    <h3 className="text-lg font-bold text-white">✨ Webica AI stvara web stranicu</h3>
+                    <h3 className="text-lg font-bold text-white flex items-center justify-center gap-2"><Sparkles size={18} className="text-emerald-400" /> Webica AI stvara web stranicu</h3>
                     <p className="text-xs text-zinc-500 mt-1">Generiranje traje u prosjeku 3–5 minuta.</p>
                 </div>
 
                 {/* Timer + Current phase */}
                 <div className="mx-6 mb-4 rounded-2xl px-5 py-3 flex items-center justify-between bg-zinc-800/50 border border-zinc-700/50">
                     <div className="flex items-center gap-2.5">
-                        <span className="text-xl" key={phase.icon}>{phase.icon}</span>
+                        <phase.Icon size={18} className="text-emerald-400" key={phase.from} />
                         <p className="text-xs font-medium text-zinc-300" key={phase.label}>{phase.label}</p>
                     </div>
                     <div className="text-right flex-shrink-0 ml-3">
@@ -82,8 +82,8 @@ function GeneratingOverlay({ seconds }) {
                                 isDone ? 'bg-emerald-500/5 border border-transparent' :
                                 'border border-transparent'
                             }`}>
-                                <span className="text-sm w-5 text-center flex-shrink-0">
-                                    {isDone ? '✅' : isActive ? '⏳' : '○'}
+                                <span className="text-sm w-5 text-center flex-shrink-0 flex items-center justify-center">
+                                    {isDone ? <Check size={14} className="text-emerald-400" /> : isActive ? <Hourglass size={14} className="text-emerald-400" /> : '○'}
                                 </span>
                                 <span className={`text-xs ${
                                     isActive ? 'text-white font-medium' :
@@ -109,7 +109,7 @@ function GeneratingOverlay({ seconds }) {
 
                 {/* Don't refresh warning */}
                 <div className="mx-6 mb-6 flex items-start gap-2.5 rounded-xl px-4 py-3 bg-yellow-500/10 border border-yellow-500/20">
-                    <span className="text-base flex-shrink-0 mt-0.5">⚠️</span>
+                    <AlertTriangle size={16} className="flex-shrink-0 mt-0.5 text-yellow-400" />
                     <p className="text-xs font-medium text-yellow-400/90">
                         <strong>Ne osvježavaj stranicu!</strong> Generiranje je u tijeku — prekidanje može uzrokovati gubitak podataka.
                     </p>
@@ -217,7 +217,7 @@ export default function TrialPreview({ html, isGenerating }) {
                 ) : !isGenerating && !html ? (
                     <div className="flex items-center justify-center h-full bg-zinc-900">
                         <div className="text-center space-y-3">
-                            <div className="text-4xl">🌐</div>
+                            <Globe size={36} className="text-zinc-500" />
                             <p className="text-zinc-400 text-sm">Tvoja web stranica će se pojaviti ovdje</p>
                         </div>
                     </div>

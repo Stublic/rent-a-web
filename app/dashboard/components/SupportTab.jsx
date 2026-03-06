@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MessageSquare, ChevronDown, ChevronRight, Clock, CheckCircle, AlertTriangle, RefreshCw, Send } from 'lucide-react';
+import { MessageSquare, ChevronDown, ChevronRight, Clock, CheckCircle, AlertTriangle, RefreshCw, Send, Crown, Bot } from 'lucide-react';
 import { getMyTickets, getTicketMessages, addTicketReply } from '@/app/actions/support-tickets';
 
 const STATUS_CONFIG = {
@@ -85,8 +85,8 @@ function TicketDetail({ ticketId, onClose }) {
                                     borderBottomLeftRadius: !isUser ? '4px' : undefined,
                                 }}
                             >
-                                {isAdmin && <div className="text-xs font-bold mb-1 opacity-80">👑 Admin</div>}
-                                {msg.role === 'AI' && <div className="text-xs font-bold mb-1 opacity-60">🤖 AI Asistent</div>}
+                                {isAdmin && <div className="text-xs font-bold mb-1 opacity-80 flex items-center gap-1"><Crown size={11} /> Admin</div>}
+                                {msg.role === 'AI' && <div className="text-xs font-bold mb-1 opacity-60 flex items-center gap-1"><Bot size={11} /> AI Asistent</div>}
                                 <div className="whitespace-pre-wrap">{msg.content}</div>
                             </div>
                         </div>
@@ -121,7 +121,7 @@ function TicketDetail({ ticketId, onClose }) {
 
             {ticket.status === 'RESOLVED' && (
                 <div className="text-center py-3 rounded-xl text-sm" style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e' }}>
-                    ✅ Ovaj ticket je riješen
+                    <CheckCircle size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} /> Ovaj ticket je riješen
                 </div>
             )}
         </div>
@@ -175,7 +175,7 @@ export default function SupportTab() {
                         </div>
                         <h3 className="font-bold mb-2" style={{ color: 'var(--db-heading)' }}>Nema ticketa</h3>
                         <p className="text-sm" style={{ color: 'var(--db-text-muted)' }}>
-                            Koristite AI chat (ikona 💬 dolje lijevo) za pitanja i pomoć. Ako AI ne može riješiti vaš problem, automatski će kreirati ticket.
+                            Koristite AI chat (ikona <MessageSquare size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /> dolje lijevo) za pitanja i pomoć. Ako AI ne može riješiti vaš problem, automatski će kreirati ticket.
                         </p>
                     </div>
                 </div>

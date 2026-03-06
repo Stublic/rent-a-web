@@ -10,12 +10,51 @@
 import { GoogleGenAI } from '@google/genai';
 import { put } from '@vercel/blob';
 import { logGeminiUsage } from '@/lib/gemini-usage';
+import { prisma } from '@/lib/prisma';
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
 
-// Image generation model
-const IMAGE_MODEL = 'gemini-3-pro-image-preview';
+// Default image generation models (must be image-capable models, NOT text-only)
+// Nano Banana 2   = gemini-3.1-flash-image-preview (fast, efficient)
+// Nano Banana Pro = gemini-3-pro-image-preview (discontinuing 2026-03-09)
+const DEFAULT_IMAGE_PRIMARY = 'gemini-3.1-flash-image-preview';
+const DEFAULT_IMAGE_FALLBACK = 'gemini-3-pro-image-preview';
+
+// ─── In-memory image model cache (refreshes every 60 s) ─────────────
+let cachedImageModels: { primary: string; fallback: string } | null = null;
+let imageCacheTimestamp = 0;
+const IMAGE_CACHE_TTL_MS = 60_000;
+
+export function clearImageModelCache() {
+    cachedImageModels = null;
+    imageCacheTimestamp = 0;
+}
+
+export async function getConfiguredImageModel(): Promise<{ primary: string; fallback: string }> {
+    const now = Date.now();
+    if (cachedImageModels && now - imageCacheTimestamp < IMAGE_CACHE_TTL_MS) {
+        return cachedImageModels;
+    }
+
+    try {
+        const rows = await prisma.systemConfig.findMany({
+            where: { key: { in: ['aiImageModel', 'aiImageModelFallback'] } },
+        });
+        const map: Record<string, string> = {};
+        for (const r of rows) map[r.key] = r.value;
+
+        cachedImageModels = {
+            primary: map.aiImageModel || DEFAULT_IMAGE_PRIMARY,
+            fallback: map.aiImageModelFallback || DEFAULT_IMAGE_FALLBACK,
+        };
+    } catch {
+        cachedImageModels = { primary: DEFAULT_IMAGE_PRIMARY, fallback: DEFAULT_IMAGE_FALLBACK };
+    }
+
+    imageCacheTimestamp = now;
+    return cachedImageModels;
+}
 
 // ─── Style → photo aesthetic modifier ─────────────────────────────────────────
 export const STYLE_IMAGE_MODS: Record<string, string> = {
@@ -177,21 +216,25 @@ export function buildAIImagePrompts(
  */
 export async function generateAndUploadImage(
     prompt: string,
-    filename: string
+    filename: string,
+    modelOverride?: string
 ): Promise<string | null> {
     if (!GOOGLE_API_KEY || !BLOB_TOKEN) return null;
+
+    const configured = await getConfiguredImageModel();
+    const modelName = modelOverride || configured.primary;
 
     try {
         const ai = new GoogleGenAI({ apiKey: GOOGLE_API_KEY });
 
         const response = await ai.models.generateContent({
-            model: IMAGE_MODEL,
+            model: modelName,
             contents: prompt,
             config: {
                 responseModalities: ['IMAGE'],
                 imageConfig: {
                     aspectRatio: '16:9',
-                    imageSize: '1K', // 1K is faster; use '2K' for main builder
+                    imageSize: '1K',
                 } as any,
             },
         });
@@ -204,7 +247,7 @@ export async function generateAndUploadImage(
         // Log usage if successful
         logGeminiUsage({
             type: 'generate_image',
-            model: IMAGE_MODEL,
+            model: modelName,
             isImage: true,
         });
 
@@ -219,11 +262,11 @@ export async function generateAndUploadImage(
             contentType: mimeType,
         });
 
-        console.log(`📷 AI image uploaded: ${blob.url}`);
+        console.log(`📷 AI image uploaded: ${blob.url} (model: ${modelName})`);
         return blob.url;
 
     } catch (err: any) {
-        console.error(`⚠️ Image gen failed for "${filename}":`, err.message?.slice(0, 100));
+        console.error(`⚠️ Image gen failed for "${filename}" (model: ${modelName}):`, err.message?.slice(0, 100));
         return null;
     }
 }

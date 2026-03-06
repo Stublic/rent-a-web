@@ -5,20 +5,20 @@ import { motion, AnimatePresence } from "framer-motion";
 
 // Fun & informative messages shown when generation takes longer than expected
 const EXTENDED_MESSAGES = [
-    { text: "AI razmišlja extra duboko danas... 🧠", sub: "Kompleksniji dizajn = više vremena" },
-    { text: "Kreativnost zahtijeva strpljenje! 🎨", sub: "Svaki piksel se ručno slaže (šalim se, AI to radi)" },
-    { text: "Webica piše u prosjeku 3000+ linija koda 📝", sub: "To je kao pola romana — samo ljepšeg" },
-    { text: "Generira se responsivni dizajn za sve uređaje 📱", sub: "Mobilni, tablet, desktop — sve u jednom" },
-    { text: "AI model obrađuje tvoje slike i sadržaj 🖼️", sub: "Slike se optimiziraju za brzo učitavanje" },
-    { text: "Još malo! Savršenstvo ne trpi žurbu ⏳", sub: "Kvaliteta > brzina" },
-    { text: "Zabavni fact: prosječna web stranica ima 50+ sekcija CSS-a 🤓", sub: "AI ih generira sve u jednom potezu" },
-    { text: "Koristi se napredni AI model za bolji rezultat 🚀", sub: "Automatski fallback na jači model" },
-    { text: "AI piše mobile-first kod s animacijama ✨", sub: "Smooth scroll, fade-in, hover efekti..." },
-    { text: "Fun fact: Webica AI procesira tisuće linija koda u minuti ⚡", sub: "Ali kreativnost ipak traje malo duže" },
-    { text: "Skoro gotovo! AI radi završne provjere 🔍", sub: "Validacija HTML-a, pristupačnosti i brzine" },
-    { text: "AI optimizira SEO meta tagove za Google 🔎", sub: "Naslov, opis i strukturirani podaci" },
-    { text: "Tvoja stranica će biti brža od 90% web stranica 🏎️", sub: "Optimizirani CSS i minimalan JavaScript" },
-    { text: "Generiraju se lazy-load slike i WebP format 📸", sub: "Za najbolji Core Web Vitals score" },
+    { text: "AI razmišlja extra duboko danas...", sub: "Kompleksniji dizajn = više vremena" },
+    { text: "Kreativnost zahtijeva strpljenje!", sub: "Svaki piksel se ručno slaže (šalim se, AI to radi)" },
+    { text: "Webica piše u prosjeku 3000+ linija koda", sub: "To je kao pola romana — samo ljepšeg" },
+    { text: "Generira se responsivni dizajn za sve uređaje", sub: "Mobilni, tablet, desktop — sve u jednom" },
+    { text: "AI model obrađuje tvoje slike i sadržaj", sub: "Slike se optimiziraju za brzo učitavanje" },
+    { text: "Još malo! Savršenstvo ne trpi žurbu", sub: "Kvaliteta > brzina" },
+    { text: "Zabavni fact: prosječna web stranica ima 50+ sekcija CSS-a", sub: "AI ih generira sve u jednom potezu" },
+    { text: "Koristi se napredni AI model za bolji rezultat", sub: "Automatski fallback na jači model" },
+    { text: "AI piše mobile-first kod s animacijama", sub: "Smooth scroll, fade-in, hover efekti..." },
+    { text: "Fun fact: Webica AI procesira tisuće linija koda u minuti", sub: "Ali kreativnost ipak traje malo duže" },
+    { text: "Skoro gotovo! AI radi završne provjere", sub: "Validacija HTML-a, pristupačnosti i brzine" },
+    { text: "AI optimizira SEO meta tagove za Google", sub: "Naslov, opis i strukturirani podaci" },
+    { text: "Tvoja stranica će biti brža od 90% web stranica", sub: "Optimizirani CSS i minimalan JavaScript" },
+    { text: "Generiraju se lazy-load slike i WebP format", sub: "Za najbolji Core Web Vitals score" },
 ];
 
 /**

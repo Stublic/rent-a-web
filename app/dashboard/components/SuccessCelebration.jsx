@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { PartyPopper, ExternalLink, ArrowRight } from "lucide-react";
+import { PartyPopper, ExternalLink, ArrowRight, Zap } from "lucide-react";
 
 // ─── Canvas Confetti ─────────────────────────────────────────────────────────
 function ConfettiCanvas() {
@@ -94,7 +94,7 @@ export default function SuccessCelebration({ seconds, onDismiss, projectId }) {
                             className="relative inline-flex items-center justify-center w-20 h-20 mx-auto"
                         >
                             <div className="absolute inset-0 rounded-full" style={{ background: 'rgba(34,197,94,0.15)', filter: 'blur(12px)' }} />
-                            <span className="text-5xl relative z-10">🎉</span>
+                            <PartyPopper size={40} className="relative z-10" style={{ color: '#4ade80' }} />
                         </motion.div>
                     </div>
 
@@ -111,7 +111,7 @@ export default function SuccessCelebration({ seconds, onDismiss, projectId }) {
                         className="inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-full"
                         style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }}
                     >
-                        <span className="text-lg">⚡</span>
+                        <Zap size={18} style={{ color: '#4ade80' }} />
                         <span className="text-sm font-bold" style={{ color: '#4ade80' }}>
                             Generirano za {seconds} {seconds === 1 ? 'sekundu' : seconds < 5 ? 'sekunde' : 'sekundi'}
                         </span>

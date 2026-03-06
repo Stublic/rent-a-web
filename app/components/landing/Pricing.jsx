@@ -1,5 +1,5 @@
 'use client';
-import { Check, Star, Rocket, ShoppingBag, Sparkles, RefreshCw, CreditCard, MonitorIcon, Zap, TrendingUp, FileText, Clock, Lock } from 'lucide-react';
+import { Check, Star, Rocket, ShoppingBag, Sparkles, RefreshCw, CreditCard, MonitorIcon, Zap, TrendingUp, FileText, Clock, Lock, Search, HelpCircle, Download, Shield, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { FadeIn } from './Animations';
 
@@ -293,7 +293,7 @@ export default function Pricing({ onCheckout, checkoutLoading }) {
             style={{ background: 'var(--lp-surface)', border: '1px solid var(--lp-border)' }}
           >
             <h3 className="text-xl font-extrabold mb-6 text-center" style={{ color: 'var(--lp-heading)' }}>
-              🔎 Zašto mjesečna pretplata?
+              <Search size={18} className="inline-block align-text-bottom mr-1" style={{ color: 'var(--lp-heading)' }} /> Zašto mjesečna pretplata?
             </h3>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {whySubscription.map((item, i) => (
@@ -314,7 +314,7 @@ export default function Pricing({ onCheckout, checkoutLoading }) {
         {/* ── Add-ons ── */}
         <FadeIn delay={100}>
           <div className="max-w-4xl mx-auto mb-20">
-            <h3 className="text-xl font-extrabold mb-2 text-center" style={{ color: 'var(--lp-heading)' }}>🚀 Dodaci i nadogradnje</h3>
+            <h3 className="text-xl font-extrabold mb-2 text-center flex items-center justify-center gap-2" style={{ color: 'var(--lp-heading)' }}><Rocket size={18} /> Dodaci i nadogradnje</h3>
             <p className="text-sm text-center mb-8" style={{ color: 'var(--lp-text-muted)' }}>Nadogradi svoj paket kada želiš:</p>
             <div className="grid sm:grid-cols-2 gap-4">
               {[
@@ -355,7 +355,7 @@ export default function Pricing({ onCheckout, checkoutLoading }) {
         {/* ── Mini FAQ ── */}
         <FadeIn delay={120}>
           <div className="max-w-3xl mx-auto mb-20">
-            <h3 className="text-xl font-extrabold mb-6 text-center" style={{ color: 'var(--lp-heading)' }}>📍 Česta pitanja</h3>
+            <h3 className="text-xl font-extrabold mb-6 text-center flex items-center justify-center gap-2" style={{ color: 'var(--lp-heading)' }}><HelpCircle size={18} /> Česta pitanja</h3>
             <div className="space-y-3">
               {miniFaqs.map((faq, i) => (
                 <div
@@ -371,70 +371,269 @@ export default function Pricing({ onCheckout, checkoutLoading }) {
           </div>
         </FadeIn>
 
-        {/* ── Buyout table ── */}
-        <FadeIn delay={150}>
+        {/* ── Buyout section ── */}
+        <div className="max-w-5xl mx-auto mb-20 relative">
+
+          {/* Ambient glow */}
           <div
-            className="max-w-5xl mx-auto rounded-2xl overflow-hidden mb-20"
-            style={{ background: 'var(--lp-surface)', border: '1px solid var(--lp-border)' }}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] pointer-events-none opacity-[0.07]"
+            style={{ background: 'radial-gradient(ellipse, var(--lp-accent-green), transparent 70%)' }}
+          />
+
+          {/* Section header */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-12 relative z-10"
           >
-            <div className="p-8 text-center" style={{ borderBottom: '1px solid var(--lp-border)' }}>
-              <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--lp-heading)' }}>Želite otkupiti web? Pogledajte opcije.</h3>
-              <p style={{ color: 'var(--lp-text-muted)' }}>Nudimo i opciju jednokratnog otkupa stranice.</p>
+            <div
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest mb-4"
+              style={{
+                background: 'var(--lp-surface)',
+                border: '1px solid var(--lp-border)',
+                color: 'var(--lp-text-muted)',
+              }}
+            >
+              <CreditCard size={12} /> Otkup stranice
             </div>
-            <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x" style={{ borderColor: 'var(--lp-border)' }}>
-              <div className="p-8 space-y-4">
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'rgba(59,130,246,0.1)', color: 'var(--lp-accent-blue)' }}>
-                    <CreditCard size={20} />
-                  </div>
-                  <h4 className="text-base font-bold" style={{ color: 'var(--lp-heading)' }}>Otkup weba (Jednokratno)</h4>
-                </div>
-                {[
-                  { label: 'Landing Page', price: '390 €' },
-                  { label: 'Web Stranica', price: '990 €' },
-                  { label: 'Web Shop', price: '1.990 €' },
-                ].map((item, idx) => (
-                  <div key={idx} className="flex justify-between items-center p-3.5 rounded-xl" style={{ background: 'var(--lp-bg)', border: '1px solid var(--lp-border)' }}>
-                    <span style={{ color: 'var(--lp-text-secondary)' }}>{item.label}</span>
-                    <span className="text-lg font-extrabold" style={{ color: 'var(--lp-heading)' }}>{item.price}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="p-8 space-y-4">
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: 'rgba(245,158,11,0.1)', color: 'var(--lp-accent-orange)' }}>
-                    <RefreshCw size={20} />
-                  </div>
+            <h3
+              className="text-2xl lg:text-3xl font-extrabold tracking-tight mb-3"
+              style={{ color: 'var(--lp-heading)' }}
+            >
+              Vaša stranica,{' '}
+              <span style={{ color: 'var(--lp-text-muted)' }}>vaši uvjeti</span>
+            </h3>
+            <p className="text-base max-w-lg mx-auto" style={{ color: 'var(--lp-text-secondary)' }}>
+              Dva načina da vaša web stranica postane trajno vaša. Odaberite što vam više odgovara.
+            </p>
+          </motion.div>
+
+          {/* Two option cards */}
+          <div className="grid md:grid-cols-2 gap-6 relative z-10">
+
+            {/* ──── Option 1: Preuzmi stranicu ──── */}
+            <motion.div
+              initial={{ opacity: 0, y: 28 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+              whileHover={{ y: -4, transition: { duration: 0.25 } }}
+              className="relative rounded-2xl overflow-hidden group"
+              style={{
+                background: 'var(--lp-card)',
+                border: '1px solid var(--lp-card-border)',
+              }}
+            >
+              {/* Top accent bar */}
+              <div className="h-1 w-full" style={{ background: '#3b82f6' }} />
+
+              {/* Hover glow */}
+              <div
+                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+                style={{ background: 'radial-gradient(ellipse at top, rgba(59,130,246,0.06), transparent 70%)' }}
+              />
+
+              <div className="p-7 relative">
+                {/* Header */}
+                <div className="flex items-start gap-4 mb-6">
+                  <motion.div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                    style={{ background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.25)' }}
+                    whileHover={{ scale: 1.05, rotate: -3 }}
+                    transition={{ type: 'spring', stiffness: 300 }}
+                  >
+                    <Download size={22} style={{ color: '#3b82f6' }} />
+                  </motion.div>
                   <div>
-                    <h4 className="text-base font-bold" style={{ color: 'var(--lp-heading)' }}>Godišnje održavanje</h4>
-                    <div className="text-xs font-bold uppercase tracking-wide" style={{ color: 'var(--lp-accent-orange)' }}>Obavezno uz otkup</div>
-                  </div>
-                </div>
-                {[
-                  { label: 'Za web stranice', price: '250 €', period: '/ god', tags: ['.com domena', 'Hosting', 'Održavanje', 'Podrška'] },
-                  { label: 'Za web shop', price: '350 €', period: '/ god', tags: ['Hosting', 'Sigurnost', 'Updateovi', 'Održavanje'] },
-                ].map((item, idx) => (
-                  <div key={idx}>
-                    <div className="flex justify-between items-baseline mb-2">
-                      <span className="font-bold text-sm" style={{ color: 'var(--lp-heading)' }}>{item.label}</span>
-                      <span className="font-extrabold" style={{ color: 'var(--lp-heading)' }}>
-                        {item.price} <span className="text-xs font-normal" style={{ color: 'var(--lp-text-muted)' }}>{item.period}</span>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] font-extrabold uppercase tracking-widest" style={{ color: '#3b82f6' }}>
+                        Opcija 1
                       </span>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      {item.tags.map(tag => (
-                        <span key={tag} className="text-xs px-2.5 py-1 rounded-lg font-medium" style={{ background: 'var(--lp-bg)', color: 'var(--lp-text-muted)', border: '1px solid var(--lp-border)' }}>
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                    {idx === 0 && <div className="w-full h-px my-5" style={{ background: 'var(--lp-border)' }} />}
+                    <h4 className="text-lg font-bold" style={{ color: 'var(--lp-heading)' }}>Preuzmi stranicu</h4>
+                    <p className="text-sm mt-1 leading-relaxed" style={{ color: 'var(--lp-text-muted)' }}>
+                      Dobivate kompletni kod — hostajte gdje želite.
+                    </p>
                   </div>
-                ))}
+                </div>
+
+                {/* Divider */}
+                <div className="h-px w-full mb-5" style={{ background: 'var(--lp-border)' }} />
+
+                {/* Price tiers */}
+                <div className="space-y-2.5 mb-6">
+                  {[
+                    { label: 'Landing Page', price: '390 €' },
+                    { label: 'Web Stranica', price: '990 €' },
+                    { label: 'Web Shop', price: '1.990 €' },
+                  ].map((item, idx) => (
+                    <motion.div
+                      key={idx}
+                      initial={{ opacity: 0, x: -12 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.15 + idx * 0.08, duration: 0.4 }}
+                      className="flex justify-between items-center p-3.5 rounded-xl transition-colors duration-200"
+                      style={{ background: 'var(--lp-bg)', border: '1px solid var(--lp-border)' }}
+                    >
+                      <span className="text-sm font-medium" style={{ color: 'var(--lp-text-secondary)' }}>{item.label}</span>
+                      <span className="text-lg font-extrabold" style={{ color: 'var(--lp-heading)' }}>{item.price}</span>
+                    </motion.div>
+                  ))}
+                </div>
+
+                {/* Features */}
+                <div className="space-y-2.5">
+                  <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--lp-text-muted)' }}>Što uključuje:</p>
+                  {['Kompletni HTML/CSS/JS kod', 'Sve slike i fontove', '90 dana za preuzimanje', 'Bez daljnjih troškova'].map((f, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, x: -8 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.35 + i * 0.06, duration: 0.35 }}
+                      className="flex items-center gap-2.5 text-sm"
+                    >
+                      <div
+                        className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                        style={{ background: 'rgba(59,130,246,0.12)' }}
+                      >
+                        <Check size={11} style={{ color: '#3b82f6' }} strokeWidth={3} />
+                      </div>
+                      <span style={{ color: 'var(--lp-text-secondary)' }}>{f}</span>
+                    </motion.div>
+                  ))}
+                </div>
               </div>
-            </div>
+            </motion.div>
+
+            {/* ──── Option 2: Otkup + Održavanje ──── */}
+            <motion.div
+              initial={{ opacity: 0, y: 28 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.12 }}
+              whileHover={{ y: -4, transition: { duration: 0.25 } }}
+              className="relative rounded-2xl overflow-hidden group"
+              style={{
+                background: 'var(--lp-card)',
+                border: '1px solid',
+                borderColor: 'color-mix(in srgb, var(--lp-accent-green) 40%, var(--lp-card-border))',
+                boxShadow: '0 0 60px -15px color-mix(in srgb, var(--lp-accent-green) 30%, transparent)',
+              }}
+            >
+              {/* Top accent bar */}
+              <div className="h-1 w-full" style={{ background: 'var(--lp-accent-green)' }} />
+
+              {/* Recommended badge */}
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.3, duration: 0.4 }}
+                className="absolute top-3 right-4 z-10"
+              >
+                <span
+                  className="text-[10px] font-extrabold uppercase tracking-widest px-3 py-1.5 rounded-full text-white"
+                  style={{
+                    background: 'var(--lp-accent-green)',
+                    boxShadow: '0 4px 12px color-mix(in srgb, var(--lp-accent-green) 30%, transparent)',
+                  }}
+                >
+                  Preporučeno
+                </span>
+              </motion.div>
+
+              {/* Hover glow */}
+              <div
+                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+                style={{ background: 'radial-gradient(ellipse at top, color-mix(in srgb, var(--lp-accent-green) 6%, transparent), transparent 70%)' }}
+              />
+
+              <div className="p-7 relative">
+                {/* Header */}
+                <div className="flex items-start gap-4 mb-6">
+                  <motion.div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                    style={{
+                      background: 'color-mix(in srgb, var(--lp-accent-green) 12%, transparent)',
+                      border: '1px solid color-mix(in srgb, var(--lp-accent-green) 25%, transparent)',
+                    }}
+                    whileHover={{ scale: 1.05, rotate: 3 }}
+                    transition={{ type: 'spring', stiffness: 300 }}
+                  >
+                    <Shield size={22} style={{ color: 'var(--lp-accent-green)' }} />
+                  </motion.div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] font-extrabold uppercase tracking-widest" style={{ color: 'var(--lp-accent-green)' }}>
+                        Opcija 2
+                      </span>
+                    </div>
+                    <h4 className="text-lg font-bold" style={{ color: 'var(--lp-heading)' }}>Otkup + Održavanje</h4>
+                    <p className="text-sm mt-1 leading-relaxed" style={{ color: 'var(--lp-text-muted)' }}>
+                      Mi i dalje hostamo i održavamo — vi uživate.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Divider */}
+                <div className="h-px w-full mb-5" style={{ background: 'var(--lp-border)' }} />
+
+                {/* Price tiers — buyout + yearly */}
+                <div className="space-y-2.5 mb-6">
+                  {[
+                    { label: 'Landing Page', buyout: '390 €', yearly: '+ 250 € / god' },
+                    { label: 'Web Stranica', buyout: '990 €', yearly: '+ 250 € / god' },
+                    { label: 'Web Shop', buyout: '1.990 €', yearly: '+ 350 € / god' },
+                  ].map((item, idx) => (
+                    <motion.div
+                      key={idx}
+                      initial={{ opacity: 0, x: -12 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.2 + idx * 0.08, duration: 0.4 }}
+                      className="flex justify-between items-center p-3.5 rounded-xl transition-colors duration-200"
+                      style={{ background: 'var(--lp-bg)', border: '1px solid var(--lp-border)' }}
+                    >
+                      <span className="text-sm font-medium" style={{ color: 'var(--lp-text-secondary)' }}>{item.label}</span>
+                      <div className="text-right">
+                        <span className="text-lg font-extrabold" style={{ color: 'var(--lp-heading)' }}>{item.buyout}</span>
+                        <div className="text-[11px] font-semibold" style={{ color: 'var(--lp-accent-green)' }}>{item.yearly}</div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+
+                {/* Features */}
+                <div className="space-y-2.5">
+                  <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--lp-text-muted)' }}>Što uključuje:</p>
+                  {['Hosting i SSL uključeni', '.com/.hr domena uključena', 'Sigurnosne nadogradnje', 'Tehnička podrška', 'Automatski backup'].map((f, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, x: -8 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.4 + i * 0.06, duration: 0.35 }}
+                      className="flex items-center gap-2.5 text-sm"
+                    >
+                      <div
+                        className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                        style={{ background: 'color-mix(in srgb, var(--lp-accent-green) 12%, transparent)' }}
+                      >
+                        <Check size={11} style={{ color: 'var(--lp-accent-green)' }} strokeWidth={3} />
+                      </div>
+                      <span style={{ color: 'var(--lp-text-secondary)' }}>{f}</span>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+
           </div>
-        </FadeIn>
+        </div>
 
         {/* ── Bottom CTA ── */}
         <FadeIn delay={160}>

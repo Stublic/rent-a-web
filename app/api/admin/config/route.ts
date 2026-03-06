@@ -18,7 +18,7 @@ async function requireAdmin() {
     }
 }
 
-const CONFIG_KEYS = ['aiPrimaryModel', 'aiFallbackModel'];
+const CONFIG_KEYS = ['aiPrimaryModel', 'aiFallbackModel', 'aiImageModel', 'aiImageModelFallback'];
 
 export async function GET() {
     const session = await requireAdmin();
@@ -36,6 +36,8 @@ export async function GET() {
     return NextResponse.json({
         aiPrimaryModel: result.aiPrimaryModel || 'gemini-3.1-pro-preview',
         aiFallbackModel: result.aiFallbackModel || 'gemini-3-pro-preview',
+        aiImageModel: result.aiImageModel || 'gemini-3.1-flash-image-preview',
+        aiImageModelFallback: result.aiImageModelFallback || 'gemini-3-pro-image-preview',
     });
 }
 
@@ -54,6 +56,14 @@ export async function PUT(req: Request) {
         updates.push({ key: 'aiFallbackModel', value: aiFallbackModel.trim() });
     }
 
+    const { aiImageModel, aiImageModelFallback } = body;
+    if (aiImageModel && typeof aiImageModel === 'string') {
+        updates.push({ key: 'aiImageModel', value: aiImageModel.trim() });
+    }
+    if (aiImageModelFallback && typeof aiImageModelFallback === 'string') {
+        updates.push({ key: 'aiImageModelFallback', value: aiImageModelFallback.trim() });
+    }
+
     if (updates.length === 0) {
         return NextResponse.json({ error: 'No valid fields' }, { status: 400 });
     }
@@ -66,9 +76,11 @@ export async function PUT(req: Request) {
         });
     }
 
-    // Clear the in-memory cache so changes take effect immediately
+    // Clear the in-memory caches so changes take effect immediately
     const { clearModelCache } = await import('@/lib/gemini-with-fallback');
     clearModelCache();
+    const { clearImageModelCache } = await import('@/lib/ai-images');
+    clearImageModelCache();
 
     return NextResponse.json({ success: true });
 }

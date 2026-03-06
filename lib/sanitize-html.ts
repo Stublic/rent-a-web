@@ -7,6 +7,10 @@
  * - Fixes horizontal overflow issues
  * - Ensures valid HTML structure (single DOCTYPE, html, body)
  * - Ensures hero/first section has padding-top for fixed navbars
+ * - Removes stuck opacity:0 / visibility:hidden on sections
+ * - Strips leftover GSAP CDN scripts
+ * - Removes duplicate navigation links
+ * - Injects reveal animation CSS/JS safety net
  */
 
 export function sanitizeHtml(html: string): string {
@@ -90,19 +94,19 @@ export function sanitizeHtml(html: string): string {
         });
     }
 
-    // 5. Remove rogue "hidden" classes from elements that contain visible content
+    // 5. Remove rogue "hidden" classes from SECTION-LEVEL elements only
+    //    Do NOT remove hidden from div, nav, ul, aside — those are often mobile menus/dropdowns
     result = result.replace(
-        /(<(?:section|div|header|footer|main|nav|article|aside|ul|ol|form|figure)[^>]*\sclass="[^"]*)\bhidden\b([^"]*")/gi,
+        /(<(?:section|main|article|footer)[^>]*\sclass="[^"]*)\bhidden\b([^"]*")/gi,
         (fullMatch, before, after) => {
-            // Don't remove hidden if it's part of overflow-hidden, sr-hidden, etc.
             const precedingChars = before.slice(-1);
             if (precedingChars === '-') return fullMatch;
             return before + after;
         }
     );
-    // Single-class hidden: class="hidden"
+    // Single-class hidden on section-level: class="hidden"
     result = result.replace(
-        /(<(?:section|div|header|footer|main|nav|article|aside)[^>]*)\sclass="hidden"([^>]*>)/gi,
+        /(<(?:section|main|article|footer)[^>]*)\sclass="hidden"([^>]*>)/gi,
         '$1$2'
     );
 
@@ -153,7 +157,76 @@ export function sanitizeHtml(html: string): string {
     // 9. Detect fully duplicated page sections
     result = removeDuplicateSections(result);
 
-    // 10. Clean stray whitespace / newlines
+    // 9.5. Remove duplicate navigation links (e.g. two "Kontakt" links)
+    result = removeDuplicateNavLinks(result);
+
+    // 10. Remove opacity:0 from section-level inline styles (common GSAP initial state stuck)
+    result = result.replace(
+        /(<(?:section|header|footer|main|article|div)[^>]*\sstyle="[^"]*?)opacity\s*:\s*0\s*;?\s*([^"]*")/gi,
+        (match, before, after) => {
+            // Only fix if this looks like a major container (has class or id)
+            if (match.includes('class=') || match.includes('id=') || /<(?:section|header|footer|main|article)/i.test(match)) {
+                return before + after;
+            }
+            return match;
+        }
+    );
+
+    // 11. Remove visibility:hidden from section-level inline styles
+    result = result.replace(
+        /(<(?:section|header|footer|main|article)[^>]*\sstyle="[^"]*?)visibility\s*:\s*hidden\s*;?\s*([^"]*")/gi,
+        '$1$2'
+    );
+
+    // 12. Strip leftover GSAP CDN scripts (legacy pages or AI adding them despite prompt)
+    result = result.replace(
+        /<script[^>]*src="[^"]*cdnjs\.cloudflare\.com\/ajax\/libs\/gsap[^"]*"[^>]*><\/script>\s*/gi,
+        ''
+    );
+
+    // 13. Inject reveal animation CSS + IntersectionObserver if not already present
+    if (!result.includes('data-webica-reveal') && !result.includes('.reveal.visible')) {
+        const revealCSS = `
+    <style data-webica-reveal>
+      .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.6s ease, transform 0.6s ease; }
+      .reveal.visible { opacity: 1; transform: none; }
+      .reveal-delay-1 { transition-delay: 0.1s; } .reveal-delay-2 { transition-delay: 0.2s; }
+      .reveal-delay-3 { transition-delay: 0.3s; } .reveal-delay-4 { transition-delay: 0.4s; }
+    </style>`;
+        if (result.includes('</head>')) {
+            result = result.replace('</head>', revealCSS + '\n</head>');
+        }
+    }
+
+    // 14. Inject reveal observer script if not already present
+    if (!result.includes('data-webica-reveal-observer') && !result.includes('data-webica-visibility-fix')) {
+        const revealScript = `
+<script data-webica-reveal-observer>
+(function() {
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
+  }, { threshold: 0.15 });
+  document.querySelectorAll('.reveal').forEach(function(el) { observer.observe(el); });
+  // Safety net: after 4s force all .reveal elements visible (in case observer missed)
+  setTimeout(function() {
+    document.querySelectorAll('.reveal:not(.visible)').forEach(function(el) { el.classList.add('visible'); });
+  }, 4000);
+  // Also fix any non-reveal elements with stuck opacity
+  setTimeout(function() {
+    document.querySelectorAll('section, header, footer, main').forEach(function(el) {
+      var s = getComputedStyle(el);
+      if (s.opacity === '0' || parseFloat(s.opacity) < 0.1) { el.style.opacity = '1'; el.style.transition = 'opacity 0.4s ease'; }
+      if (s.visibility === 'hidden') el.style.visibility = 'visible';
+    });
+  }, 3000);
+})();
+</script>`;
+        if (result.includes('</body>')) {
+            result = result.replace('</body>', revealScript + '\n</body>');
+        }
+    }
+
+    // 13. Clean stray whitespace / newlines
     result = result.replace(/\n{4,}/g, '\n\n');
 
     return result.trim();
@@ -197,6 +270,101 @@ function removeDuplicateSections(html: string): string {
     }
 
     return result;
+}
+
+/**
+ * Removes duplicate <a> links within each individual <nav> element,
+ * within <div> elements that look like mobile menus,
+ * and catches any consecutive duplicate <a> tags globally.
+ */
+function removeDuplicateNavLinks(html: string): string {
+    let result = html;
+
+    // 1. Process individual <nav>...</nav> blocks
+    result = result.replace(
+        /(<nav(?:\s[^>]*)?>)([\s\S]*?)(<\/nav>)/gi,
+        (fullMatch, openTag: string, innerContent: string, closeTag: string) => {
+            return openTag + deduplicateLinksInBlock(innerContent) + closeTag;
+        }
+    );
+
+    // 2. Process <div> elements that look like mobile menus
+    //    (class or id containing "menu", "mobile", "nav-", "navigation", "sidebar")
+    result = result.replace(
+        /(<div[^>]*(?:class|id)="[^"]*(?:menu|mobile|nav-|navigation|sidebar)[^"]*"[^>]*>)([\s\S]*?)(<\/div>)/gi,
+        (fullMatch, openTag: string, innerContent: string, closeTag: string) => {
+            return openTag + deduplicateLinksInBlock(innerContent) + closeTag;
+        }
+    );
+
+    // 3. Global pass: find ALL <a> tags, detect duplicates by text, remove from HTML
+    //    Works on any container regardless of class/id
+    const linkRegex = /<a\s[^>]*>[\s\S]*?<\/a>/gi;
+    const allLinks: { match: string; text: string; index: number }[] = [];
+    let linkMatch;
+    while ((linkMatch = linkRegex.exec(result)) !== null) {
+        const text = linkMatch[0].replace(/<[^>]*>/g, '').trim().toLowerCase();
+        allLinks.push({ match: linkMatch[0], text, index: linkMatch.index });
+    }
+
+    // Find duplicates: same text, close proximity (within 500 chars = same nav block)
+    const toRemove: string[] = [];
+    const seenInProximity = new Map<string, number>(); // text -> last index
+    for (const link of allLinks) {
+        if (link.text.length < 2) continue;
+        // Skip CTA buttons
+        if (link.match.includes('btn') || link.match.includes('button') ||
+            link.match.includes('cta') || link.match.includes('rounded-full')) continue;
+
+        const lastIndex = seenInProximity.get(link.text);
+        if (lastIndex !== undefined && (link.index - lastIndex) < 500) {
+            // This is a duplicate within close proximity — mark for removal
+            toRemove.push(link.match);
+        } else {
+            seenInProximity.set(link.text, link.index);
+        }
+    }
+
+    // Remove marked duplicates (replace first occurrence of each)
+    for (const dup of toRemove) {
+        result = result.replace(dup, '');
+    }
+    // Clean up empty <li> tags
+    result = result.replace(/<li[^>]*>\s*<\/li>/gi, '');
+
+    return result;
+}
+
+/**
+ * Deduplicates <a> links within a block of HTML.
+ * Removes subsequent <a> tags with the same visible text, keeping the first.
+ */
+function deduplicateLinksInBlock(html: string): string {
+    const seenTexts = new Set<string>();
+
+    const cleaned = html.replace(/<a\s[^>]*>([\s\S]*?)<\/a>/gi, (linkMatch, linkContent: string) => {
+        // Extract visible text (strip HTML tags)
+        const visibleText = linkContent.replace(/<[^>]*>/g, '').trim().toLowerCase();
+
+        // Skip empty links, icon-only links, or very short content
+        if (!visibleText || visibleText.length < 2) return linkMatch;
+
+        // Skip CTA buttons (they often have the same text intentionally)
+        if (linkMatch.includes('btn') || linkMatch.includes('button') ||
+            linkMatch.includes('cta') || linkMatch.includes('rounded-full')) {
+            return linkMatch;
+        }
+
+        if (seenTexts.has(visibleText)) {
+            return ''; // Duplicate — remove
+        }
+
+        seenTexts.add(visibleText);
+        return linkMatch;
+    });
+
+    // Clean up empty <li> tags left behind
+    return cleaned.replace(/<li[^>]*>\s*<\/li>/gi, '');
 }
 
 /**

@@ -12,7 +12,7 @@ import VisualEditorHelp from "./VisualEditorHelp";
 function extractNavLinkClass(html) {
     const firstNav = html.match(/<nav[\s\S]*?<\/nav>/i);
     if (!firstNav) return '';
-    const pocetnaLink = firstNav[0].match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i);
+    const pocetnaLink = firstNav[0].match(/<a\s[^>]*href=["']\/["'][^>]*>[^<]*<\/a>/i);
     if (!pocetnaLink) return '';
     const cls = pocetnaLink[0].match(/class="([^"]*)"/);
     if (!cls) return '';
@@ -57,32 +57,37 @@ function injectNavLinks(html, project, hasBlog) {
     if (missingSlugs.length > 0) {
         const navLinksHtml = missingSlugs.map(s => `<a href="/${s}"${linkClass ? ` class="${linkClass}"` : ''}>${labels[s]}</a>`).join('\n                    ');
 
-        // Desktop nav
+        // Desktop nav — replace only the FIRST <!-- NAV_LINKS --> (desktop)
         if (html.includes('<!-- NAV_LINKS -->')) {
-            html = html.replace(/<!-- NAV_LINKS -->/g, navLinksHtml);
+            html = html.replace('<!-- NAV_LINKS -->', navLinksHtml);
         } else if (navMatch) {
             const poc = navMatch[0].match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i);
             if (poc) html = html.replace(navMatch[0], navMatch[0].replace(poc[0], poc[0] + '\n                    ' + navLinksHtml));
         }
 
-        // Mobile menu
-        const mm = html.match(/<div[^>]*id=["']mobile-menu["'][^>]*>[\s\S]*?<\/div>/i);
-        if (mm) {
-            const mobileHtml = mm[0];
-            const mobileMissing = missingSlugs.filter(slug =>
-                !mobileHtml.match(new RegExp(`<a\\\\s[^>]*href=["']\\\\/${slug}["'][^>]*>\\\\s*${labels[slug]}\\\\s*<\\\\/a>`, 'i'))
-            );
-            if (mobileMissing.length > 0) {
-                let mc = '';
-                const mp = mobileHtml.match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i);
+        // Mobile menu — replace remaining <!-- NAV_LINKS --> placeholders with mobile-styled links
+        if (html.includes('<!-- NAV_LINKS -->')) {
+            // Extract mobile link class from Početna in mobile menu
+            const mm = html.match(/<div[^>]*id=["']mobile-menu["'][^>]*>[\s\S]*?<\/div>/i);
+            let mc = '';
+            if (mm) {
+                const mp = mm[0].match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i);
                 if (mp) { const c = mp[0].match(/class="([^"]*)"/); if (c) mc = c[1].replace(/\bborder-b[-\w]*/g,'').replace(/\bborder-primary\b/g,'').replace(/\s{2,}/g,' ').trim(); }
-                const ml = mobileMissing.map(s => `<a href="/${s}"${mc ? ` class="${mc}"` : ''}>${labels[s]}</a>`).join('\n            ');
-                if (html.includes('<!-- NAV_LINKS_MOBILE -->')) {
-                    html = html.replace(/<!-- NAV_LINKS_MOBILE -->/g, ml);
-                } else if (mp) {
-                    html = html.replace(mm[0], mobileHtml.replace(mp[0], mp[0] + '\n            ' + ml));
-                }
             }
+            const mobileLinksHtml = missingSlugs.map(s => `<a href="/${s}"${mc ? ` class="${mc}"` : ''}>${labels[s]}</a>`).join('\n            ');
+            html = html.replace(/<!-- NAV_LINKS -->/g, mobileLinksHtml);
+        }
+
+        // Also handle <!-- NAV_LINKS_MOBILE --> if present
+        if (html.includes('<!-- NAV_LINKS_MOBILE -->')) {
+            const mm = html.match(/<div[^>]*id=["']mobile-menu["'][^>]*>[\s\S]*?<\/div>/i);
+            let mc = '';
+            if (mm) {
+                const mp = mm[0].match(/<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>/i);
+                if (mp) { const c = mp[0].match(/class="([^"]*)"/); if (c) mc = c[1].replace(/\bborder-b[-\w]*/g,'').replace(/\bborder-primary\b/g,'').replace(/\s{2,}/g,' ').trim(); }
+            }
+            const ml = missingSlugs.map(s => `<a href="/${s}"${mc ? ` class="${mc}"` : ''}>${labels[s]}</a>`).join('\n            ');
+            html = html.replace(/<!-- NAV_LINKS_MOBILE -->/g, ml);
         }
 
         // Footer
@@ -91,7 +96,7 @@ function injectNavLinks(html, project, hasBlog) {
         } else {
             const fm = html.match(/<footer[\s\S]*?<\/footer>/i);
             if (fm) {
-                const fh = fm[0].match(/<li>\s*<a\s[^>]*href=["']\/["'][^>]*>\s*Početna\s*<\/a>\s*<\/li>/i);
+                const fh = fm[0].match(/<li>\s*<a\s[^>]*href=["']\/["'][^>]*>[^<]*<\/a>\s*<\/li>/i);
                 if (fh && !fm[0].includes(`href="/${missingSlugs[0]}"`)) {
                     const fl = missingSlugs.map(s => `<li><a href="/${s}" class="hover:text-white transition-colors">${labels[s]}</a></li>`).join('\n                        ');
                     html = html.replace(fm[0], fm[0].replace(fh[0], fh[0] + '\n                        ' + fl));
@@ -109,24 +114,33 @@ function injectNavLinks(html, project, hasBlog) {
         const bl = `<a href="/blog"${lc ? ` class="${lc}"` : ''}>Blog</a>`;
         const ns = html.match(/<nav[\s\S]*?<\/nav>/i);
         if (ns) {
-            const dl = ns[0].match(/<div[^>]*class="[^"]*hidden\s+md:flex[^"]*"[^>]*>[\s\S]*?<\/div>/i);
-            const target = dl || ns;
-            const lp = /<a\s[^>]*href=["']\/[a-z-]*["'][^>]*>[^<]*<\/a>/gi;
-            const links = target[0].match(lp);
-            if (links && links.length > 0) {
-                const last = links[links.length - 1];
-                html = html.replace(target[0], target[0].replace(last, last + '\n                    ' + bl));
+            // Find the CTA button in the nav (has bg-brand, rounded-lg, inline-flex, etc.)
+            const ctaInNav = ns[0].match(/<a\s[^>]*class="[^"]*(?:bg-brand|bg-primary|rounded-full|rounded-lg[^"]*bg-)[^"]*"[^>]*>[\s\S]*?<\/a>/i);
+            if (ctaInNav) {
+                // Insert blog link BEFORE the CTA button
+                html = html.replace(ns[0], ns[0].replace(ctaInNav[0], bl + '\n                    ' + ctaInNav[0]));
+            } else {
+                // No CTA found, add after the last regular nav link
+                const dl = ns[0].match(/<div[^>]*class="[^"]*hidden\s+md:flex[^"]*"[^>]*>[\s\S]*?<\/div>/i);
+                const target = dl || ns;
+                const lp = /<a\s[^>]*href=["']\/[a-z-]*["'][^>]*>[^<]*<\/a>/gi;
+                const links = target[0].match(lp);
+                if (links && links.length > 0) {
+                    const last = links[links.length - 1];
+                    html = html.replace(target[0], target[0].replace(last, last + '\n                    ' + bl));
+                }
             }
         }
-        // Mobile blog
+        // Mobile — insert blog link after the last regular nav link
         const mm = html.match(/<div[^>]*id=["']mobile-menu["'][^>]*>[\s\S]*?<\/div>/i);
         if (mm && !mm[0].includes('href="/blog"')) {
             const mobileHtml = mm[0];
-            const cta = mobileHtml.match(/<a\s[^>]*class="[^"]*(?:bg-(?:primary|brand)[^"]*|inline-flex[^"]*rounded-full)"[^>]*>[\s\S]*?<\/a>/i);
-            const mobileNavLinks = mobileHtml.match(/<a\s[^>]*href=["']\/[a-z][a-z-]*["'][^>]*>[^<]*<\/a>/gi);
+            // Get all links, then filter out CTA-styled ones
+            const allMobileLinks = mobileHtml.match(/<a\s[^>]*href=["']\/[^"']*["'][^>]*>[\s\S]*?<\/a>/gi) || [];
+            const regularNavLinks = allMobileLinks.filter(l => !l.match(/class="[^"]*(?:bg-brand|bg-primary|rounded-lg|w-full)[^"]*"/i));
             let mc = '';
-            if (mobileNavLinks && mobileNavLinks.length > 0) {
-                const c = mobileNavLinks[0].match(/class="([^"]*)"/);
+            if (regularNavLinks.length > 0) {
+                const c = regularNavLinks[0].match(/class="([^"]*)"/);
                 if (c) mc = c[1];
             }
             if (!mc) {
@@ -134,14 +148,10 @@ function injectNavLinks(html, project, hasBlog) {
                 if (mp) { const c = mp[0].match(/class="([^"]*)"/); if (c) mc = c[1].replace(/\bborder-b[-\w]*/g,'').replace(/\bborder-primary\b/g,'').replace(/\s{2,}/g,' ').trim(); }
             }
             const mbl = `<a href="/blog"${mc ? ` class="${mc}"` : ''}>Blog</a>`;
-            if (cta) {
-                html = html.replace(mm[0], mobileHtml.replace(cta[0], mbl + '\n            ' + cta[0]));
-            } else {
-                const allLinks = mobileHtml.match(/<a\s[^>]*href=["']\/[a-z-]*["'][^>]*>[^<]*<\/a>/gi);
-                if (allLinks && allLinks.length > 0) {
-                    const last = allLinks[allLinks.length - 1];
-                    html = html.replace(mm[0], mobileHtml.replace(last, last + '\n            ' + mbl));
-                }
+            // Insert after the last regular nav link (before CTA)
+            if (regularNavLinks.length > 0) {
+                const last = regularNavLinks[regularNavLinks.length - 1];
+                html = html.replace(mm[0], mobileHtml.replace(last, last + '\n                ' + mbl));
             }
         }
     }

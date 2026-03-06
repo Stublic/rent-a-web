@@ -277,7 +277,7 @@ export default function FeedbackPage() {
                     </div>
                     <h2 className="text-xl font-bold mb-1.5" style={{ color: 'var(--db-heading)' }}>Vaše mišljenje nam je važno</h2>
                     <p className="text-sm" style={{ color: 'var(--db-text-muted)' }}>
-                        Odgovorite na nekoliko pitanja kako bismo mogli poboljšati vašu Webica AI platformu. Traje oko 2 minute.
+                        Odgovorite na nekoliko pitanja kako bismo mogli poboljšati vašu Webica AI platformu. Za prvi feedback dobivate <strong style={{ color: '#fbbf24' }}>+500 tokena</strong>!
                     </p>
                 </div>
 

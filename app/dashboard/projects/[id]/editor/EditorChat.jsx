@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Loader2, Undo2, Sparkles, Coins, ArrowRight, Search, Pencil, ShieldCheck, Paperclip, X, Upload, Image, FolderOpen } from "lucide-react";
+import { Loader2, Undo2, Sparkles, Coins, ArrowRight, Search, Pencil, ShieldCheck, Paperclip, X, Upload, Image, FolderOpen, Wrench, Square } from "lucide-react";
 import { editWebsiteAction, undoLastEditAction } from "@/app/actions/edit-website";
+import { fixPageAction } from "@/app/actions/fix-visibility";
 import { useRouter } from "next/navigation";
 import MediaPickerPopup from "./MediaPickerPopup";
 import InfoTooltip from "@/components/InfoTooltip";
@@ -32,15 +33,20 @@ const LOADING_STEPS = [
     { icon: Search, text: "Analiziram tvoj zahtjev...", minMs: 0 },
     { icon: Pencil, text: "Uređujem HTML i CSS...", minMs: 2000 },
     { icon: ShieldCheck, text: "Provjeravam kvalitetu...", minMs: 5000 },
+    { icon: Wrench, text: "Složeniji zahtjev — još malo strpljenja...", minMs: 30000 },
+    { icon: Wrench, text: "AI prolazi kroz cijelu stranicu...", minMs: 60000 },
+    { icon: Wrench, text: "Uskoro gotovo — hvala na strpljenju!", minMs: 120000 },
 ];
 
 function LoadingIndicator({ startTime }) {
     const [stepIdx, setStepIdx] = useState(0);
+    const [elapsed, setElapsed] = useState(0);
 
     useEffect(() => {
         const interval = setInterval(() => {
-            const elapsed = Date.now() - startTime;
-            const nextIdx = LOADING_STEPS.findLastIndex(s => elapsed >= s.minMs);
+            const ms = Date.now() - startTime;
+            setElapsed(ms);
+            const nextIdx = LOADING_STEPS.findLastIndex(s => ms >= s.minMs);
             if (nextIdx >= 0 && nextIdx !== stepIdx) setStepIdx(nextIdx);
         }, 500);
         return () => clearInterval(interval);
@@ -48,9 +54,11 @@ function LoadingIndicator({ startTime }) {
 
     const step = LOADING_STEPS[stepIdx];
     const Icon = step.icon;
+    const secs = Math.floor(elapsed / 1000);
+    const showWarning = elapsed >= 15000;
 
     return (
-        <div className="flex justify-start">
+        <div className="flex flex-col gap-2 items-start">
             <div className="rounded-2xl px-4 py-3 flex items-center gap-2.5 max-w-[85%]"
                 style={{ background: 'var(--db-surface)', border: '1px solid var(--db-border)' }}>
                 <div className="relative">
@@ -60,13 +68,19 @@ function LoadingIndicator({ startTime }) {
                     <Icon size={13} style={{ color: 'var(--db-text-muted)' }} />
                     <span className="text-xs font-medium" style={{ color: 'var(--db-text-secondary)' }}>{step.text}</span>
                 </div>
-                <div className="flex gap-1 ml-1">
-                    {LOADING_STEPS.map((_, i) => (
-                        <div key={i} className="w-1.5 h-1.5 rounded-full transition-all duration-300"
-                            style={{ background: i <= stepIdx ? 'var(--db-accent-green)' : 'var(--db-border)' }} />
-                    ))}
-                </div>
+                <span className="text-[10px] font-mono ml-1 tabular-nums" style={{ color: 'var(--db-text-muted)' }}>
+                    {secs}s
+                </span>
             </div>
+
+            {showWarning && (
+                <div className="rounded-xl px-3 py-2 flex items-start gap-2 max-w-[85%]"
+                    style={{ background: 'rgba(234,179,8,0.06)', border: '1px solid rgba(234,179,8,0.15)' }}>
+                    <span className="text-[10px] leading-relaxed" style={{ color: '#ca8a04' }}>
+                        ⚠ Neki zahtjevi mogu trajati <strong>3–5 min</strong> ovisno o složenosti. <strong>Ne osvježavaj prozor!</strong>
+                    </span>
+                </div>
+            )}
         </div>
     );
 }
@@ -102,15 +116,14 @@ function AssistantMessage({ msg, onSuggestionClick }) {
                     )}
                 </div>
                 {msg.suggestion && (
-                    <button onClick={() => onSuggestionClick(msg.suggestion)}
-                        className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-[11px] font-medium transition-all hover:scale-[1.02] hover:shadow-sm w-fit"
+                    <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-[11px] font-medium w-fit"
                         style={{
                             background: 'color-mix(in srgb, var(--db-accent-green) 8%, var(--db-surface))',
                             border: '1px solid color-mix(in srgb, var(--db-accent-green) 20%, var(--db-border))',
                             color: 'var(--db-accent-green)',
                         }}>
-                        <ArrowRight size={12} /> {msg.suggestion}
-                    </button>
+                        <Sparkles size={12} /> {msg.suggestion}
+                    </div>
                 )}
             </div>
         </div>
@@ -122,17 +135,25 @@ function AssistantMessage({ msg, onSuggestionClick }) {
 // ─── Main EditorChat ──────────────────────────────────────────────────────────
 export default function EditorChat({ project, userTokens = 0, activePage = 'home', pageLabel = 'Početna' }) {
     const projectId = project.id;
-    // Persist messages in sessionStorage so they survive tab navigation
-    const [messages, setMessages] = useState(() => loadMessages(projectId));
+    // Start with empty messages (SSR-safe), then hydrate from sessionStorage
+    const [messages, setMessages] = useState([]);
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
     const [loadingStart, setLoadingStart] = useState(0);
     const [undoing, setUndoing] = useState(false);
+    const [fixingVisibility, setFixingVisibility] = useState(false);
     const [tokens, setTokens] = useState(userTokens);
     const [showMediaPicker, setShowMediaPicker] = useState(false);
+    const abortRef = useRef(null); // AbortController for stopping AI requests
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
     const router = useRouter();
+
+    // Hydrate messages from sessionStorage on mount (client-only)
+    useEffect(() => {
+        const saved = loadMessages(projectId);
+        if (saved.length > 0) setMessages(saved);
+    }, [projectId]);
 
     // Sync tokens when the prop changes (e.g. after router.refresh())
     useEffect(() => {
@@ -141,7 +162,7 @@ export default function EditorChat({ project, userTokens = 0, activePage = 'home
 
     // Save messages to sessionStorage whenever they change
     useEffect(() => {
-        saveMessages(projectId, messages);
+        if (messages.length > 0) saveMessages(projectId, messages);
     }, [messages, projectId]);
 
     const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -168,10 +189,18 @@ export default function EditorChat({ project, userTokens = 0, activePage = 'home
         setLoading(true);
         setLoadingStart(Date.now());
 
+        // Create AbortController for this request
+        const controller = new AbortController();
+        abortRef.current = controller;
+
         try {
             // Send conversation history for multi-turn context
             const conversationHistory = buildConversationHistory();
             const result = await editWebsiteAction(project.id, editText, conversationHistory, activePage);
+
+            // If aborted while waiting, ignore the result
+            if (controller.signal.aborted) return;
+
             if (result.success) {
                 if (result.tokensRemaining !== undefined) setTokens(result.tokensRemaining);
                 setMessages((prev) => [...prev, {
@@ -201,6 +230,7 @@ export default function EditorChat({ project, userTokens = 0, activePage = 'home
                 }]);
             }
         } catch (error) {
+            if (controller.signal.aborted) return;
             console.error(error);
             setMessages((prev) => [...prev, {
                 role: "assistant",
@@ -209,18 +239,104 @@ export default function EditorChat({ project, userTokens = 0, activePage = 'home
                 projectId,
             }]);
         } finally {
+            abortRef.current = null;
             setLoading(false);
+        }
+    };
+
+    const handleStop = () => {
+        if (abortRef.current) {
+            abortRef.current.abort();
+            abortRef.current = null;
+        }
+        setLoading(false);
+        // Remove the last user message (the one that triggered this) and add cancelled note
+        setMessages((prev) => {
+            const updated = [...prev];
+            // Keep the user message but add a cancelled assistant response
+            return [...updated, {
+                role: "assistant",
+                content: "⏹ Zahtjev prekinut.",
+                isError: false,
+                projectId,
+            }];
+        });
+    };
+
+    // ─── Auto-detect "page is broken" requests ─────────────────────────────────
+    const FIX_KEYWORDS = [
+        'prazna', 'nevidljiv', 'skriveni', 'ne vidi', 'ne prikazuje',
+        'nestalo', 'blank', 'hidden', 'invisible', 'opacity',
+        'ne vidim', 'nema ništa', 'prazan', 'nema sadržaj',
+        'slomljen', 'broken', 'crni ekran', 'bijeli ekran',
+        'samo hero', 'samo footer', 'samo navbar', 'prazno',
+        'horizontalni scroll', 'overflow', 'duplirano', 'dupla sekcija',
+        'popravi', 'fix', 'stražnja je slomljena', 'ne radi',
+    ];
+
+    const isFixRequest = (text) => {
+        const lower = text.toLowerCase();
+        return FIX_KEYWORDS.some(kw => lower.includes(kw));
+    };
+
+    // ─── "Popravi" (deterministic full fix, no AI, no tokens) ────────────────
+    const handleFixPage = async () => {
+        setFixingVisibility(true);
+        setMessages(prev => [...prev, {
+            role: 'user',
+            content: '🔧 Popravi stranicu (automatski popravak)',
+        }]);
+
+        try {
+            const result = await fixPageAction(project.id, activePage);
+            if (result.success) {
+                setMessages(prev => [...prev, {
+                    role: 'assistant',
+                    content: result.noChanges
+                        ? '✅ Stranica izgleda ispravno — nisam pronašao probleme.'
+                        : '🔧 Popravak primijenjen! Ispravljeni su problemi s layoutom, vidljivošću i strukturom.',
+                    success: true,
+                    suggestion: result.noChanges ? '' : 'Pregledaj stranicu i vidi je li sve OK',
+                    projectId,
+                }]);
+                if (!result.noChanges) {
+                    window.dispatchEvent(new Event('project-html-saved'));
+                    router.refresh();
+                }
+            } else {
+                setMessages(prev => [...prev, {
+                    role: 'assistant',
+                    content: result.error || 'Greška pri popravku.',
+                    isError: true,
+                    projectId,
+                }]);
+            }
+        } catch (err) {
+            console.error(err);
+            setMessages(prev => [...prev, {
+                role: 'assistant',
+                content: 'Došlo je do greške pri popravku stranice.',
+                isError: true,
+                projectId,
+            }]);
+        } finally {
+            setFixingVisibility(false);
         }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        // Auto-detect layout/visibility issues → use deterministic fix instead of AI
+        if (isFixRequest(input)) {
+            setInput('');
+            await handleFixPage();
+            return;
+        }
         await submitEdit(input);
     };
 
     const handleSuggestionClick = (suggestion) => {
-        setInput(suggestion);
-        inputRef.current?.focus();
+        submitEdit(suggestion);
     };
 
     // Handle media selected from popup (library or uploaded)
@@ -285,11 +401,19 @@ export default function EditorChat({ project, userTokens = 0, activePage = 'home
                             {activePage === 'home' ? 'Razgovaraj s AI-em o promjenama' : `Uređuješ: ${pageLabel}`}
                         </p>
                     </div>
-                    <button onClick={handleUndo} disabled={!hasEdits || undoing}
-                        className="px-2.5 py-1.5 rounded-lg text-xs font-medium disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1.5 transition-all hover:bg-white/5"
-                        style={{ color: 'var(--db-text-muted)', border: '1px solid var(--db-border)' }}>
-                        <Undo2 size={13} /><span className="hidden sm:inline">Undo</span>
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                        <button onClick={handleFixPage} disabled={fixingVisibility || loading}
+                            className="px-2.5 py-1.5 rounded-lg text-xs font-medium disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1.5 transition-all hover:bg-white/5"
+                            style={{ color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}
+                            title="Popravi layout, vidljivost i strukturu (bez tokena)">
+                            <Wrench size={13} /><span className="hidden lg:inline">Popravi</span>
+                        </button>
+                        <button onClick={handleUndo} disabled={!hasEdits || undoing || loading}
+                            className="px-2.5 py-1.5 rounded-lg text-xs font-medium disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1.5 transition-all hover:bg-white/5"
+                            style={{ color: 'var(--db-text-muted)', border: '1px solid var(--db-border)' }}>
+                            <Undo2 size={13} /><span className="hidden sm:inline">Undo</span>
+                        </button>
+                    </div>
                 </div>
                 
                 {/* Token Display */}
@@ -406,11 +530,19 @@ export default function EditorChat({ project, userTokens = 0, activePage = 'home
                         className="flex-1 rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-white/20"
                         style={{ background: 'var(--db-surface)', border: '1px solid var(--db-border)', color: 'var(--db-heading)' }}
                         disabled={loading || tokens < 50} />
-                    <button type="submit" disabled={loading || !input.trim() || tokens < 50}
-                        className="px-4 rounded-xl font-bold text-xs disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:scale-105"
-                        style={{ background: 'var(--db-heading)', color: 'var(--db-bg)' }}>
-                        Pošalji
-                    </button>
+                    {loading ? (
+                        <button type="button" onClick={handleStop}
+                            className="px-4 rounded-xl font-bold text-xs transition-all hover:scale-105 flex items-center gap-1.5"
+                            style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171' }}>
+                            <Square size={12} fill="currentColor" /> Stop
+                        </button>
+                    ) : (
+                        <button type="submit" disabled={!input.trim() || tokens < 50}
+                            className="px-4 rounded-xl font-bold text-xs disabled:opacity-30 disabled:cursor-not-allowed transition-all hover:scale-105"
+                            style={{ background: 'var(--db-heading)', color: 'var(--db-bg)' }}>
+                            Pošalji
+                        </button>
+                    )}
                 </div>
             </form>
         </div>

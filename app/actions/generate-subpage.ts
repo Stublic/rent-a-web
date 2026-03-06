@@ -181,14 +181,20 @@ ${tokensSection}
 - Same button styles
 - Same navigation structure (copy verbatim from homepage)
 - Same footer (copy verbatim from homepage)
-- Same GSAP animations pattern
+- Same CSS .reveal animation pattern (IntersectionObserver + CSS transitions)
 
 ## TECHNICAL REQUIREMENTS
-1. Complete, self-contained HTML file starting with <!DOCTYPE html>
+1. Complete, self-contained HTML file starting with <!DOCTYPE html>. The <html> tag MUST include lang="hr".
 2. Use Tailwind CSS via CDN: <script src="https://cdn.tailwindcss.com"></script>
-3. Use GSAP + ScrollTrigger via CDN
+3. Use CSS-only reveal animations (class="reveal", IntersectionObserver script — NO GSAP)
 4. All text in CROATIAN language
 5. SEO meta title and description for this specific page
+
+## SEMANTIC HTML & ACCESSIBILITY (MANDATORY)
+- Use semantic HTML5: <header>, <main> (wrapping all content between header and footer), <footer>, <section> for each content block inside <main>.
+- There must be exactly ONE <h1> per page with the page title/keyword. Use <h2> for section titles and <h3> for sub-items. Never skip heading levels.
+- ALL <img> tags MUST have descriptive, keyword-rich alt attributes.
+- All icon-only buttons/links MUST have aria-label attributes.
 
 ## NAVIGATION (copy from homepage VERBATIM)
 - Copy the EXACT same nav/header structure from the homepage HTML above
@@ -484,14 +490,20 @@ ${tokensSection}
 - Same button styles
 - Same navigation structure (copy verbatim from homepage)
 - Same footer (copy verbatim from homepage)
-- Same GSAP animations pattern
+- Same CSS .reveal animation pattern (IntersectionObserver + CSS transitions)
 
 ## TECHNICAL REQUIREMENTS
-1. Complete, self-contained HTML file starting with <!DOCTYPE html>
+1. Complete, self-contained HTML file starting with <!DOCTYPE html>. The <html> tag MUST include lang="hr".
 2. Use Tailwind CSS via CDN: <script src="https://cdn.tailwindcss.com"></script>
-3. Use GSAP + ScrollTrigger via CDN
+3. Use CSS-only reveal animations (class="reveal", IntersectionObserver script — NO GSAP)
 4. All text in CROATIAN language
 5. SEO meta title and description for this specific page
+
+## SEMANTIC HTML & ACCESSIBILITY (MANDATORY)
+- Use semantic HTML5: <header>, <main> (wrapping all content between header and footer), <footer>, <section> for each content block inside <main>.
+- There must be exactly ONE <h1> per page with the page title/keyword. Use <h2> for section titles and <h3> for sub-items. Never skip heading levels.
+- ALL <img> tags MUST have descriptive, keyword-rich alt attributes.
+- All icon-only buttons/links MUST have aria-label attributes.
 
 ## NAVIGATION (copy from homepage VERBATIM)
 - Copy the EXACT same nav/header structure from the homepage HTML above

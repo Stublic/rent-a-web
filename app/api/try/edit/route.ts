@@ -69,7 +69,7 @@ Korisnik ti daje zahtjev za izmjenu (na hrvatskom jeziku), a ti ga primijeni na 
 **Odgovor (SAMO čisti JSON, bez \`\`\`json wrappinga):**
 {
   "html": "...kompletni modificirani HTML dokument koji počinje s <!DOCTYPE html>...",
-  "summary": "Kratki opis što si napravio (na hrvatskom, 1-2 rečenice, počni s ✅)",
+  "summary": "Kratki opis što si napravio (na hrvatskom, 1-2 rečenice)",
   "suggestion": "Relevantan prijedlog za sljedeću izmjenu u obliku pitanja (na hrvatskom, npr. 'Želiš li da sada uredimo boje u footer sekciji?')"
 }
 

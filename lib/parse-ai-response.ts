@@ -25,7 +25,7 @@ export function parseAiResponse(rawText: string): AiEditResponse | null {
         if (parsed.html && typeof parsed.html === 'string') {
             return {
                 html: parsed.html,
-                summary: parsed.summary || '✅ Izmjena primijenjena.',
+                summary: parsed.summary || 'Izmjena primijenjena.',
                 suggestion: parsed.suggestion || '',
             };
         }
@@ -82,7 +82,7 @@ export function parseAiResponse(rawText: string): AiEditResponse | null {
                     htmlValue = unescapeJsonString(htmlValue);
 
                     // Extract summary and suggestion from remaining text
-                    let summary = '✅ Izmjena primijenjena.';
+                    let summary = 'Izmjena primijenjena.';
                     let suggestion = '';
 
                     if (remainingText) {
@@ -106,7 +106,7 @@ export function parseAiResponse(rawText: string): AiEditResponse | null {
     // --- Attempt 3: Extract raw HTML from response ---
     const htmlMatch = text.match(/<!DOCTYPE[\s\S]*<\/html>/i);
     if (htmlMatch) {
-        let summary = '✅ Izmjena primijenjena.';
+        let summary = 'Izmjena primijenjena.';
         const summaryComment = text.match(/<!-- EDIT_SUMMARY: (.+?) -->/);
         if (summaryComment) summary = summaryComment[1];
         return { html: htmlMatch[0], summary, suggestion: '' };
@@ -114,7 +114,7 @@ export function parseAiResponse(rawText: string): AiEditResponse | null {
 
     // --- Attempt 4: If the text itself looks like HTML ---
     if (text.includes('<!DOCTYPE') || text.includes('<html')) {
-        return { html: text, summary: '✅ Izmjena primijenjena.', suggestion: '' };
+        return { html: text, summary: 'Izmjena primijenjena.', suggestion: '' };
     }
 
     return null;

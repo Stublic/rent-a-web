@@ -444,7 +444,7 @@ export async function POST(req) {
                         const emailHtml = `
                             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
                                 <div style="background: linear-gradient(135deg, #7c3aed, #6d28d9); padding: 40px 30px; text-align: center; border-radius: 12px 12px 0 0;">
-                                    <h1 style="color: white; margin: 0; font-size: 24px;">🎉 Dobrodošli!</h1>
+                                    <h1 style="color: white; margin: 0; font-size: 24px;">Dobrodošli!</h1>
                                     <p style="color: rgba(255,255,255,0.85); margin: 8px 0 0; font-size: 14px;">Vaša web stranica je u pripremi</p>
                                 </div>
                                 
@@ -454,12 +454,12 @@ export async function POST(req) {
                                     
                                     <div style="background: #faf5ff; border: 1px solid #e9d5ff; padding: 20px; border-radius: 8px; margin: 24px 0;">
                                         <p style="margin: 0; color: #6b21a8; font-size: 15px;">
-                                            🎁 Kako bismo vam olakšali početak, na račun smo vam dodali <strong>500 AI tokena</strong> kao dobrodošlicu.
+                                            Kako bismo vam olakšali početak, na račun smo vam dodali <strong>500 AI tokena</strong> kao dobrodošlicu.
                                         </p>
                                     </div>
 
                                     <div style="background: white; border: 1px solid #e5e5e5; border-left: 4px solid #7c3aed; padding: 20px; border-radius: 8px; margin: 24px 0;">
-                                        <h2 style="margin-top: 0; color: #7c3aed; font-size: 16px;">💡 Brzi savjet za uređivanje</h2>
+                                        <h2 style="margin-top: 0; color: #7c3aed; font-size: 16px;">Brzi savjet za uređivanje</h2>
                                         <p style="font-size: 14px; margin-bottom: 12px;">Rent a webica nudi dva sjajna načina za prilagodbu stranice:</p>
                                         <ul style="margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6; color: #4b5563;">
                                             <li><strong>Besplatni Vizualni Editor (Tab 'Sadržaj'):</strong> Savršen za trenutne izmjene tekstova, slika i kontakt podataka (ne troši tokene).</li>
@@ -492,7 +492,7 @@ export async function POST(req) {
                         await transporter.sendMail({
                             from: process.env.SMTP_FROM || 'Rent a webica <noreply@rentaweb.hr>',
                             to: customerEmail,
-                            subject: `🎉 Dobrodošli! Vaša pretplata je aktivna${invoiceNumber ? ` - Račun ${invoiceNumber}` : ''}`,
+                            subject: `Dobrodošli! Vaša pretplata je aktivna${invoiceNumber ? ` - Račun ${invoiceNumber}` : ''}`,
                             html: emailHtml,
                             attachments: invoiceUrl ? [
                                 {
@@ -543,11 +543,56 @@ export async function POST(req) {
         }
     }
 
-    // Handle subscription status updates (e.g. canceled but not yet deleted)
+    // Handle subscription status updates (e.g. canceled but not yet deleted, or plan upgrades)
     if (event.type === 'customer.subscription.updated') {
         const subscription = event.data.object;
         const subscriptionId = subscription.id;
 
+        // ── Handle plan upgrade (Starter → Advanced) ──
+        const newPriceId = subscription.items?.data?.[0]?.price?.id;
+        const isUpgradeToAdvanced = newPriceId === process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_ADVANCED
+            || newPriceId === 'price_1SxaHAKhkXukXczc0cPpLMH2'; // hardcoded fallback
+
+        if (isUpgradeToAdvanced && subscription.status === 'active') {
+            console.log(`🚀 Plan upgrade detected for subscription: ${subscriptionId}`);
+
+            try {
+                const project = await prisma.project.findFirst({
+                    where: { stripeSubscriptionId: subscriptionId }
+                });
+
+                if (project) {
+                    const isCurrentlyStarter = project.planName?.toLowerCase().includes('starter');
+
+                    if (isCurrentlyStarter) {
+                        const advancedPlanName = 'Advanced - Landing stranica + Google oglasi';
+
+                        // Update project plan
+                        await prisma.project.update({
+                            where: { id: project.id },
+                            data: { planName: advancedPlanName }
+                        });
+
+                        // Update user plan + grant 500 bonus tokens (idempotent safety net)
+                        await prisma.user.update({
+                            where: { id: project.userId },
+                            data: {
+                                planName: advancedPlanName,
+                                editorTokens: { increment: 500 }
+                            }
+                        });
+
+                        console.log(`✅ Webhook: Project ${project.id} upgraded to Advanced + 500 bonus tokens`);
+                    } else {
+                        console.log(`ℹ️ Project ${project.id} already on plan: ${project.planName} — skipping upgrade`);
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Error handling plan upgrade:', error.message);
+            }
+        }
+
+        // ── Handle cancellation ──
         if (subscription.status === 'canceled' || subscription.cancel_at_period_end) {
             console.log(`⚠️ Subscription canceled / canceling: ${subscriptionId} `);
 

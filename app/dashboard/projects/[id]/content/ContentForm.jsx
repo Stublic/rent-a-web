@@ -12,7 +12,9 @@ import { updateContentAction } from "@/app/actions/update-content";
 import {
     Loader2, Upload, Trash2, Plus, Sparkles, Image,
     FolderOpen, Phone, Mail, MapPin, X, Check, Clock,
-    Star, HelpCircle, Images, DollarSign, Globe, Share2
+    Star, HelpCircle, Images, DollarSign, Globe, Share2,
+    Search, Pencil, Wrench, Save, Rocket, AlertTriangle,
+    FileText, Palette, Type, Lock, Hourglass
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ExtendedWaitBanner } from "@/app/dashboard/components/ExtendedWaitMessages";
@@ -126,10 +128,10 @@ function ServicesSection({ control, register, watch, setValue, setMediaPickerFie
 
 // ─── Updating Overlay ────────────────────────────────────────────────────────
 const UPDATE_PHASES = [
-    { from: 0,  label: "Analiziranje promjena u sadržaju...",          icon: "🔍" },
-    { from: 10, label: "Webica AI piše novi HTML...",                  icon: "✍️" },
-    { from: 30, label: "Optimizacija i provjera koda...",              icon: "🔧" },
-    { from: 50, label: "Spremanje na server...",                       icon: "💾" },
+    { from: 0,  label: "Analiziranje promjena u sadržaju...",          Icon: Search },
+    { from: 10, label: "Webica AI piše novi HTML...",                  Icon: Pencil },
+    { from: 30, label: "Optimizacija i provjera koda...",              Icon: Wrench },
+    { from: 50, label: "Spremanje na server...",                       Icon: Save },
 ];
 
 function UpdatingOverlay({ seconds }) {
@@ -159,11 +161,11 @@ function UpdatingOverlay({ seconds }) {
                 <div className="mx-6 mb-4 rounded-2xl px-5 py-3 flex items-center justify-between" style={{ background: 'var(--db-surface)', border: '1px solid var(--db-border)' }}>
                     <div className="flex items-center gap-2.5">
                         <motion.span
-                            key={phase.icon}
+                            key={phase.Icon.displayName}
                             initial={{ scale: 0.7, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
-                            className="text-xl"
-                        >{phase.icon}</motion.span>
+                            className="flex items-center"
+                        ><phase.Icon size={18} style={{ color: '#60a5fa' }} /></motion.span>
                         <motion.p
                             key={phase.label}
                             initial={{ opacity: 0, x: 8 }}
@@ -205,8 +207,8 @@ function UpdatingOverlay({ seconds }) {
                                     background: isActive ? 'rgba(59,130,246,0.08)' : isDone ? 'rgba(34,197,94,0.05)' : 'transparent',
                                     border: isActive ? '1px solid rgba(59,130,246,0.2)' : '1px solid transparent'
                                 }}>
-                                <span className="text-sm w-5 text-center flex-shrink-0">
-                                    {isDone ? '✅' : isActive ? '⏳' : '○'}
+                                <span className="text-sm w-5 text-center flex-shrink-0 flex items-center justify-center">
+                                    {isDone ? <Check size={14} className="text-emerald-400" /> : isActive ? <Hourglass size={14} className="text-blue-400" /> : '○'}
                                 </span>
                                 <span className="text-xs" style={{ color: isActive ? 'var(--db-heading)' : isDone ? 'var(--db-text-secondary)' : 'var(--db-text-muted)' }}>
                                     {p.label}
@@ -221,7 +223,7 @@ function UpdatingOverlay({ seconds }) {
                 {/* Don't refresh warning */}
                 <div className="mx-6 mb-6 flex items-start gap-2.5 rounded-xl px-4 py-3"
                     style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)' }}>
-                    <span className="text-base flex-shrink-0 mt-0.5">⚠️</span>
+                    <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" style={{ color: '#fbbf24' }} />
                     <p className="text-xs font-medium" style={{ color: '#fbbf24' }}>
                         <strong>Ne osvježavaj stranicu!</strong> Ažuriranje je u tijeku — prekidanje može oštetiti sadržaj.
                     </p>
@@ -233,11 +235,11 @@ function UpdatingOverlay({ seconds }) {
 
 // ─── Generating Overlay ──────────────────────────────────────────────────────
 const GENERATION_PHASES = [
-    { from: 0,  label: "Priprema podataka...",                         icon: "📋" },
-    { from: 8,  label: "Webica AI piše HTML kod stranice...",          icon: "✍️" },
-    { from: 30, label: "Generiranje slika i optimizacija...",          icon: "🖼️" },
-    { from: 55, label: "Završne provjere i spremanje...",              icon: "💾" },
-    { from: 80, label: "Koristi se jači AI model...",                  icon: "🚀" },
+    { from: 0,  label: "Priprema podataka...",                         Icon: FileText },
+    { from: 8,  label: "Webica AI piše HTML kod stranice...",          Icon: Pencil },
+    { from: 30, label: "Generiranje slika i optimizacija...",          Icon: Image },
+    { from: 55, label: "Završne provjere i spremanje...",              Icon: Save },
+    { from: 80, label: "Koristi se jači AI model...",                  Icon: Rocket },
 ];
 
 function GeneratingOverlay({ seconds, isAdvanced }) {
@@ -261,14 +263,14 @@ function GeneratingOverlay({ seconds, isAdvanced }) {
                         <div className="absolute inset-0 rounded-full animate-pulse" style={{ background: 'rgba(34,197,94,0.15)' }} />
                         <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#4ade80' }} />
                     </div>
-                    <h3 className="text-lg font-bold" style={{ color: 'var(--db-heading)' }}>✨ Webica AI stvara web stranicu</h3>
+                    <h3 className="text-lg font-bold flex items-center justify-center gap-2" style={{ color: 'var(--db-heading)' }}><Sparkles size={18} className="text-emerald-400" /> Webica AI stvara web stranicu</h3>
                     <p className="text-xs mt-1" style={{ color: 'var(--db-text-muted)' }}>Generiranje traje u prosjeku 3–5 minuta.</p>
                 </div>
 
                 {/* Timer */}
                 <div className="mx-6 mb-4 rounded-2xl px-5 py-3 flex items-center justify-between" style={{ background: 'var(--db-surface)', border: '1px solid var(--db-border)' }}>
                     <div className="flex items-center gap-2.5">
-                        <motion.span key={phase.icon} initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-xl">{phase.icon}</motion.span>
+                        <motion.span key={phase.Icon.displayName || phase.from} initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex items-center"><phase.Icon size={18} style={{ color: '#4ade80' }} /></motion.span>
                         <motion.p key={phase.label} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} className="text-xs font-medium" style={{ color: 'var(--db-text-secondary)' }}>{phase.label}</motion.p>
                     </div>
                     <div className="text-right flex-shrink-0 ml-3">
@@ -295,7 +297,7 @@ function GeneratingOverlay({ seconds, isAdvanced }) {
                         return (
                             <div key={i} className="flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all"
                                 style={{ background: isActive ? 'rgba(34,197,94,0.08)' : isDone ? 'rgba(34,197,94,0.05)' : 'transparent', border: isActive ? '1px solid rgba(34,197,94,0.2)' : '1px solid transparent' }}>
-                                <span className="text-sm w-5 text-center flex-shrink-0">{isDone ? '✅' : isActive ? '⏳' : '○'}</span>
+                                <span className="text-sm w-5 text-center flex-shrink-0 flex items-center justify-center">{isDone ? <Check size={14} className="text-emerald-400" /> : isActive ? <Hourglass size={14} className="text-emerald-400" /> : '○'}</span>
                                 <span className="text-xs" style={{ color: isActive ? 'var(--db-heading)' : isDone ? 'var(--db-text-secondary)' : 'var(--db-text-muted)' }}>{p.label}</span>
                             </div>
                         );
@@ -307,7 +309,7 @@ function GeneratingOverlay({ seconds, isAdvanced }) {
                 {/* Warning */}
                 <div className="mx-6 mb-6 flex items-start gap-2.5 rounded-xl px-4 py-3"
                     style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)' }}>
-                    <span className="text-base flex-shrink-0 mt-0.5">⚠️</span>
+                    <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" style={{ color: '#fbbf24' }} />
                     <p className="text-xs font-medium" style={{ color: '#fbbf24' }}>
                         <strong>Ne zatvaraj i ne osvježavaj stranicu!</strong> Generiranje je u tijeku — prekidanje može uzrokovati grešku.
                     </p>
@@ -324,6 +326,7 @@ export default function ContentForm({ project }) {
     const [saving, setSaving] = useState(false);
     const [updating, setUpdating] = useState(false);
     const [generatingSeconds, setGeneratingSeconds] = useState(0);
+    const generatingSecondsRef = useRef(0);
     const generatingTimerRef = useRef(null);
     const [errorMessage, setErrorMessage] = useState("");
     const [uploadError, setUploadError] = useState("");
@@ -478,7 +481,11 @@ export default function ContentForm({ project }) {
     const doGenerate = async (data) => {
         setGenerating(true); setErrorMessage("");
         setGeneratingSeconds(0);
-        generatingTimerRef.current = setInterval(() => setGeneratingSeconds(s => s + 1), 1000);
+        generatingSecondsRef.current = 0;
+        generatingTimerRef.current = setInterval(() => {
+            generatingSecondsRef.current += 1;
+            setGeneratingSeconds(s => s + 1);
+        }, 1000);
         try {
             const result = isAdvanced
                 ? await generateAdvancedWebsiteAction(project.id, data)
@@ -490,7 +497,7 @@ export default function ContentForm({ project }) {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 return;
             }
-            setCelebrationSeconds(generatingSeconds);
+            setCelebrationSeconds(generatingSecondsRef.current);
             setGenerating(false);
             setShowCelebration(true);
         } catch {
@@ -671,7 +678,7 @@ export default function ContentForm({ project }) {
             {/* Error messages */}
             {errorMessage && (
                 <div className="mb-6 bg-red-500/10 border border-red-500/30 rounded-2xl p-4 flex items-start gap-3">
-                    <span className="text-2xl">⚠️</span>
+                    <AlertTriangle size={24} className="flex-shrink-0 mt-0.5 text-red-400" />
                     <div>
                         <h4 className="font-bold text-red-400 mb-1">Greška</h4>
                         {errorMessage.includes('\n') ? (
@@ -691,7 +698,7 @@ export default function ContentForm({ project }) {
             )}
             {uploadError && (
                 <div className="mb-6 bg-orange-500/10 border border-orange-500/30 rounded-2xl p-4 flex items-start gap-3">
-                    <span className="text-xl">⚠️</span><p className="text-orange-300 text-sm flex-1">{uploadError}</p>
+                    <AlertTriangle size={20} className="flex-shrink-0 mt-0.5 text-orange-400" /><p className="text-orange-300 text-sm flex-1">{uploadError}</p>
                 </div>
             )}
 
@@ -704,7 +711,7 @@ export default function ContentForm({ project }) {
                     <motion.div variants={{ hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0 } }}>
                         <div className="rounded-2xl p-5 flex items-start gap-3.5"
                             style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)' }}>
-                            <span className="text-2xl flex-shrink-0 mt-0.5">🔒</span>
+                            <Lock size={22} className="flex-shrink-0 mt-0.5" style={{ color: '#60a5fa' }} />
                             <div>
                                 <h4 className="font-bold text-sm mb-1" style={{ color: '#60a5fa' }}>Stranica je generirana</h4>
                                 <p className="text-xs leading-relaxed" style={{ color: 'var(--db-text-secondary)' }}>
@@ -751,7 +758,7 @@ export default function ContentForm({ project }) {
                 {/* ── Color Palette ── */}
                 {!project.hasGenerated && (
                 <motion.div variants={{ hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0 } }}>
-                    <Section icon="🎨" title="Paleta Boja" accentColor="#8B5CF6"
+                    <Section icon={<Palette size={18} />} title="Paleta Boja" accentColor="#8B5CF6"
                         hint="Odaberite paletu boja za vašu stranicu ili prepustite AI-u da odabere idealne boje.">
                         <ColorPaletteSection watch={watch} setValue={setValue} />
                     </Section>
@@ -761,7 +768,7 @@ export default function ContentForm({ project }) {
                 {/* ── Typography ── */}
                 {!project.hasGenerated && (
                 <motion.div variants={{ hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0 } }}>
-                    <Section icon="📝" title="Tipografija" accentColor="#3B82F6"
+                    <Section icon={<Type size={18} />} title="Tipografija" accentColor="#3B82F6"
                         hint="Odaberite kombinaciju fontova za naslove i tekst vaše stranice.">
                         <TypographySection watch={watch} setValue={setValue} />
                     </Section>
@@ -773,7 +780,7 @@ export default function ContentForm({ project }) {
                 <AnimatePresence>
                 {activeSections.has('designRef') && (
                 <motion.div key="designRef" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }}>
-                    <Section icon="🎨" title="Inspiracija za Dizajn" accentColor="#8b5cf6"
+                    <Section icon={<Palette size={18} />} title="Inspiracija za Dizajn" accentColor="#8b5cf6"
                         onRemove={() => toggleSection('designRef')}
                         hint="AI će koristiti ovu stranicu kao vizualnu inspiraciju pri generiranju vaše stranice.">
                         <div className="space-y-1.5">

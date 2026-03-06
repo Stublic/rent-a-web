@@ -79,7 +79,7 @@ function FeedbackCard({ feedback, onDelete }) {
                         {/* First impression (testimonial) - highlighted */}
                         {firstImpression && (
                             <div className="rounded-xl p-3.5" style={{ background: 'rgba(168,85,247,0.05)', border: '1px solid rgba(168,85,247,0.15)' }}>
-                                <p className="text-[11px] font-semibold mb-1 text-purple-400">💬 Prvi dojam (testimonial)</p>
+                                <p className="text-[11px] font-semibold mb-1 text-purple-400 flex items-center gap-1"><MessageSquare size={11} /> Prvi dojam (testimonial)</p>
                                 <p className="text-sm italic leading-relaxed" style={{ color: 'var(--lp-heading)' }}>"{firstImpression}"</p>
                             </div>
                         )}

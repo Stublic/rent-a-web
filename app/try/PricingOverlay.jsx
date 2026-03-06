@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, Loader2, X, Sparkles, Zap, TrendingUp } from 'lucide-react';
+import { Check, Loader2, X, Sparkles, Zap, TrendingUp, Rocket } from 'lucide-react';
 
 const plans = [
     {
@@ -131,7 +131,7 @@ export default function PricingOverlay({ onClose, trialData }) {
                 >
                     <div>
                         <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
-                            Sviđa ti se? Nastavi graditi. 🚀
+                            Sviđa ti se? Nastavi graditi. <Rocket size={24} className="inline" />
                         </h2>
                         <p className="text-zinc-400">
                             Tvoja stranica je spremna. Odaberi paket i preuzmi ju.

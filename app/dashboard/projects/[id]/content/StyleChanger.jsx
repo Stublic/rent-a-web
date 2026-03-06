@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Palette, Wand2, AlertTriangle, X, Loader2, Coins } from "lucide-react";
+import { Palette, Wand2, AlertTriangle, X, Loader2, Coins, FileText, Pencil, Image, Save, Rocket, Check, Hourglass, Bot } from "lucide-react";
 import { motion } from "framer-motion";
 import { changeProjectStyleAction } from "@/app/actions/change-style";
 import { STYLES } from "@/lib/styles";
@@ -13,11 +13,11 @@ const STYLE_COST = 500;
 
 // ─── Generation Phases for the multi-step loader ────────────────────────────
 const REGEN_PHASES = [
-    { from: 0,  label: "Priprema sadržaja za novi stil...",        icon: "📋" },
-    { from: 8,  label: "Webica AI piše novi dizajn...",              icon: "✍️" },
-    { from: 30, label: "Generiranje slika i vizualnog stila...",    icon: "🎨" },
-    { from: 55, label: "Provjera kvalitete i spremanje...",         icon: "💾" },
-    { from: 80, label: "Koristi se jači AI model...",               icon: "🚀" },
+    { from: 0,  label: "Priprema sadržaja za novi stil...",        Icon: FileText },
+    { from: 8,  label: "Webica AI piše novi dizajn...",              Icon: Pencil },
+    { from: 30, label: "Generiranje slika i vizualnog stila...",    Icon: Image },
+    { from: 55, label: "Provjera kvalitete i spremanje...",         Icon: Save },
+    { from: 80, label: "Koristi se jači AI model...",               Icon: Rocket },
 ];
 
 // ─── Regeneration Overlay (multi-step progress) ────────────────────────────
@@ -39,8 +39,8 @@ function RegenerationOverlay({ seconds, styleName }) {
                         <div className="absolute inset-0 rounded-full animate-pulse" style={{ background: 'rgba(168,85,247,0.15)' }} />
                         <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#a855f7' }} />
                     </div>
-                    <h3 className="text-lg font-bold" style={{ color: 'var(--db-heading)' }}>
-                        🎨 Regeneracija u stilu „{styleName}"
+                    <h3 className="text-lg font-bold flex items-center justify-center gap-2" style={{ color: 'var(--db-heading)' }}>
+                        <Palette size={18} style={{ color: '#a855f7' }} /> Regeneracija u stilu „{styleName}“
                     </h3>
                     <p className="text-xs mt-1" style={{ color: 'var(--db-text-muted)' }}>
                         Generiranje traje u prosjeku 3–5 minuta.
@@ -51,11 +51,11 @@ function RegenerationOverlay({ seconds, styleName }) {
                 <div className="mx-6 mb-4 rounded-2xl px-5 py-3 flex items-center justify-between" style={{ background: 'var(--db-surface)', border: '1px solid var(--db-border)' }}>
                     <div className="flex items-center gap-2.5">
                         <motion.span
-                            key={phase.icon}
+                            key={phase.Icon.displayName || phase.from}
                             initial={{ scale: 0.7, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
-                            className="text-xl"
-                        >{phase.icon}</motion.span>
+                            className="flex items-center"
+                        ><phase.Icon size={18} style={{ color: '#a855f7' }} /></motion.span>
                         <motion.p
                             key={phase.label}
                             initial={{ opacity: 0, x: 8 }}
@@ -97,8 +97,8 @@ function RegenerationOverlay({ seconds, styleName }) {
                                     background: isActive ? 'rgba(168,85,247,0.08)' : isDone ? 'rgba(34,197,94,0.05)' : 'transparent',
                                     border: isActive ? '1px solid rgba(168,85,247,0.2)' : '1px solid transparent'
                                 }}>
-                                <span className="text-sm w-5 text-center flex-shrink-0">
-                                    {isDone ? '✅' : isActive ? '⏳' : '○'}
+                                <span className="text-sm w-5 text-center flex-shrink-0 flex items-center justify-center">
+                                    {isDone ? <Check size={14} className="text-emerald-400" /> : isActive ? <Hourglass size={14} style={{ color: '#a855f7' }} /> : '○'}
                                 </span>
                                 <span className="text-xs" style={{ color: isActive ? 'var(--db-heading)' : isDone ? 'var(--db-text-secondary)' : 'var(--db-text-muted)' }}>
                                     {p.label}
@@ -113,7 +113,7 @@ function RegenerationOverlay({ seconds, styleName }) {
                 {/* Warning */}
                 <div className="mx-6 mb-6 flex items-start gap-2.5 rounded-xl px-4 py-3"
                     style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)' }}>
-                    <span className="text-base flex-shrink-0 mt-0.5">⚠️</span>
+                    <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" style={{ color: '#fbbf24' }} />
                     <p className="text-xs font-medium" style={{ color: '#fbbf24' }}>
                         <strong>Ne osvježavaj stranicu!</strong> Generiranje je u tijeku — prekidanje može oštetiti sadržaj.
                     </p>
@@ -273,7 +273,7 @@ export default function StyleChanger({ project, userTokens }) {
                                 className="flex flex-col gap-1 p-3 rounded-xl text-left transition-all disabled:opacity-40"
                                 style={{ border: '1px solid var(--db-border)', background: 'var(--db-surface)' }}
                             >
-                                <span className="text-lg">🤖</span>
+                                <Bot size={20} />
                                 <span className="text-xs font-bold" style={{ color: 'var(--db-heading)' }}>AI odabir</span>
                                 <span className="text-[10px]" style={{ color: 'var(--db-text-muted)' }}>AI sam bira stil</span>
                             </button>
@@ -311,7 +311,7 @@ export default function StyleChanger({ project, userTokens }) {
                         <div className="text-center">
                             <div className="w-12 h-12 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl"
                                 style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)' }}>
-                                {selectedStyleInfo ? selectedStyleInfo.emoji : '🤖'}
+                                {selectedStyleInfo ? selectedStyleInfo.emoji : <Bot size={24} />}
                             </div>
 
                             <h3 className="text-lg font-bold mb-2" style={{ color: 'var(--db-heading)' }}>
@@ -348,7 +348,7 @@ export default function StyleChanger({ project, userTokens }) {
                                     className="flex-1 py-2.5 rounded-xl font-bold text-sm transition-all hover:scale-105 flex items-center justify-center gap-2"
                                     style={{ background: 'rgba(168,85,247,0.85)', color: '#fff' }}
                                 >
-                                    <Wand2 size={16} /> Generiraj ({STYLE_COST} 🪙)
+                                    <Wand2 size={16} /> Generiraj ({STYLE_COST} <Coins size={14} className="inline" />)
                                 </button>
                             </div>
                         </div>

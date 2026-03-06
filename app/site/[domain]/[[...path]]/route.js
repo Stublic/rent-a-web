@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { injectContactFormScript } from '@/lib/contact-form-script';
+import { injectSeoHead } from '@/lib/seo-injection';
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
@@ -93,12 +94,13 @@ function htmlResponse(html, status = 200) {
 }
 
 /**
- * Inject favicon and custom SEO meta into page HTML.
+ * Inject favicon, custom SEO meta, JSON-LD, OG/Twitter tags, and canonical URL into page HTML.
  * @param {string} html - The page HTML
  * @param {object} project - The project object with contentData
  * @param {string} pageKey - The page key (e.g. 'home', 'o-nama', 'usluge', 'kontakt')
+ * @param {string} domain - The serving domain (e.g. 'moj-projekt.webica.hr')
  */
-function injectSiteExtras(html, project, pageKey = 'home') {
+function injectSiteExtras(html, project, pageKey = 'home', domain = '') {
     const seoSettings = (project.contentData || {}).seoSettings || {};
     const favicon = seoSettings.favicon;
     const pageSeo = seoSettings.pages?.[pageKey] || {};
@@ -118,17 +120,16 @@ function injectSiteExtras(html, project, pageKey = 'home') {
             injections += `<meta name="description" content="${pageSeo.description}">\n`;
         }
     }
-    if (pageSeo.ogImage) {
-        if (html.includes('property="og:image"')) {
-            html = html.replace(/<meta\s+property="og:image"\s+content="[^"]*"/i, `<meta property="og:image" content="${pageSeo.ogImage}"`);
-        } else {
-            injections += `<meta property="og:image" content="${pageSeo.ogImage}">\n`;
-        }
-    }
 
     if (injections && html.includes('</head>')) {
         html = html.replace('</head>', injections + '</head>');
     }
+
+    // Inject JSON-LD, canonical, OG/Twitter, robots, lang="hr"
+    if (domain) {
+        html = injectSeoHead(html, project, domain, pageKey);
+    }
+
     return html;
 }
 
@@ -778,7 +779,7 @@ export async function GET(req, { params }) {
 
     if (segments.length === 0) {
         // Homepage
-        return htmlResponse(injectSiteExtras(serveHomepage(project), project, 'home'));
+        return htmlResponse(injectSiteExtras(serveHomepage(project), project, 'home', domain));
     }
 
     // Subpages (Advanced multi-page HTML)
@@ -792,7 +793,7 @@ export async function GET(req, { params }) {
             // Use homepage's canonical nav/footer for consistent navigation
             const canonicalHome = serveHomepage(project);
             pageHtml = replaceNavAndFooter(pageHtml, canonicalHome);
-            return htmlResponse(injectSiteExtras(pageHtml, project, pageSlug));
+            return htmlResponse(injectSiteExtras(pageHtml, project, pageSlug, domain));
         }
     }
 

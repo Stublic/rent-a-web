@@ -99,7 +99,7 @@ export async function POST(
                 from: 'Webica <noreply@webica.hr>',
                 to: ownerEmail,
                 replyTo: email,
-                subject: `📩 Novi upit — ${project.name} (${name})`,
+                subject: `Novi upit — ${project.name} (${name})`,
                 html: `
                     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #f9fafb; padding: 32px 24px;">
                         <div style="background: #fff; border-radius: 12px; padding: 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">

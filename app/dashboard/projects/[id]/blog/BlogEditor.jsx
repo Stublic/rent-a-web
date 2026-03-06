@@ -95,6 +95,7 @@ export default function BlogEditor({ projectId, existingPost }) {
     const [showMediaPicker, setShowMediaPicker] = useState(null); // null | 'cover' | 'editor'
     const [showSeo, setShowSeo] = useState(false);
     const [uploadingCover, setUploadingCover] = useState(false);
+    const [generatingCover, setGeneratingCover] = useState(false);
 
     // Category state
     const [categoryId, setCategoryId] = useState(existingPost?.categoryId || "");
@@ -187,6 +188,35 @@ export default function BlogEditor({ projectId, existingPost }) {
             setCoverImage(data.media.url);
         } catch (err) { toast.error(err.message); }
         finally { setUploadingCover(false); }
+    };
+
+    // AI Cover Image generation
+    const handleAiCoverGenerate = async () => {
+        setGeneratingCover(true);
+        try {
+            const res = await fetch('/api/blog/generate-cover', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    projectId,
+                    title: title.trim() || undefined,
+                    topic: aiTopic.trim() || title.trim() || undefined,
+                }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                if (data.insufficientTokens) {
+                    throw new Error(`Nemate dovoljno tokena. Potrebno: ${data.tokensNeeded}, Preostalo: ${data.tokensRemaining}`);
+                }
+                throw new Error(data.error || 'Greška pri generiranju slike.');
+            }
+            setCoverImage(data.url);
+            toast.success(`Cover slika generirana! Potrošeno: ${data.tokensUsed} tokena. Preostalo: ${data.tokensRemaining}`);
+        } catch (err) {
+            toast.error(err.message);
+        } finally {
+            setGeneratingCover(false);
+        }
     };
 
     // Create new category
@@ -413,7 +443,7 @@ export default function BlogEditor({ projectId, existingPost }) {
                         </button>
                     </div>
                 ) : (
-                    <div className="flex gap-3">
+                    <div className="flex flex-wrap gap-3">
                         <button type="button" onClick={() => setShowMediaPicker('cover')}
                             className="px-4 py-2.5 bg-green-600/20 hover:bg-green-600/30 text-green-400 text-sm font-medium rounded-lg transition-colors flex items-center gap-2 border border-green-500/20">
                             <FolderOpen size={14} />Iz knjižnice
@@ -423,6 +453,13 @@ export default function BlogEditor({ projectId, existingPost }) {
                             {uploadingCover ? 'Uploadam...' : 'Upload sliku'}
                             <input type="file" accept="image/*" onChange={handleCoverUpload} className="hidden" disabled={uploadingCover} />
                         </label>
+                        <button type="button" onClick={handleAiCoverGenerate}
+                            disabled={generatingCover || (!title.trim() && !aiTopic.trim())}
+                            className={`px-4 py-2.5 text-sm font-medium rounded-lg transition-colors flex items-center gap-2 border ${generatingCover ? 'bg-[color:var(--db-surface)] text-[color:var(--db-text-muted)] border-[color:var(--db-border)]' : 'bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 border-purple-500/20'} disabled:opacity-50`}>
+                            {generatingCover ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                            {generatingCover ? 'Generiram...' : 'Generiraj AI sliku'}
+                            <span className="text-[10px] opacity-70 ml-0.5">25 tokena</span>
+                        </button>
                     </div>
                 )}
             </div>

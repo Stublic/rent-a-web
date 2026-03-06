@@ -26,11 +26,11 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://rent.webica.hr';
 // Email templates
 const emails = {
     3: {
-        subject: '💡 Kako izvući maksimum iz AI Editora?',
+        subject: 'Kako izvući maksimum iz AI Editora?',
         html: (name) => `
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; color: #333; background: #ffffff;">
                 <div style="background: linear-gradient(135deg, #0a0a0a, #1a1a1a); padding: 40px 30px; border-radius: 12px 12px 0 0;">
-                    <h1 style="color: #7c3aed; margin: 0 0 8px; font-size: 24px;">💡 Savjeti za AI Editor</h1>
+                    <h1 style="color: #7c3aed; margin: 0 0 8px; font-size: 24px;">Savjeti za AI Editor</h1>
                     <p style="color: #a1a1aa; margin: 0; font-size: 14px;">Iskoristite puni potencijal vaše web stranice</p>
                 </div>
                 <div style="padding: 30px; background: #fafafa; border: 1px solid #e5e5e5; border-top: none; border-radius: 0 0 12px 12px;">
@@ -38,7 +38,7 @@ const emails = {
                     <p>Vaša platforma je već nekoliko dana s vama! Kako bismo vam pomogli da ostvarite savršen i moderan dizajn, pripremili smo kratki vodič za korištenje našeg inovativnog AI Editora.</p>
                     
                     <div style="background: #fff; border: 1px solid #e5e5e5; border-left: 4px solid #7c3aed; padding: 20px; border-radius: 8px; margin: 24px 0;">
-                        <p style="margin: 0 0 12px; font-weight: 600; color: #7c3aed;">🎯 3 brza savjeta za profesionalan rezultat:</p>
+                        <p style="margin: 0 0 12px; font-weight: 600; color: #7c3aed;">3 brza savjeta za profesionalan rezultat:</p>
                         <ol style="margin: 0; padding-left: 20px; line-height: 1.8; color: #4b5563;">
                             <li><strong>Budite precizni:</strong> Umjesto "promijeni boju", pokušajte nešto poput <em>"promijeni boju pozadine zaglavlja u tamno ljubičastu #4c1d95"</em>.</li>
                             <li><strong>Odvažite se na eksperimente:</strong> Svaka AI izmjena koju napravite može se trenutno poništiti tipkom <strong>Undo</strong>. Nema straha od pogreške!</li>
@@ -61,11 +61,11 @@ const emails = {
         `,
     },
     7: {
-        subject: '🚀 Kako napredujete? Tu smo ako vam treba pomoć!',
+        subject: 'Kako napredujete? Tu smo ako vam treba pomoć!',
         html: (name) => `
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; color: #333; background: #ffffff;">
                 <div style="background: linear-gradient(135deg, #0a0a0a, #1a1a1a); padding: 40px 30px; border-radius: 12px 12px 0 0;">
-                    <h1 style="color: #7c3aed; margin: 0 0 8px; font-size: 24px;">🚀 Kako napredujete?</h1>
+                    <h1 style="color: #7c3aed; margin: 0 0 8px; font-size: 24px;">Kako napredujete?</h1>
                     <p style="color: #a1a1aa; margin: 0; font-size: 14px;">Već tjedan dana ste s nama!</p>
                 </div>
                 <div style="padding: 30px; background: #fafafa; border: 1px solid #e5e5e5; border-top: none; border-radius: 0 0 12px 12px;">
@@ -73,7 +73,7 @@ const emails = {
                     <p>Prošlo je točno tjedan dana od kreiranja vaše stranice! Iskreno se nadamo da ste zadovoljni rezultatom te da vaša webica već privlači prve upite.</p>
                     
                     <div style="background: #faf5ff; border: 1px solid #e9d5ff; padding: 20px; border-radius: 8px; margin: 24px 0;">
-                        <p style="margin: 0 0 12px; font-weight: 600; color: #6b21a8;">💡 Savjet za brže uređivanje</p>
+                        <p style="margin: 0 0 12px; font-weight: 600; color: #6b21a8;">Savjet za brže uređivanje</p>
                         <p style="margin: 0; color: #6b21a8; line-height: 1.5;">
                             Dobra vijest! Za promjenu teksta, slika ili boja ne morate čekati na naš odgovor. Sve to možete odraditi sami, u par klikova, koristeći Vizualni ili AI Editor.
                         </p>
@@ -103,16 +103,16 @@ const emails = {
         `,
     },
     14: {
-        subject: '⭐ Podignite svoju web stranicu na iduću razinu',
+        subject: 'Podignite svoju web stranicu na iduću razinu',
         html: (name, planName) => `
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; color: #333; background: #ffffff;">
                 <div style="background: linear-gradient(135deg, #0a0a0a, #1a1a1a); padding: 40px 30px; border-radius: 12px 12px 0 0;">
-                    <h1 style="color: #7c3aed; margin: 0 0 8px; font-size: 24px;">⭐ Dva tjedna s nama!</h1>
+                    <h1 style="color: #7c3aed; margin: 0 0 8px; font-size: 24px;">Dva tjedna s nama!</h1>
                     <p style="color: #a1a1aa; margin: 0; font-size: 14px;">Hvala vam na povjerenju</p>
                 </div>
                 <div style="padding: 30px; background: #fafafa; border: 1px solid #e5e5e5; border-top: none; border-radius: 0 0 12px 12px;">
                     <p>Pozdrav${name ? ` ${name}` : ''},</p>
-                    <p>Uživamo vidjeti kako se vaša web prisutnost razvija kroz ova dva tjedna. Hvala vam na povjerenju! 🎉</p>
+                    <p>Uživamo vidjeti kako se vaša web prisutnost razvija kroz ova dva tjedna. Hvala vam na povjerenju!</p>
                     
                     ${planName?.includes('Starter') ? `
                     <div style="background: linear-gradient(135deg, #faf5ff, #f3e8ff); border: 1px solid #d8b4fe; padding: 24px; border-radius: 12px; margin: 24px 0; text-align: center;">
@@ -128,7 +128,7 @@ const emails = {
                     </div>
                     ` : `
                     <div style="background: #faf5ff; border: 1px solid #e9d5ff; padding: 20px; border-radius: 8px; margin: 24px 0;">
-                        <p style="margin: 0; font-weight: 600; color: #6b21a8;">🌟 Osvježite identitet</p>
+                        <p style="margin: 0; font-weight: 600; color: #6b21a8;">Osvježite identitet</p>
                         <p style="margin: 8px 0 0; color: #6b21a8; line-height: 1.5;">
                             Vaša web stranica već sada izgleda moćno! Ako joj nekad poželite u potpunosti osvježiti identitet, prisjetite se opcije <strong>"Promjena stila"</strong> u dashboardu koja će prepakirati trenutni sadržaj u jedan od 20 sofisticiranih predložaka.
                         </p>

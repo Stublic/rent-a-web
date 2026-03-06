@@ -46,16 +46,16 @@ function getReminderEmail(projectName, planName, daysLeft, label, urgency, userN
     const colors = urgencyColors[urgency] || urgencyColors.medium;
 
     const subject = urgency === 'critical'
-        ? `🚨 Još ${label} do brisanja vaše web stranice "${projectName}"`
+        ? `Još ${label} do brisanja vaše web stranice "${projectName}"`
         : urgency === 'high'
-            ? `⚠️ Vaša web stranica "${projectName}" se briše za ${label}`
-            : `📋 Podsjetnik: Web stranica "${projectName}" — brisanje za ${label}`;
+            ? `Vaša web stranica "${projectName}" se briše za ${label}`
+            : `Podsjetnik: Web stranica "${projectName}" — brisanje za ${label}`;
 
     const html = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; color: #333; background: #ffffff;">
             <div style="background: ${colors.headerBg}; padding: 40px 30px; border-radius: 12px 12px 0 0; text-align: center;">
                 <h1 style="color: white; margin: 0 0 8px; font-size: 22px;">
-                    ${urgency === 'critical' ? '🚨' : urgency === 'high' ? '⚠️' : '📋'} Upozorenje pred brisanje
+                    Upozorenje pred brisanje
                 </h1>
                 <p style="color: rgba(255,255,255,0.85); margin: 0; font-size: 14px;">
                     Vaši podaci za "${projectName}" istječu za ${label}
@@ -67,7 +67,7 @@ function getReminderEmail(projectName, planName, daysLeft, label, urgency, userN
 
                 <div style="background: ${colors.bg}; border: 1px solid ${colors.border}; border-left: 4px solid ${colors.border}; padding: 16px 20px; border-radius: 8px; margin: 20px 0;">
                     <p style="margin: 0; font-weight: 600; color: ${colors.text}; font-size: 16px;">
-                        ⏳ Garancija čuvanja podataka ističe za ${daysLeft} ${daysLeft === 1 ? 'dan' : 'dana'}
+                        Garancija čuvanja podataka ističe za ${daysLeft} ${daysLeft === 1 ? 'dan' : 'dana'}
                     </p>
                     <p style="margin: 8px 0 0; color: ${colors.text}; font-size: 14px; line-height: 1.5;">
                         Nakon toga, cijela vaša stranica, dizajn, tekstovi i slike bit će <strong>trajno obrisani</strong> iz našeg sustava. Ne dajte da vaš dosadašnji trud propadne!
@@ -145,11 +145,11 @@ export async function GET(req) {
                             await transporter.sendMail({
                                 from: process.env.SMTP_FROM,
                                 to: project.user.email,
-                                subject: `❌ Web stranica "${project.name}" je trajno obrisana`,
+                                subject: `Web stranica "${project.name}" je trajno obrisana`,
                                 html: `
                                     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
                                         <div style="background: linear-gradient(135deg, #0a0a0a, #1a1a1a); padding: 40px 30px; border-radius: 12px 12px 0 0; text-align: center;">
-                                            <h1 style="color: #ef4444; margin: 0; font-size: 24px;">❌ Podaci su trajno obrisani</h1>
+                                            <h1 style="color: #ef4444; margin: 0; font-size: 24px;">Podaci su trajno obrisani</h1>
                                         </div>
                                         <div style="padding: 30px; background: #fafafa; border: 1px solid #e5e5e5; border-top: none; border-radius: 0 0 12px 12px;">
                                             <p style="font-size: 16px;">Pozdrav${project.user.name ? ` ${project.user.name}` : ''},</p>

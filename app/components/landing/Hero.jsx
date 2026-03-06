@@ -1,5 +1,5 @@
 'use client';
-import { ArrowRight, Star, Zap } from 'lucide-react';
+import { ArrowRight, Star, Zap, CreditCard, Check } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import WebsiteShowcase from './WebsiteShowcase';
 
@@ -101,10 +101,10 @@ export default function Hero() {
             }}
           >
             {[
-              { icon: '⚡', text: 'Online za 5 minuta' },
-              { icon: '💳', text: 'Od 39€/mj' },
-              { icon: '✓', text: 'Otkaži bilo kada' },
-            ].map(({ icon, text }) => (
+              { icon: Zap, text: 'Online za 5 minuta' },
+              { icon: CreditCard, text: 'Od 39€/mj' },
+              { icon: Check, text: 'Otkaži bilo kada' },
+            ].map(({ icon: ChipIcon, text }) => (
               <span
                 key={text}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold"
@@ -114,7 +114,7 @@ export default function Hero() {
                   color: 'var(--lp-text-secondary)',
                 }}
               >
-                <span>{icon}</span>
+                <ChipIcon size={14} />
                 {text}
               </span>
             ))}

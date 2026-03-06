@@ -314,12 +314,27 @@ Return ONLY the raw HTML starting with <!DOCTYPE html>. No markdown code blocks.
 2. Use Tailwind CSS via CDN: <script src="https://cdn.tailwindcss.com"></script>
    Configure Tailwind theme in a <script> tag. ${colorInstruction}
 3. ${fontInstruction}
-4. Use GSAP + ScrollTrigger via CDN for smooth scroll-triggered animations:
-   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-5. Generate SEO meta title and description
-6. Include Open Graph tags
-7. All text in CROATIAN language
+4. Use CSS-only scroll-triggered reveal animations (NO GSAP, no external animation libraries):
+   Add this CSS in a <style> tag inside <head>:
+   .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.6s ease, transform 0.6s ease; }
+   .reveal.visible { opacity: 1; transform: none; }
+   .reveal-delay-1 { transition-delay: 0.1s; } .reveal-delay-2 { transition-delay: 0.2s; } .reveal-delay-3 { transition-delay: 0.3s; } .reveal-delay-4 { transition-delay: 0.4s; }
+   Add this script before </body>:
+   <script>
+   const observer = new IntersectionObserver((entries) => { entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } }); }, { threshold: 0.15 });
+   document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+   </script>
+   Apply class="reveal" to every <section> and major content block. Use reveal-delay-N on children sets to stagger them.
+5. Generate SEO meta title and description. The <html> tag MUST include lang="hr".
+6. All text in CROATIAN language
+
+## SEMANTIC HTML & ACCESSIBILITY (MANDATORY)
+- Use semantic HTML5 elements: <header> for the top navigation bar, <main> to wrap ALL page content between header and footer, <footer> for the bottom section, <section> for each content section inside <main>, <article> for testimonials or repeating content blocks.
+- Do NOT use bare <div> elements where a semantic element exists. Every major block must be a <section>.
+- **Heading Hierarchy:** There must be exactly ONE <h1> tag per page, containing the business name or primary keyword. Use <h2> for section titles and <h3> for sub-items. Never skip levels (e.g., no <h1> followed by <h3>).
+- **Image Alt Text:** ALL <img> tags MUST have descriptive, keyword-rich alt attributes (e.g., alt="Frizerski salon Bella - moderno uređen interijer" NOT alt="image" or alt="").
+- **Accessible Links/Buttons:** All icon-only buttons and links MUST have an aria-label attribute (e.g., aria-label="Otvori mobilni izbornik"). The hamburger menu button must have aria-label.
+- **Focus states:** Ensure all interactive elements (<a>, <button>) have visible focus styles for keyboard navigation.
 
 ## NAVIGATION (very important!)
 - Logo: ${data.logoUrl ? `<img src="${data.logoUrl}" alt="${data.businessName}">` : `"${data.businessName}" as text logo`}

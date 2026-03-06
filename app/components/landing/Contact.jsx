@@ -45,7 +45,7 @@ export default function Contact() {
 
           <div className="max-w-2xl mx-auto">
             <form onSubmit={handleSubmit} className="space-y-5 p-7 rounded-2xl" style={{ background: 'var(--lp-card)', border: '1px solid var(--lp-card-border)' }}>
-              {success && <div className="p-4 rounded-xl text-center text-sm font-medium" style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)', color: 'var(--lp-accent-green)' }}>✅ Poruka uspješno poslana! Javit ćemo vam se uskoro.</div>}
+              {success && <div className="p-4 rounded-xl text-center text-sm font-medium" style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)', color: 'var(--lp-accent-green)' }}>Poruka uspješno poslana! Javit ćemo vam se uskoro.</div>}
               {error && <div className="p-4 rounded-xl text-center text-sm" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: 'var(--lp-accent-red)' }}>{error}</div>}
 
               <div className="grid md:grid-cols-2 gap-5">
